@@ -59,11 +59,21 @@ func _run() -> void:
 	for c in d.build_tab.find_children("*", "Button", true, false):
 		if (c as Button).theme_type_variation == "FlatButton":
 			rows += 1
-	_check(rows >= 11, "lista do catálogo + antena (%d)" % rows)
-	for i in DrawerBuildTab.FILTERS.size() + 1:
-		d.build_tab.cycle_filter(1)
-		_check(DrawerBuildTab.FILTERS[d.build_tab._filter] != "casa", "filtro 'casa' escondido antes do contato")
-	d.build_tab.set_filter("")
+	_check(rows >= 11, "lista do catálogo + cabeçalhos (%d)" % rows)
+	# lista única por nível de antena: cabeçalho "Antena N" antes dos itens que ele libera
+	var heads: Array[int] = []
+	for lvl in d.build_tab._headers.keys():
+		heads.append(int(lvl))
+	heads.sort()
+	_check(heads == [1, 3, 4], "cabeçalhos por nível de antena %s" % str(heads))
+	var list: VBoxContainer = d.build_tab._list
+	var order: Array[String] = []
+	for c in list.get_children():
+		order.append(String(c.name))
+	_check(order.find("Item_vaso") < order.find("Item_prateleira") and order.find("Item_prateleira") < order.find("Item_painel"), "itens em ordem de nível")
+	_check(not "Item_cama_dela" in order, "casa dela escondida antes do contato")
+	var up: Button = _find(d.build_tab, "UpgradeButton")
+	_check(up != null and up.is_visible_in_tree(), "botão de melhorar a antena à vista")
 
 	# comprar com posicionamento
 	d.build_tab.select_item("vaso")
@@ -98,6 +108,10 @@ func _run() -> void:
 	d.build_tab.select_item(DrawerBuildTab.ANTENNA)
 	var ab: Button = _find(d, "AntennaButton")
 	_check(ab != null and ab.disabled, "antena: requisitos faltando, botão desabilitado")
+
+	var up2: Button = _find(d.build_tab, "UpgradeButton")
+	up2.pressed.emit()
+	_check(_called("antenna") == [["antenna"]], "o botão do cabeçalho tenta subir a antena")
 
 	# objeto na faixa: cultura, mover, desmontar
 	d.select_instance(1)

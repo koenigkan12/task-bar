@@ -32,7 +32,7 @@ Tudo é com o mouse.
 
 | Ação | Como |
 |---|---|
-| Construir, plantar, melhorar a antena | Botão da seta na alça (ou clique na escotilha/caixa): abre a gaveta, aba **Construir**. Escolha o item, depois o lugar na faixa |
+| Construir, plantar, melhorar a antena | Botão da seta na alça (ou clique na escotilha/caixa): abre a gaveta, aba **Construir**: uma lista só, por nível de antena ("Antena 1" com os itens liberados, depois "Antena 2"... com cadeado e em cinza os que faltam). O botão **Subir** (com o preço) fica fixo no topo e no cabeçalho do próximo nível; clicar na antena do cenário abre a lista nessa seção. Escolha o item, depois o lugar na faixa |
 | Ouvir o rádio / ler o Diário | Clique na mesa do rádio ou aba **Rádio** da gaveta (a luz verde pulsa quando há fala nova) |
 | Ver o estado (o que Joaquim faz, caixa, energia, antena e jornada da casa) | Clique no próprio objeto: **Joaquim**, **caixa/escotilha**, **gerador**, **antena** (abre um cartão; Esc ou clique fora fecha) |
 | Trocar a cultura de um vaso, mover ou desmontar | Clique no objeto na faixa |

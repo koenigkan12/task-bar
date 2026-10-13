@@ -188,6 +188,7 @@ func line_tiers() -> Dictionary           # {plantio:n, agua:"gotejador", energi
 # comandos
 func catalog(filter: String = "") -> Array[Dictionary]  # filter: "", "plantio","agua","energia","transporte","decor","casa","escavacao"
    # entrada: {item,name_key,desc_key,cost,cols,line,tier,status:"available"|"locked"|"unaffordable"|"maxed"|"owned",
+   #           antenna:int (nível de antena que libera o item; a aba Construir agrupa por ele),
    #           missing:Array[String] (chaves i18n legíveis), pra_que:Array[String], post_contact:bool, pinned:bool}
 func can_place(item_id: String, room: int, col: int) -> bool
 func placement_hints(item_id: String) -> Array[Dictionary]   # [{room,col}] posições válidas (primeira coluna do bloco)

@@ -120,7 +120,11 @@ func catalog(filter: String = "") -> Array[Dictionary]:
 		var pq: Array[String] = []
 		for p: String in r[7]:
 			pq.append(p)
-		out.append({"item": r[0], "name_key": "item.%s.name" % r[0], "desc_key": "item.%s.desc" % r[0],
+		var ant: int = 1
+		for k in missing.size():
+			if missing[k] == "missing.antenna":
+				ant = int(margs[k]["n"])
+		out.append({"item": r[0], "antenna": ant, "name_key": "item.%s.name" % r[0], "desc_key": "item.%s.desc" % r[0],
 			"cost": r[2], "cols": r[3], "line": r[1], "tier": r[4], "status": r[5], "missing": missing, "missing_args": margs,
 			"pra_que": pq, "post_contact": r[1] == "casa", "pinned": pinned == r[0]})
 	return out

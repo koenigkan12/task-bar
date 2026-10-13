@@ -1237,7 +1237,7 @@ func _catalog_entry(id: String) -> Dictionary:
 		m = {"keys": [] as Array[String], "args": [] as Array[Dictionary]}
 	return {"item": id, "name_key": "item." + id + ".name", "desc_key": "item." + id + ".desc",
 			"cost": int(ev["cost"]), "cols": int(d.get("cols", 0)), "line": String(d.get("line", "")),
-			"tier": int(d.get("tier", 0)), "status": status, "missing": m["keys"], "missing_args": m["args"],
+			"tier": int(d.get("tier", 0)), "antenna": int((d.get("requires", {}) as Dictionary).get("antenna", 1)), "status": status, "missing": m["keys"], "missing_args": m["args"],
 			"pra_que": _str_array(d.get("pra_que", [])), "post_contact": bool(d.get("post_contact", false)),
 			"pinned": _pinned == id}
 

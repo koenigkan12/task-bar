@@ -1,15 +1,16 @@
 class_name DrawerBuildTab
 extends HBoxContainer
-## Aba Construir: catálogo por linha (esquerda) e detalhe do que está escolhido (direita).
+## Aba Construir: catálogo numa lista só, por nível de antena (esquerda), e detalhe do que está escolhido (direita).
+## Cada nível tem um cabeçalho "Antena N" com os itens que ele libera; os níveis que faltam ficam em cinza com
+## cadeado e o do próximo nível leva o botão de melhorar a antena (que também fica fixo no topo da lista).
 ## Detalhe de item: "pra quê?", requisitos que faltam, comprar (modo de posicionar) e fixar objetivo.
 ## Detalhe de objeto já construído (clicado na faixa): cultura do vaso, mover, desmontar.
 ## Detalhe da antena: antenna_info() e melhorar.
 
-const FILTERS: Array[String] = ["", "plantio", "agua", "energia", "transporte", "decor", "casa", "escavacao"]
 const ANTENNA: String = "__antenna"
+const MAX_LEVEL: int = 5
 
 var drawer: Drawer
-var _filter: int = 0
 var _sel_item: String = ""          # item do catálogo ou ANTENNA
 var _sel_inst: int = -1             # objeto escolhido na faixa
 var _confirm_demolish: bool = false
@@ -17,7 +18,8 @@ var _list_sig: String = ""
 var _detail_sig: String = ""
 var _catalog: Array = []
 
-var _filter_label: Label
+var _top: HBoxContainer              # antena atual + botão de melhorar, sempre à vista
+var _headers: Dictionary = {}        # nível -> cabeçalho na lista (para rolar até ele)
 var _list: VBoxContainer
 var _list_scroll: ScrollContainer
 var _detail: VBoxContainer
@@ -32,21 +34,9 @@ func _init() -> void:
 	left.custom_minimum_size.x = 132
 	left.add_theme_constant_override("separation", 1)
 	add_child(left)
-	var frow := HBoxContainer.new()
-	frow.add_theme_constant_override("separation", 0)
-	left.add_child(frow)
-	var prev: Button = DrawerUi.icon_button("arrow_up")
-	prev.icon = _rotated_arrow(true)
-	prev.pressed.connect(func() -> void: cycle_filter(-1))
-	frow.add_child(prev)
-	_filter_label = DrawerUi.label("", "LabelAmber")
-	_filter_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_filter_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	frow.add_child(_filter_label)
-	var nxt: Button = DrawerUi.icon_button("arrow_down")
-	nxt.icon = _rotated_arrow(false)
-	nxt.pressed.connect(func() -> void: cycle_filter(1))
-	frow.add_child(nxt)
+	_top = HBoxContainer.new()
+	_top.add_theme_constant_override("separation", 2)
+	left.add_child(_top)
 	_list_scroll = ScrollContainer.new()
 	_list_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_list_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -88,18 +78,20 @@ func refresh(force: bool = false) -> void:
 	_refresh_detail(force)
 
 
-func cycle_filter(step: int) -> void:
-	var n: int = FILTERS.size()
-	for _i in n:
-		_filter = (_filter + step + n) % n
-		if _filter_visible(FILTERS[_filter]):
-			break
-	refresh(true)
+## Vai para o primeiro item ainda não comprado da linha (o cartão do gerador usa isto).
+func focus_line(line: String) -> void:
+	for e: Dictionary in _catalog:
+		if str(e.get("line", "")) == line and str(e.get("status", "")) not in ["owned", "maxed"]:
+			select_item(str(e.get("item", "")))
+			_scroll_to_item(str(e.get("item", "")))
+			return
 
 
-func set_filter(line: String) -> void:
-	_filter = maxi(0, FILTERS.find(line))
-	refresh(true)
+## Seleciona a antena e rola a lista até o cabeçalho do próximo nível (clique na antena do cenário).
+func focus_antenna() -> void:
+	select_item(ANTENNA)
+	var lvl: int = int(drawer.game.antenna_info().get("level", 1)) + 1
+	call_deferred("_scroll_to_header", mini(lvl, MAX_LEVEL))
 
 
 func select_item(item_id: String) -> void:
@@ -202,11 +194,6 @@ func press_crop(crop: String) -> void:
 
 # ---- lista ------------------------------------------------------------------
 
-func _filter_visible(line: String) -> bool:
-	# a casa dela só aparece depois do contato (não estragar a história)
-	return line != "casa" or bool(drawer.game.contact_made())
-
-
 var _suggested: String = ""
 var _auto_picked: bool = false
 
@@ -215,32 +202,29 @@ func _refresh_list(force: bool) -> void:
 	var g: Node = drawer.game
 	var sg: Dictionary = Guide.next_goal(g)
 	_suggested = "" if sg.is_empty() else String(sg["id"])
-	if not _filter_visible(FILTERS[_filter]):
-		_filter = 0
-	var line: String = FILTERS[_filter]
-	_catalog = g.catalog(line)
+	_catalog = g.catalog("")
 	var contact: bool = bool(g.contact_made())
 	var ant: Dictionary = g.antenna_info()
-	var sig: String = "%s|%s|%s|%s|%s|%s" % [line, str(_catalog), str(ant), _sel_item, I18nRef.locale(), _suggested]
+	var sig: String = "%s|%s|%s|%s|%s|%s" % [str(_catalog), str(ant), _sel_item, I18nRef.locale(), _suggested, contact]
 	if sig == _list_sig and not force:
 		return
 	_list_sig = sig
-	_filter_label.text = I18nRef.t("tab.filter.all") if line == "" else I18nRef.t("line." + line)
+	_refresh_top(ant)
 	var keep_scroll: int = _list_scroll.scroll_vertical
 	DrawerUi.clear(_list)
-	if line == "":
-		_add_antenna_row(ant)
-	var last_line: String = ""
-	for e: Dictionary in _catalog:
-		var l: String = str(e.get("line", ""))
-		if l == "casa" and not contact:
+	_headers.clear()
+	var cur: int = int(ant.get("level", 1))
+	for lvl in range(1, MAX_LEVEL + 1):
+		var items: Array = []
+		for e: Dictionary in _catalog:
+			if int(e.get("antenna", 1)) != lvl or (str(e.get("line", "")) == "casa" and not contact):
+				continue
+			items.append(e)
+		if items.is_empty() and lvl != cur + 1:
 			continue
-		if line == "" and l != last_line:
-			var hk: String = "line.%s.head" % l
-			var h: Label = DrawerUi.label(I18nRef.t(hk) if I18nRef.has_key(hk) else I18nRef.t("line." + l), "LabelMuted")
-			_list.add_child(h)
-			last_line = l
-		_add_item_row(e)
+		_add_level_header(lvl, cur, ant)
+		for e: Dictionary in items:
+			_add_item_row(e)
 	if _list.get_child_count() == 0:
 		_list.add_child(DrawerUi.label(I18nRef.t("ui.empty"), "LabelMuted"))
 	_list_scroll.set_deferred("scroll_vertical", keep_scroll)
@@ -268,24 +252,71 @@ func _row(selected: bool) -> Array:
 	return [b, h]
 
 
-func _add_antenna_row(ant: Dictionary) -> void:
-	var parts: Array = _row(_sel_item == ANTENNA)
+## Botão "[seta] Melhorar 50": cinza quando ainda não dá, mas sempre clicável (o aviso diz o que falta).
+func _upgrade_button(ant: Dictionary, with_icon: bool = true) -> Button:
+	var can: bool = bool(ant.get("can", false))
+	var b: Button = DrawerUi.button("%s %d" % [I18nRef.t("build.upgrade"), int(ant.get("next_cost", 0))], "arrow_up" if with_icon else "")
+	b.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	b.size_flags_horizontal = Control.SIZE_SHRINK_END
+	b.custom_minimum_size = Vector2(0, 13)
+	if not can:
+		b.modulate = Color(1, 1, 1, 0.75)
+	b.pressed.connect(press_antenna)
+	b.name = "UpgradeButton"
+	return b
+
+
+## Linha fixa no topo: a antena de agora e, se ainda sobe, o botão de melhorar (o mais importante da aba).
+func _refresh_top(ant: Dictionary) -> void:
+	DrawerUi.clear(_top)
+	_top.add_child(DrawerUi.icon("antena"))
+	_top.add_child(DrawerUi.fill_label(I18nRef.t("ui.antenna", {"n": int(ant.get("level", 1))}), "LabelAmber"))
+	if bool(ant.get("max", false)):
+		_top.add_child(DrawerUi.icon("check"))
+	else:
+		if _suggested == "antenna":
+			_top.add_child(DrawerUi.icon("estrela"))
+		_top.add_child(_upgrade_button(ant))
+
+
+## Cabeçalho de um nível: "Antena N" + o que ele é. Passado = ✓; próximo = botão de melhorar; adiante = cadeado e cinza.
+func _add_level_header(lvl: int, cur: int, ant: Dictionary) -> void:
+	var parts: Array = _row(lvl == cur + 1 and _sel_item == ANTENNA)
 	var b: Button = parts[0]
 	var h: HBoxContainer = parts[1]
-	h.add_child(DrawerUi.icon("antena"))
-	var name_l: Label = DrawerUi.fill_label(I18nRef.t("ui.antenna", {"n": int(ant.get("level", 1))}))
-	h.add_child(name_l)
-	if _suggested == "antenna":
-		h.add_child(DrawerUi.icon("estrela"))
-	if not bool(ant.get("max", false)):
-		h.add_child(DrawerUi.icon_text("sucata", str(int(ant.get("next_cost", 0))), "LabelAmber" if bool(ant.get("can", false)) else "LabelMuted"))
+	b.custom_minimum_size = Vector2(0, 15)
+	var future: bool = lvl > cur
+	h.add_child(DrawerUi.icon("antena" if not future else ("antena" if lvl == cur + 1 else "lock")))
+	h.add_child(DrawerUi.fill_label(I18nRef.t("ui.antenna", {"n": lvl}), "LabelAmber" if lvl <= cur + 1 else "LabelMuted"))
+	if lvl <= cur:
+		h.add_child(DrawerUi.icon("check"))
+	elif lvl == cur + 1 and not bool(ant.get("max", false)):
+		h.add_child(_upgrade_button(ant, false))
 	b.pressed.connect(select_item.bind(ANTENNA))
+	_headers[lvl] = b
+
+
+func _scroll_to_header(lvl: int) -> void:
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var hd: Control = _headers.get(lvl)
+	if hd != null and is_instance_valid(hd):
+		_list_scroll.scroll_vertical = maxi(0, int(hd.position.y) - 1)
+
+
+func _scroll_to_item(id: String) -> void:
+	await get_tree().process_frame
+	for c: Node in _list.get_children():
+		if c is Button and (c as Button).name == "Item_" + id:
+			_list_scroll.scroll_vertical = maxi(0, int((c as Control).position.y) - 16)
+			return
 
 
 func _add_item_row(e: Dictionary) -> void:
 	var id: String = str(e.get("item", ""))
 	var parts: Array = _row(_sel_item == id)
 	var b: Button = parts[0]
+	b.name = "Item_" + id
 	var h: HBoxContainer = parts[1]
 	var status: String = str(e.get("status", "available"))
 	var ic: String = ""
@@ -305,10 +336,7 @@ func _add_item_row(e: Dictionary) -> void:
 	var name_l: Label = DrawerUi.fill_label(I18nRef.t(str(e.get("name_key", "item.%s.name" % id))), "LabelMuted" if status == "locked" else "")
 	h.add_child(name_l)
 	if status == "locked":
-		var why: Array = e.get("missing", [])
-		var args: Array = e.get("missing_args", [])
-		if not why.is_empty():
-			h.add_child(DrawerUi.label(missing_short(str(why[0]), args[0] if not args.is_empty() else {}), "LabelMuted"))
+		pass   # cinza e cadeado bastam: o que falta aparece ao escolher o item (e a antena está no cabeçalho do nível)
 	elif status != "owned" and status != "maxed":
 		h.add_child(DrawerUi.icon_text("sucata", str(int(e.get("cost", 0))), "LabelAmber" if status == "available" else "LabelMuted"))
 	b.pressed.connect(select_item.bind(id))
@@ -630,7 +658,7 @@ func why_not(item_id: String, room: int = 0, col: int = -1) -> Dictionary:
 
 
 static func _rotated_arrow(left: bool) -> Texture2D:
-	# setas esquerda/direita a partir de arrow_up (o manifest só tem cima/baixo)
+	# setas esquerda/direita a partir de arrow_up (o manifest só tem cima/baixo); a aba Rádio também usa
 	var src: Texture2D = UiTheme.icon("arrow_up")
 	if src == null:
 		return null

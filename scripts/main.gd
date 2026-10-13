@@ -257,11 +257,11 @@ func _on_card_action(act: String) -> void:
 		"gens":
 			_card.close()
 			_drawer.open("build")
-			_drawer.build_tab.set_filter("energia")
+			_drawer.build_tab.focus_line("energia")
 		"antenna":
 			_card.close()
 			_drawer.open("build")
-			_drawer.build_tab.select_item(DrawerBuildTab.ANTENNA)
+			_drawer.build_tab.focus_antenna()
 
 
 ## Avisa por que o pedido não foi aceito. Devolve false quando o clique deve seguir o caminho normal.
