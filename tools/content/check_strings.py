@@ -54,6 +54,9 @@ def collect_code_keys(root: Path):
     literal, patterns = {}, {}
 
     def note(key, where, dynamic):
+        if key.endswith("."):  # prefixo montado por concatenação ("item." + id + ".name")
+            patterns.setdefault("^" + re.escape(key) + ".+$", where)
+            return
         if dynamic or "%" in key or "{" in key:
             parts = re.split(r"%[sd]|\{\w*\}", key)
             patterns.setdefault("^" + "[^.]+".join(re.escape(x) for x in parts) + "$", where)

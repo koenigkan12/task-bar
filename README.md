@@ -19,12 +19,17 @@ Tudo é com o mouse.
 
 | Ação | Como |
 |---|---|
-| Ver o que dá para clicar | Passe o mouse: o objeto ganha contorno |
-| Plantar, construir, ouvir o rádio | Clique no objeto (vaso, rádio, caixa de sucata...) |
-| Mover a janela | Arraste pela alça da janela; ela se mantém dentro da área útil do monitor |
+| Construir, plantar, melhorar a antena | Botão da seta na alça (ou clique na escotilha/caixa): abre a gaveta, aba **Construir**. Escolha o item, depois o lugar na faixa |
+| Ouvir o rádio / ler o Diário | Clique na mesa do rádio ou aba **Rádio** da gaveta (a luz verde pulsa quando há fala nova) |
+| Ver o estado (sucata, caixa, energia, jornada da casa) | Aba **Estado** |
+| Trocar a cultura de um vaso, mover ou desmontar | Clique no objeto na faixa |
+| Opções (idioma, áudio, escala, sempre por cima, apagar progresso) | Aba **Opções** ou tela de título |
+| Mover a janela | Arraste pela alça (ícone da mão); ela fica dentro da área útil do monitor |
 | Recolher | Botão de esconder na alça: a janela vira uma aba pequena na borda de baixo e o jogo continua. Clique na aba para voltar |
 | Sempre por cima, resetar posição, sair | Menu do ícone na bandeja do Windows (perto do relógio) |
 | Janela sumiu da tela | Menu da bandeja → Resetar posição, ou rode `QuantosDias.exe --reset-window` |
+
+Esc fecha a gaveta ou cancela o posicionamento. Fechar o jogo e voltar depois: o tempo passado conta (até 72 h) e a gaveta mostra um resumo do que aconteceu.
 
 O som começa desligado e só liga depois do primeiro clique. Nas opções há três modos de áudio: silencioso, ambiente e completo.
 
