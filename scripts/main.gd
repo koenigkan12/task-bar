@@ -119,7 +119,7 @@ func _on_game_started(is_new: bool) -> void:
 			_drawer.open()
 		else:
 			_drawer.close())
-	_bunker.connect("hatch_clicked", func() -> void: _drawer.open("state"))
+	_bunker.connect("hatch_clicked", _on_box_clicked)   # a escotilha e a caixa fazem a mesma coisa
 	_bunker.connect("radio_clicked", func() -> void: _drawer.open("radio"))
 	_bunker.connect("box_clicked", _on_box_clicked)
 	_bunker.connect("object_clicked", _on_object_clicked)

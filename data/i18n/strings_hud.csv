@@ -18,7 +18,7 @@ intro.next,Próximo,Next
 intro.start,Começar,Start
 tut.1,1/4 Clique num vaso pra ajudar a planta a crescer.,1/4 Click a pot to help the plant grow.
 tut.2,2/4 Continue clicando até colher: a colheita vira cestos.,2/4 Keep clicking until it's ready: the harvest becomes baskets.
-tut.3,3/4 Clique na caixa da escotilha: cestos viram sucata.,3/4 Click the hatch box: baskets turn into scrap.
+tut.3,3/4 Clique na escotilha ou na caixa embaixo dela: cestos viram sucata.,3/4 Click the hatch or the box under it: baskets turn into scrap.
 tut.4,4/4 Toque na meta ali em cima e compre uma gambiarra.,4/4 Tap the goal up there and buy a contraption.
 goal.next,Próxima meta: {item},Next goal: {item}
 plot.stage.0,Semente,Seed

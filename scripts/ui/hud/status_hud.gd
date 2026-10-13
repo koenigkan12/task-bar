@@ -1,13 +1,20 @@
 class_name StatusHud
 extends Control
 ## Faixa de status sempre visível: sucata e a próxima meta ("o que faço agora?").
-## Clicar abre a gaveta na aba Construir. Fica no canto de cima, sobre o céu.
+## Clicar na linha de cima abre a gaveta na aba Construir. O texto do tutorial fica à direita da
+## escotilha, deixa os cliques passarem e pode ser recolhido no botão "−" / "?".
 
 signal clicked()
 
 const BACK_ALPHA: float = 0.6
+const TUT_X: int = 40     ## o texto do tutorial começa depois da escotilha (x 8..40)
+const TUT_W: int = 150
 
-var _back: ColorRect
+var _toggle: Label
+var _row_w: float = 0.0
+var _row_h: float = 12.0
+var _tut_h: float = 0.0
+var _tut_hidden: bool = false
 var _scrap_icon: TextureRect
 var _scrap: Label
 var _stock_icon: TextureRect
@@ -25,6 +32,7 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	theme = UiTheme.build()
+	_tut_hidden = bool(ScreenUtil.setting("tutorial_hidden", false))
 	_build()
 	steps = FirstSteps.new()
 	add_child(steps)
@@ -36,11 +44,6 @@ func _ready() -> void:
 
 
 func _build() -> void:
-	_back = ColorRect.new()
-	_back.color = Color(UiTheme.INK, BACK_ALPHA)
-	_back.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_back.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	add_child(_back)
 	var col := VBoxContainer.new()
 	col.add_theme_constant_override("separation", 1)
 	col.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -52,9 +55,10 @@ func _build() -> void:
 	col.add_child(row)
 	_tut = _label()
 	_tut.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_tut.custom_minimum_size = Vector2(142, 0)
+	_tut.custom_minimum_size = Vector2(TUT_W - 6, 0)
+	_tut.size = Vector2(TUT_W - 6, 0)
 	_tut.add_theme_color_override("font_color", UiTheme.AMBER3)
-	col.add_child(_tut)
+	add_child(_tut)
 	_col = col
 	_scrap_icon = _icon("sucata")
 	row.add_child(_scrap_icon)
@@ -72,6 +76,9 @@ func _build() -> void:
 	row.add_child(_goal_icon)
 	_goal = _label()
 	row.add_child(_goal)
+	_toggle = _label()
+	_toggle.add_theme_color_override("font_color", UiTheme.AMBER3)
+	row.add_child(_toggle)
 
 
 func _icon(name: String) -> TextureRect:
@@ -117,22 +124,46 @@ func refresh() -> void:
 		text = _goal.text
 	_last_text = text
 	await get_tree().process_frame
-	var w: float = 6.0 + _scrap_icon.size.x + _scrap.size.x + _stock_icon.size.x + _stock.size.x + 9.0
-	if _goal_icon.visible:
-		w += _goal_icon.size.x + _goal.size.x + 2.0
 	var tut_key: String = steps.current_key() if steps != null else ""
-	_tut.visible = tut_key != ""
+	_toggle.visible = tut_key != ""
+	_toggle.text = "?" if _tut_hidden else "-"
+	_tut.visible = tut_key != "" and not _tut_hidden
 	if tut_key != "":
 		_tut.text = ScreenUtil.tr_key(tut_key)
-		w = maxf(w, 148.0)
 	await get_tree().process_frame
-	var h: float = 12.0 + (_tut.size.y + 1.0 if _tut.visible else 0.0)
-	custom_minimum_size = Vector2(w, h)
+	_row_w = 6.0 + _scrap_icon.size.x + _scrap.size.x + _stock_icon.size.x + _stock.size.x + 9.0
+	if _goal_icon.visible:
+		_row_w += _goal_icon.size.x + _goal.size.x + 2.0
+	if _toggle.visible:
+		_row_w += _toggle.size.x + 3.0
+	_row_h = 12.0
+	_tut_h = (_tut.size.y + 2.0) if _tut.visible else 0.0
+	_tut.position = Vector2(TUT_X + 3, _row_h + 1)
+	custom_minimum_size = Vector2(maxf(_row_w, TUT_X + TUT_W if _tut.visible else 0.0), _row_h + _tut_h)
 	size = custom_minimum_size
+	queue_redraw()
+
+
+func _draw() -> void:
+	var back := Color(UiTheme.INK, BACK_ALPHA)
+	draw_rect(Rect2(0, 0, _row_w, _row_h), back)
+	if _tut.visible:
+		draw_rect(Rect2(TUT_X, _row_h, TUT_W, _tut_h), back)
+
+
+## Só a linha de cima recebe clique; o texto do tutorial deixa passar (a escotilha fica clicável).
+func _has_point(point: Vector2) -> bool:
+	return point.y >= 0.0 and point.y < _row_h and point.x >= 0.0 and point.x < _row_w
 
 
 func _gui_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and (event as InputEventMouseButton).pressed \
-			and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
+	var mb := event as InputEventMouseButton
+	if mb == null or not mb.pressed or mb.button_index != MOUSE_BUTTON_LEFT:
+		return
+	if _toggle.visible and mb.position.x >= _row_w - _toggle.size.x - 5.0:
+		_tut_hidden = not _tut_hidden
+		ScreenUtil.set_setting("tutorial_hidden", _tut_hidden)
+		refresh()
+	else:
 		clicked.emit()
-		accept_event()
+	accept_event()
