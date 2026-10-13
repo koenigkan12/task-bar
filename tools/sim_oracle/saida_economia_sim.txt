@@ -1,0 +1,87 @@
+--- checagem do grafo de dependências ---
+tudo alcançável com sucata infinita: True | antena final 5 | faltam nada
+
+=== escala de preços x0.70 ===
+equilibrada        L5 em 14.5 dias | L2: dia 2.4, L3: dia 6.4, L4: dia 8.5, L5: dia 14.5
+                   cestos desperdiçados 0 | sucata vendida 2550
+economia_primeiro  L5 em 18.5 dias | L2: dia 7.5, L3: dia 9.8, L4: dia 14.8, L5: dia 18.5
+                   cestos desperdiçados 107 | sucata vendida 2454
+antena_primeiro    L5 em 32.8 dias | L2: dia 2.5, L3: dia 8.8, L4: dia 18.5, L5: dia 32.8
+                   cestos desperdiçados 0 | sucata vendida 2475
+
+=== escala de preços x1.00 ===
+equilibrada        L5 em 20.4 dias | L2: dia 2.8, L3: dia 8.5, L4: dia 12.4, L5: dia 20.4
+                   cestos desperdiçados 7 | sucata vendida 3482
+economia_primeiro  L5 em 26.4 dias | L2: dia 10.5, L3: dia 13.5, L4: dia 20.8, L5: dia 26.4
+                   cestos desperdiçados 163 | sucata vendida 3507
+antena_primeiro    L5 em 46.5 dias | L2: dia 3.4, L3: dia 12.5, L4: dia 26.4, L5: dia 46.5
+                   cestos desperdiçados 0 | sucata vendida 3571
+
+=== escala de preços x1.60 ===
+equilibrada        L5 em 32.4 dias | L2: dia 4.4, L3: dia 13.4, L4: dia 19.4, L5: dia 32.4
+                   cestos desperdiçados 30 | sucata vendida 5611
+economia_primeiro  L5 em 41.5 dias | L2: dia 16.4, L3: dia 21.4, L4: dia 32.8, L5: dia 41.5
+                   cestos desperdiçados 264 | sucata vendida 5623
+antena_primeiro    L5 em None dias | L2: dia 4.8, L3: dia 19.5, L4: dia 41.5
+                   cestos desperdiçados 0 | sucata vendida 2524
+
+--- sensibilidade à cadência de check-in (política equilibrada, x0.70) ---
+1 check-in por dia (18:30)                 L5 em 15.8 dias
+3 por dia (manhã, almoço, fim do dia)      L5 em 14.5 dias
+8 por dia                                  L5 em 14.4 dias
+
+--- valor do progresso offline (PC ligado 09-18h; política equilibrada, x0.70) ---
+com offline (bunker segue de noite e de dia)   L5 em 14.7 dias
+sem offline (só produz com o jogo aberto)      L5 em 25.4 dias
+
+--- fração do tempo acordado ocupada com tarefas, por nível de antena (equilibrada) ---
+antena 1:   77% ocupado
+antena 2:   73% ocupado
+antena 3:   97% ocupado
+antena 4:   95% ocupado
+antena 5:    0% ocupado
+
+--- ordem, custo e retorno das compras, política equilibrada (x0.70) ---
+dia   item          custo  renda/dia  ganho/dia  payback  gargalo antes -> depois
+  0.5 vaso             6        29        7.1      0.8  producao -> producao
+  0.8 vaso             6        36        7.1      0.8  producao -> producao
+  2.4 antena2         49        57       21.4      2.3  producao -> producao
+  3.4 moinho          49        57        0.0       --  producao -> producao
+  3.5 canteiro        28        75       17.9      1.6  producao -> escotilha
+  3.8 canteiro        28        75        0.1    232.1  escotilha -> trabalho
+  4.4 calha           42       118       42.7      1.0  trabalho -> escotilha
+  4.5 gotejador       38       118        0.0       --  escotilha -> escotilha
+  5.4 comodo2         84       118        0.0       --  escotilha -> escotilha
+  6.4 antena3        112       132       14.2      7.9  escotilha -> producao
+  6.5 prateleira     112       185       52.6      2.1  producao -> trabalho
+  7.5 bateria        133       185        0.0       --  trabalho -> trabalho
+  8.5 antena4        238       185        0.0       --  trabalho -> trabalho
+  9.5 cisterna       147       192        7.4     19.9  trabalho -> producao
+ 10.5 estufa         266       243       50.9      5.2  producao -> trabalho
+ 11.4 roldana        119       297       54.1      2.2  trabalho -> producao
+ 11.8 comodo3        210       297        0.0       --  producao -> producao
+ 13.4 painel         322       297        0.0       --  producao -> producao
+ 14.5 antena5        448       300        3.3    135.8  producao -> producao
+
+--- ordem, custo e retorno das compras, política antena_primeiro (x0.70) ---
+dia   item          custo  renda/dia  ganho/dia  payback  gargalo antes -> depois
+  2.5 antena2         49        34       12.9      3.8  producao -> producao
+  3.8 moinho          49        34        0.0       --  producao -> producao
+  5.8 comodo2         84        34        0.0       --  producao -> producao
+  8.8 antena3        112        36        1.7     64.6  producao -> producao
+ 12.5 bateria        133        36        0.0       --  producao -> producao
+ 18.5 antena4        238        36        0.0       --  producao -> producao
+ 24.4 comodo3        210        36        0.0       --  producao -> producao
+ 24.4 vaso             6        48       12.0      0.5  producao -> producao
+ 24.4 vaso             6        60       12.0      0.5  producao -> producao
+ 25.4 gotejador       38        60        0.0       --  producao -> producao
+ 25.5 canteiro        28        96       36.0      0.8  producao -> producao
+ 25.8 canteiro        28       131       35.2      0.8  producao -> escotilha
+ 26.4 calha           42       132        0.8     49.7  escotilha -> producao
+ 27.4 cisterna       147       132        0.0       --  producao -> producao
+ 28.4 roldana        119       132        0.0       --  producao -> producao
+ 28.8 prateleira     112       192       60.0      1.9  producao -> producao
+ 30.4 estufa         266       297      105.0      2.5  producao -> producao
+ 31.5 painel         322       297        0.0       --  producao -> producao
+ 32.8 antena5        448       300        3.3    135.8  producao -> producao
+

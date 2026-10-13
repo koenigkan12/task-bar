@@ -1,0 +1,132 @@
+{
+  "_comment": "Todo o balanceamento fica aqui (nunca espalhar números no código). Base: tools/sim_oracle/economia_sim.py (plano de ~14 dias). Preços já com o fator 0,7 aplicado. Para ~30 dias use price_scale = 2.3.",
+  "time": {
+    "awake_from_min": 360,
+    "awake_to_min": 1320,
+    "time_scale": 1.0,
+    "offline_cap_hours": 72,
+    "step_min": 10,
+    "price_scale": 1.0
+  },
+  "economy": {
+    "eat_per_day": 3,
+    "hunger_speed_floor": 0.6,
+    "box_overflow_factor": 2.0,
+    "plant_harvest_min": 3.0,
+    "water_min": 5.0,
+    "pedal_fraction": 0.25,
+    "carry_room_factor": [1.0, 1.35, 1.7],
+    "build_base_min": 6.0,
+    "build_cost_divisor": 20.0,
+    "build_labor_share": 0.7,
+    "demolish_refund": 1.0
+  },
+  "crops": {
+    "batata": { "cycle_min": 120, "price": 1.0, "requires_antenna": 1, "greenhouse_only": false },
+    "feijao": { "cycle_min": 150, "price": 2.0, "requires_antenna": 2, "greenhouse_only": false },
+    "tomate": { "cycle_min": 180, "price": 3.5, "requires_antenna": 4, "greenhouse_only": true }
+  },
+  "visits_per_day": { "1": 3, "2": 3, "3": 5, "4": 5, "5": 6 },
+  "box_capacity": { "balde": 14, "calha": 22, "roldana": 34, "esteira": 50 },
+  "carry_min": { "balde": 6.0, "calha": 3.0, "roldana": 1.2, "esteira": 0.2 },
+  "auto_water_plots": { "lata": 0, "gotejador": 4, "cisterna": 10, "bomba": 99 },
+  "power_supply": { "bicicleta": 3, "moinho": 5, "bateria": 8, "painel": 12 },
+  "radio_power_demand": { "1": 1, "2": 1, "3": 2, "4": 2, "5": 3 },
+  "lamp_power_per_room": 1,
+  "antenna": {
+    "cost": { "2": 50, "3": 110, "4": 240, "5": 450 },
+    "requires": {
+      "2": { "supply_min": 1, "rooms": 1 },
+      "3": { "supply_min": 5, "rooms": 2 },
+      "4": { "supply_min": 8, "rooms": 2 },
+      "5": { "supply_min": 12, "rooms": 3 }
+    },
+    "headroom_needed": 1
+  },
+  "rooms": {
+    "cols": 12,
+    "col_px": 16,
+    "room_px": 192,
+    "wall_px": 8,
+    "count_max": 3,
+    "dig_cost": { "2": 85, "3": 210 },
+    "dig_requires": { "2": { "antenna": 1 }, "3": { "antenna": 3 } },
+    "fixed": {
+      "1": [
+        { "id": "ladder", "col": 0, "cols": 1 },
+        { "id": "hatch_box", "col": 1, "cols": 1 },
+        { "id": "radio_table", "col": 2, "cols": 1 },
+        { "id": "bed", "col": 10, "cols": 2 }
+      ]
+    }
+  },
+  "start": {
+    "sucata": 0,
+    "antenna": 1,
+    "rooms": 1,
+    "owned": [
+      { "item": "vaso", "room": 1, "col": 3 },
+      { "item": "vaso", "room": 1, "col": 4 },
+      { "item": "vaso", "room": 1, "col": 5 },
+      { "item": "bicicleta", "room": 1, "col": 6 }
+    ],
+    "default_crop": "batata",
+    "first_cycle_min": 20
+  },
+  "lines": {
+    "plantio": ["vaso", "canteiro", "prateleira", "estufa"],
+    "agua": ["lata", "gotejador", "cisterna", "bomba"],
+    "energia": ["bicicleta", "moinho", "bateria", "painel"],
+    "transporte": ["balde", "calha", "roldana", "esteira"]
+  },
+  "items": {
+    "vaso": { "line": "plantio", "tier": 0, "cost": 6, "cols": 1, "plots": 1, "max": 5, "requires": { "antenna": 1, "rooms": 1 }, "power": 0, "pra_que": ["renda"] },
+    "canteiro": { "line": "plantio", "tier": 1, "cost": 30, "cols": 2, "plots": 3, "max": 2, "requires": { "antenna": 1, "rooms": 1 }, "power": 0, "pra_que": ["renda"] },
+    "prateleira": { "line": "plantio", "tier": 2, "cost": 110, "cols": 2, "plots": 5, "max": 1, "requires": { "antenna": 3, "rooms": 2 }, "power": 0, "pra_que": ["renda"] },
+    "estufa": { "line": "plantio", "tier": 3, "cost": 270, "cols": 3, "plots": 6, "greenhouse": true, "max": 1, "requires": { "antenna": 4, "rooms": 2 }, "power": 2, "pra_que": ["renda"] },
+
+    "lata": { "line": "agua", "tier": 0, "cost": 0, "cols": 0, "start_tool": true, "pra_que": [] },
+    "gotejador": { "line": "agua", "tier": 1, "cost": 40, "cols": 1, "replaces_line": true, "requires": { "antenna": 1, "rooms": 1 }, "power": 0, "pra_que": ["tempo"] },
+    "cisterna": { "line": "agua", "tier": 2, "cost": 150, "cols": 2, "replaces_line": true, "requires": { "antenna": 2, "rooms": 2 }, "power": 0, "pra_que": ["tempo", "renda"] },
+    "bomba": { "line": "agua", "tier": 3, "cost": 360, "cols": 1, "replaces_line": true, "requires": { "antenna": 5, "rooms": 3, "supply_min": 8 }, "power": 2, "pra_que": ["tempo"], "post_contact": true },
+
+    "bicicleta": { "line": "energia", "tier": 0, "cost": 0, "cols": 1, "replaces_line": true, "start_item": true, "pra_que": [] },
+    "moinho": { "line": "energia", "tier": 1, "cost": 50, "cols": 1, "replaces_line": true, "requires": { "antenna": 1, "rooms": 1 }, "power": 0, "pra_que": ["tempo", "porta"] },
+    "bateria": { "line": "energia", "tier": 2, "cost": 130, "cols": 2, "replaces_line": true, "requires": { "antenna": 3, "rooms": 2 }, "power": 0, "pra_que": ["porta"] },
+    "painel": { "line": "energia", "tier": 3, "cost": 320, "cols": 0, "surface": true, "replaces_line": true, "requires": { "antenna": 4, "rooms": 3 }, "power": 0, "pra_que": ["porta"] },
+
+    "balde": { "line": "transporte", "tier": 0, "cost": 0, "cols": 0, "start_tool": true, "pra_que": [] },
+    "calha": { "line": "transporte", "tier": 1, "cost": 40, "cols": 1, "replaces_line": true, "requires": { "antenna": 1, "rooms": 1 }, "power": 0, "pra_que": ["renda", "tempo"] },
+    "roldana": { "line": "transporte", "tier": 2, "cost": 120, "cols": 1, "replaces_line": true, "requires": { "antenna": 3, "rooms": 2 }, "power": 0, "pra_que": ["renda", "tempo"] },
+    "esteira": { "line": "transporte", "tier": 3, "cost": 300, "cols": 2, "replaces_line": true, "requires": { "antenna": 5, "rooms": 3, "supply_min": 8 }, "power": 2, "pra_que": ["renda", "tempo"], "post_contact": true },
+
+    "estante": { "line": "decor", "cost": 30, "cols": 1, "max": 1, "requires": { "antenna": 1, "rooms": 1 }, "enables": ["ler"], "pra_que": ["historia"] },
+    "poltrona": { "line": "decor", "cost": 40, "cols": 1, "max": 1, "requires": { "antenna": 1, "rooms": 1 }, "enables": ["cochilar", "ouvir_radio"], "pra_que": ["historia"] },
+    "mesinha": { "line": "decor", "cost": 25, "cols": 1, "max": 1, "requires": { "antenna": 1, "rooms": 1 }, "enables": ["escrever"], "pra_que": ["historia"] },
+    "foto": { "line": "decor", "cost": 15, "cols": 1, "max": 1, "requires": { "antenna": 1, "rooms": 1 }, "enables": ["olhar_foto"], "pra_que": ["historia"] },
+
+    "cama_dela": { "line": "casa", "cost": 150, "cols": 2, "max": 1, "requires": { "antenna": 5 }, "house": true, "pra_que": ["historia"] },
+    "cantinho": { "line": "casa", "cost": 100, "cols": 2, "max": 1, "requires": { "antenna": 5 }, "house": true, "pra_que": ["historia"] },
+    "planta_dela": { "line": "casa", "cost": 60, "cols": 1, "max": 1, "requires": { "antenna": 5 }, "house": true, "pra_que": ["historia"] },
+    "cabide": { "line": "casa", "cost": 50, "cols": 1, "max": 1, "requires": { "antenna": 5 }, "house": true, "pra_que": ["historia"] },
+    "segunda_caneca": { "line": "casa", "cost": 40, "cols": 0, "overlay_on": "mesinha", "max": 1, "requires": { "antenna": 5, "items": ["mesinha"] }, "house": true, "pra_que": ["historia"] },
+    "foto_dela": { "line": "casa", "cost": 80, "cols": 1, "max": 1, "requires": { "antenna": 5 }, "house": true, "pra_que": ["historia"] }
+  },
+  "journey": {
+    "arrival_min_days_after_contact": 7,
+    "house_items": ["cama_dela", "cantinho", "planta_dela", "cabide", "segunda_caneca", "foto_dela"],
+    "epilogue_notes_per_day": 2
+  },
+  "behaviors": {
+    "ler": { "needs": "estante", "min_free_busy": 0.0 },
+    "cochilar": { "needs": "poltrona" },
+    "ouvir_radio": { "needs": "poltrona" },
+    "escrever": { "needs": "mesinha" },
+    "olhar_foto": { "needs": "foto" }
+  },
+  "test_targets": {
+    "antenna5_day_min": 12.0,
+    "antenna5_day_max": 17.5,
+    "antenna_day_hint": { "2": 2.4, "3": 6.4, "4": 8.5, "5": 14.5 }
+  }
+}
