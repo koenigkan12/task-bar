@@ -221,7 +221,9 @@ func play_radio_cue(cue: String) -> void:
 	if not CUES.has(cue):
 		push_warning("AudioManager: cue desconhecido '%s'" % cue)
 		return
-	if not cue_allowed():
+	# A voz dela e o tema da chegada tocam mesmo no modo ambiente (acontecem uma vez; são o ponto da história).
+	var rare: bool = cue == "voice_her" or cue == "epilogue"
+	if not (cue_allowed() or (rare and loops_allowed())):
 		return
 	_record({"kind": "cue", "name": cue})
 	match cue:

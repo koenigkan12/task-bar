@@ -19,6 +19,7 @@ var _ending: EndingScreen
 var _drawer_open: bool = false
 var _playing: bool = false
 var _in_ending: bool = false
+var _ending_layer: CanvasLayer
 
 
 func _ready() -> void:
@@ -162,7 +163,10 @@ func _on_arrival_cut() -> void:
 		return
 	_ending = EndingScreen.new()
 	_ending.finished.connect(_on_ending_finished)
-	add_child(_ending)
+	_ending_layer = CanvasLayer.new()
+	_ending_layer.layer = 20
+	add_child(_ending_layer)
+	_ending_layer.add_child(_ending)
 	_ending.play_arrival()
 
 
@@ -171,7 +175,8 @@ func _on_ending_finished(kind: String) -> void:
 		"arrival":
 			_ending.show_next_day()
 		_:
-			_ending.queue_free()
+			_ending_layer.queue_free()
+			_ending_layer = null
 			_ending = null
 			_in_ending = false
 			_toggle_drawer(false)
