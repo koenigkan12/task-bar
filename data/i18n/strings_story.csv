@@ -1,0 +1,123 @@
+key,pt_BR,en
+radio.l1_arrival,"(Chiado. Só chiado, como todo dia.)","(Static. Only static, like every day.)"
+radio.l1_reaction,Hoje também não.,Not today either.
+radio.l1_a1,"(Um apito fino, comprido. Some do mesmo jeito que veio.)","(A thin whistle, long. It fades out the way it came.)"
+radio.l1_a2,"(Uma sílaba, talvez. Uma voz? O chiado fecha por cima antes de dar para saber.)","(A syllable, maybe. A voice? The static closes over it before you can tell.)"
+radio.l1_a3,"(Estalos miúdos, como gordura na frigideira.)","(Tiny crackles, like fat in a frying pan.)"
+radio.l1_a4,(O chiado de manhã é mais fino que o da noite.),(Morning static is thinner than the night kind.)
+radio.l2_arrival,"Quem tá na escuta, escuta bem. Feijão: de molho de véspera, dois dedos de fundura. Rega pouco, que feijão afoga.","Whoever's listening, listen close. Beans: soak them overnight, plant them two fingers deep. Water little, beans drown easy."
+radio.l2_reaction,Dois dedos. Tá anotado.,Two fingers deep. Noted.
+radio.l2_p1,"Bom dia, aqui do posto da estrada velha. Orvalho forte hoje. Feijão gosta, eu não, que o joelho reclama.","Good morning, from the old-road station. Heavy dew today. Beans like it, I don't, my knee complains."
+radio.l2_p2,"(Uma valsa, muito longe. Falta metade das notas, mas o compasso aguenta.)","(A waltz, very far away. Half the notes are missing, but the beat holds.)"
+radio.l2_p3,"Fim de tarde, descascando o que sobrou da safra. O feijão não tem pressa. Quem escuta também não precisa ter.","Late afternoon, shelling what's left of the harvest. Beans are in no hurry. Neither does whoever's listening have to be."
+radio.l2_p4,"(A valsa de novo, mais perto. Dá para reconhecer o refrão.)","(The waltz again, a little closer. You can make out the chorus.)"
+radio.l3_arrival,"Caravana do vale, no cruzamento da usina. Passamos por aqui todo dia, ao meio-dia. Quem tiver o que trocar, deixa na caixa.","Valley caravan, at the power plant crossroads. We come through every day at noon. Whoever has something to trade, leave it in the box."
+radio.l3_reaction,Tem mais gente do que eu pensava.,There are more people than I thought.
+radio.l3_n1,"Quatro, sete, dois, zero, nove, nove. Repito: quatro, sete, dois.","Four, seven, two, zero, nine, nine. Repeating: four, seven, two."
+radio.l3_p1,"Meio-dia no cruzamento. A mula tá mancando, mas anda. A sopa saiu rala porque a água acabou antes.","Noon at the crossroads. The mule is limping, but she walks. The soup came out thin, the water ran out first."
+radio.l3_n2,"Oito, um, um, três, três, três... desculpe, seis. Repito.","Eight, one, one, three, three, three... sorry, six. Repeating."
+radio.l3_p2,"Hoje uma menina esperou a gente no cruzamento com um ovo. Um só, enrolado num pano. Ninguém teve coragem de regatear.","Today a little girl waited for us at the crossroads with an egg. Just one, wrapped in a cloth. Nobody had the heart to haggle."
+radio.l4_arrival,"Boa tarde pra quem tiver escutando. Toco todo dia às seis, pra mão não esquecer. Tomate quer sol; quem não tem sol faz estufa de garrafa.","Good afternoon to whoever's listening. I play every day at six, so my hands don't forget. Tomatoes want sun; no sun, build a greenhouse out of bottles."
+radio.l4_reaction,Seis da tarde. Vou parar pra ouvir.,Six o'clock. I'll stop and listen.
+radio.l4_m1,(A música das seis. Um violão velho e um assobio. Termina com ele limpando a garganta.),(The six o'clock tune. An old guitar and a whistle. It ends with him clearing his throat.)
+radio.l4_m2,Errei a segunda parte hoje e deixei. A música aguenta um erro. Eu também.,I missed the second part today and left it. The song can take a mistake. So can I.
+radio.l4_m3,Choveu o dia inteiro e o violão inchou. Desafinou do jeito dele. Toquei assim mesmo.,It rained all day and the guitar swelled up. It went out of tune its own way. I played anyway.
+radio.l4_norte1,...alguém aí? Câmbio. Aqui é o abrigo do norte. Câmbio.,...anyone there? Over. This is the northern shelter. Over.
+radio.l4_norte2,"Se alguém ouvir, só diz que ouviu. Não precisa dizer mais nada. Câmbio.","If anyone hears this, just say you heard. You don't have to say more. Over."
+radio.l4_norte3,A gente reveza a escuta. Hoje sou eu. Boa noite pra quem estiver aí.,We take turns on the radio. Tonight it's me. Good night to whoever's out there.
+radio.l5_arrival,"Eu tô viva. Tô a caminho. Vai demorar, mas eu vou chegar.","I'm alive. I'm on my way. It'll take a while, but I'll get there."
+radio.l5_reaction,Tô aqui. Pode vir devagar.,I'm here. Take your time.
+radio.l5_velho,A de hoje é pra quem tá esperando alguém. Tem sempre alguém. Boa noite.,Today's tune is for whoever is waiting for someone. There's always someone. Good night.
+radio.l5_numeros,"Hoje não tenho números. Só quis dizer boa noite, pra quem estiver aí.","No numbers today. I just wanted to say good night, to whoever is out there."
+radio.l5_sementes,Bom dia. Choveu na hora certa e o feijão deu mais do que eu esperava. Era só isso que eu queria contar.,"Good morning. It rained exactly when it should, and the beans did better than I hoped. That's all I wanted to tell you."
+radio.l5_caravana,"Meio-dia no cruzamento. A estrada tá seca até o rio, pra quem vai a pé. Passamos de novo amanhã.","Noon at the crossroads. The road is dry all the way to the river, for anyone on foot. We'll be back tomorrow."
+speaker.ruido,Chiado,Static
+speaker.sementes,Sementes,Seeds
+speaker.caravana,Caravana,Caravan
+speaker.numeros,Números,Numbers
+speaker.velho,O Velho,The Old Man
+speaker.norte,Norte,North
+speaker.ela,Ela,Her
+speaker.ele,Ele,Him
+journey.on_cama_dela,"Uma cama só pra mim? Eu durmo em qualquer chão, você sabe. Mas vou aceitar.","A bed just for me? I'll sleep on any floor, you know that. But I'll take it."
+journey.on_cantinho,Um canto com luz baixa. Vou me enroscar lá e ninguém me acha a tarde inteira.,A corner with a low light. I'll curl up there and nobody will find me all afternoon.
+journey.on_planta_dela,"A planta. Não rega demais, ela é mais teimosa que carente. Parece com alguém.","The plant. Don't overwater it, it's more stubborn than needy. Reminds me of someone."
+journey.on_cabide,"Um cabide? Então eu levo o casaco. Vai chegar cheirando a estrada, desculpa de antemão.","A coat hook? Then I'll bring the coat. It'll smell like the road, sorry in advance."
+journey.on_segunda_caneca,"Uma segunda caneca. Põe do lado da sua, bem junto. Eu sei que você ia pôr.",A second mug. Put it right next to yours. I know you would.
+journey.on_foto_dela,"A foto na parede. Aquele lugar ainda existe? Se eu passar perto, te conto.","The picture on the wall. Does that place still exist? If I pass near it, I'll tell you."
+journey.t1,"Primeiro dia inteiro andando. Os pés estão discutindo comigo, mas eu tô ganhando.","First full day on foot. My feet are arguing with me, but I'm winning."
+journey.t2,Passei pelo posto da estrada velha. Um homem me deu feijão e uma opinião sobre o meu sapato.,Passed the old-road station. A man gave me beans and an opinion about my shoes.
+journey.t3,"Dormi num galpão com telhado. Telhado! Acordei com a chuva em cima e fiquei ouvindo, sem pressa.","Slept in a shed with a roof. A roof! I woke to rain on it and just listened, in no hurry."
+journey.t4,"Atravessei o rio hoje. A ponte caiu, mas tem pedra. Molhei até o joelho e segui.","Crossed the river today. The bridge is down, but there are stones. Wet to the knee, kept going."
+journey.t5,Cruzei com uma caravana. Me deram um lugar na carroça por duas horas. Que luxo.,Ran into a caravan. They gave me a spot on the cart for two hours. What luxury.
+journey.t6,Comi sopa rala hoje e pensei em você: o seu tempero nunca dava certo e eu sempre comia tudo.,"Had thin soup today and thought of you: your seasoning never worked, and I always ate it all."
+journey.t7,Ouvi um violão ao longe às seis e parei na estrada até acabar. Acho que é o mesmo que você escuta.,I heard a guitar far off at six and stopped on the road until it ended. I think it's the same one you hear.
+journey.t8,"Andei com o sol nas costas. Minha sombra ia na frente, comprida, mostrando o caminho. Boa companhia.","Walked with the sun at my back. My shadow went ahead of me, long, showing the way. Good company."
+journey.t9,"Contei postes de luz pra passar o tempo. Perdi a conta no vinte e dois. Recomecei, tá tudo bem.","Counted utility poles to pass the time. Lost count at twenty-two. Started over, it's fine."
+journey.t10,"Tô a uma tarde daí, mais ou menos. Vou descansar antes. Termina de arrumar a casa, sem pressa.","I'm about an afternoon away, more or less. I'll rest first. Finish getting the place ready, no hurry."
+journey.arrival,"Ei. Sou eu. Demorou, mas eu cheguei.","Hey. It's me. It took a while, but I'm here."
+note.1,"Dormi onze horas seguidas. Se eu roncar, finge que é o gerador.","Slept eleven hours straight. If I snore, pretend it's the generator."
+note.2,Obrigada pela cama. Vou demorar a acreditar que ela é minha.,Thank you for the bed. It'll take me a while to believe it's mine.
+note.3,Primeiro café na caneca. Tava ruim. Tomei tudo.,First coffee from the mug. It was bad. I drank all of it.
+note.4,"O pão ficou duro. Comi o pão todo, com carinho.","The bread came out hard. I ate all of it, lovingly."
+note.5,"Achei as cartas na gaveta. Li só uma, juro. As outras deixei como estavam.","I found the letters in the drawer. I read only one, I swear. The others I left as they were."
+note.6,Decidi deixar um bilhete por dia. Assim você sempre tem o que ler de manhã.,I decided to leave a note every day. That way you always have something to read in the morning.
+note.7,Lista pra quando a caravana passar:\nsal\nfósforo\nlinha de costura\npilha (a mais importante),List for when the caravan comes by:\nsalt\nmatches\nsewing thread\nbatteries (the important one)
+note.8,"Fiz um desenho do bunker visto de lado, com a terra toda aberta. Você ficou do tamanho de um grão de feijão.","I drew the bunker from the side, with all the earth cut open. You came out the size of a bean."
+note.9,A planta soltou uma folha nova. Do tamanho de uma unha. Fiquei olhando um tempão.,The plant put out a new leaf. The size of a fingernail. I watched it for ages.
+note.10,"Remendei sua camisa de trabalho. O cotovelo agora é de outra cor, de propósito.","I mended your work shirt. The elbow is a different color now, on purpose."
+note.11,O velho do rádio errou a segunda parte de novo. Eu adorei.,The old man on the radio missed the second part again. I loved it.
+note.12,Veio pilha! Quatro. Guardei duas pro dia em que a luz falhar.,Batteries came! Four. I kept two for the day the light fails.
+note.13,Você cochilou na poltrona com o livro aberto. Marquei a página. Era a 112.,You dozed off in the armchair with the book open. I marked the page. It was 112.
+note.14,A sopa tava boa. Pode parar de me olhar pra ver se eu gostei.,The soup was good. You can stop watching me to see if I liked it.
+note.15,"Contei os degraus da escada: vinte e três. Você já sabia, né? Eu precisava contar sozinha.","I counted the ladder rungs: twenty-three. You knew already, right? I needed to count them myself."
+note.16,Teve uma hora em que me perguntei se ainda sabia conversar. Aí você me passou o sal e eu soube.,There was a moment I wondered if I still knew how to talk. Then you passed me the salt and I did.
+note.17,Entendi o gerador. Quer dizer: entendi que é uma bicicleta. Já é um começo.,I understood the generator. Meaning: I understood it's a bicycle. It's a start.
+note.18,"Choveu. Abri a tampa um dedo, só pra sentir o cheiro. Depois fechei, não se preocupa.","It rained. I opened the hatch a finger's width, just to smell it. Then I closed it, don't worry."
+note.19,Liguei o rádio baixinho. Você fingiu que não ouviu. Eu vi o pé batendo.,I turned the radio on low. You pretended not to hear. I saw your foot tapping.
+note.20,"Tomate! Um só, vermelho, dividido ao meio. A sua metade está no prato. Come.","A tomato! Just one, red, split in half. Your half is on the plate. Eat."
+note.21,O cabide agora tem dois casacos. Fiquei olhando. Parece uma casa de verdade.,The hook has two coats now. I stood there looking. It looks like a real home.
+note.22,"Sonhei com a estrada. Acordei e você estava ali, respirando. Foi bom saber onde eu estava.","I dreamed of the road. I woke up and you were right there, breathing. It was good to know where I was."
+note.23,Perguntei quantos dias fazia. Você respondeu: hoje. Anotei.,I asked how many days it had been. You said: today. I wrote it down.
+note.24,Hoje fiquei olhando você regar a planta. Você fala com ela baixinho. Fingi que não ouvi.,Today I watched you water the plant. You talk to her under your breath. I pretended not to hear.
+note.25,A planta cresceu uns dedos e já não cabe na lata. Amanhã a gente troca. Você escolhe a lata.,The plant grew a few fingers and doesn't fit the can anymore. We'll swap it tomorrow. You pick the can.
+note.26,Lista de novo:\nsal\nfósforo\nlinha\numa coisa boba pra você (segredo),List again:\nsalt\nmatches\nthread\nsomething silly for you (secret)
+note.27,"Se um dia a gente subir, leva as duas canecas. A planta também. O resto a gente vê.","If one day we go up, we take both mugs. The plant too. We'll see about the rest."
+note.28,Hoje não tenho nada pra dizer. Só queria que a mesa tivesse um papel. Bom dia.,Nothing to say today. I just wanted the table to have a note on it. Good morning.
+note.29,"Boa noite. Deixei a lâmpada acesa: não era preciso, deixei assim mesmo.","Good night. I left the lamp on: no need, but I left it anyway."
+ending.knock,(Três batidas na tampa. Devagar.),(Three knocks on the hatch. Slow.)
+ending.light,(A luz desce pelo duto.),(Light comes down the shaft.)
+ending.title,"Vai demorar, ela disse.","It'll take a while, she said."
+ending.line.1,Demorou.,It did.
+ending.line.2,Mas ela chegou.,But she made it.
+ending.nextday.title,Na manhã seguinte,The next morning
+ending.nextday.line.1,Duas canecas na mesa.,Two mugs on the table.
+ending.nextday.line.2,Um casaco no cabide.,A coat on the hook.
+ending.nextday.line.3,"O rádio chia baixinho, por hábito.","The radio hisses softly, out of habit."
+ending.continue,Ficar mais um pouco,Stay a little longer
+ending.demo.title,Fim da demonstração,End of the demo
+ending.demo.line,...alguém aí? Câmbio.,...anyone there? Over.
+ending.demo.wish,Tem mais. Ela está a caminho.,There's more. She's on her way.
+diary.title,Diário do rádio,Radio log
+diary.empty,Ainda nada. O rádio só chia.,Nothing yet. The radio only hisses.
+diary.kind.radio,Rádio,Radio
+diary.kind.her,Ela,Her
+diary.kind.note,Bilhete na mesa,Note on the table
+diary.kind.away,Enquanto você estava fora,While you were away
+diary.kind.system,Aviso,Notice
+diary.day,Dia {day},Day {day}
+diary.time,{hour}h,{hour}:00
+diary.while_away,ouvido enquanto você estava fora,heard while you were away
+diary.caption.voice_her,"(a voz dela, com chiado)","(her voice, through the static)"
+diary.unread.one,1 fala nova,1 new line
+diary.unread.other,{n} falas novas,{n} new lines
+diary.mark_read,Marcar como lido,Mark as read
+diary.away.summary,"{hours} h fora. {visits} visitas à caixa, +{scrap} de sucata, {nights} noites.","{hours} h away. {visits} visits to the box, +{scrap} scrap, {nights} nights."
+diary.away.summary.v1,"{hours} h fora. 1 visita à caixa, +{scrap} de sucata, {nights} noites.","{hours} h away. 1 visit to the box, +{scrap} scrap, {nights} nights."
+diary.away.summary.n1,"{hours} h fora. {visits} visitas à caixa, +{scrap} de sucata, 1 noite.","{hours} h away. {visits} visits to the box, +{scrap} scrap, 1 night."
+diary.away.summary.n0,"{hours} h fora. {visits} visitas à caixa, +{scrap} de sucata, nenhuma noite.","{hours} h away. {visits} visits to the box, +{scrap} scrap, no nights."
+diary.away.summary.v1n1,"{hours} h fora. 1 visita à caixa, +{scrap} de sucata, 1 noite.","{hours} h away. 1 visit to the box, +{scrap} scrap, 1 night."
+diary.away.summary.v1n0,"{hours} h fora. 1 visita à caixa, +{scrap} de sucata, nenhuma noite.","{hours} h away. 1 visit to the box, +{scrap} scrap, no nights."
+diary.away.line,Às {hour}h o rádio pegou: {speaker}.,At {hour}:00 the radio picked up: {speaker}.
+diary.away.line.night,"De madrugada, às {hour}h, o rádio pegou: {speaker}.","In the small hours, at {hour}:00, the radio picked up: {speaker}."
+diary.away.slept,Ele dormiu em paz.,He slept soundly.

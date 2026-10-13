@@ -96,6 +96,8 @@ func set_locale(code: String) -> void
 func has_key(key: String) -> bool
 ```
 Lê todos os `res://data/i18n/strings_*.csv` em runtime (cabeçalho `key,pt_BR,en`, aspas CSV padrão, `\n` literal vira quebra de linha). `locale = "auto"` usa `OS.get_locale_language()` (pt → pt_BR, resto → en).
+- Implementação: parser puro em `scripts/i18n/i18n_csv.gd` (`class_name I18nCsv`). Lista de arquivos = `_index.json` ∪ varredura da pasta. Valor vazio em `en` cai para `pt_BR`; chave ausente devolve a chave (aviso uma vez). `set_locale()` aceita `auto|pt|pt_BR|en|en_US…` e grava em `Settings`; reage também a `Settings.changed("locale")`. Extra: `available_locales()`, `reload()`.
+- **Export:** o Godot não empacota `.csv` cru (vira tradução). Cada CSV tem um `.csv.import` com `importer="keep"` e existe `data/i18n/_index.json`. **Ao criar/remover um `strings_*.csv`, rode `python3 tools/content/make_i18n_index.py`.** Conferência de chaves: `python3 tools/content/check_strings.py`.
 
 ### 4.3 `Sim` / `Balance` / `Game` (scripts/sim/) [SIM]
 - `class_name Balance`: carrega `data/balance.json`, `radio.json`, `journey.json`; getters tipados (`Balance.item(id)`, etc.). `Balance.load_all(path_prefix := "res://data/")`.
@@ -281,6 +283,8 @@ CSV `key,pt_BR,en`. Um arquivo por módulo:
 - `strings_items.csv` [CONTEÚDO]: `item.<id>.name`, `item.<id>.desc` (1 frase: "pra quê?"), `crop.<id>.name`, `line.<id>`, `pra_que.<renda|tempo|espaco|porta|historia>`, `missing.*` (frases curtas de requisito: `missing.antenna` "Antena nível {n}", `missing.rooms`, `missing.supply`, `missing.cost`, `missing.free_cols`, `missing.item`, `missing.max`), `antenna.<n>.name`.
 - `strings_ui.csv` [UI]: `ui.*`, `title.*`, `opt.*`, `hint.*`, `tab.*`, `toast.*`.
 Placeholders `{nome}`. Nenhuma frase longa: a faixa é minúscula.
+- Chaves extras de `strings_items.csv`: `item.<id>.name|desc` (desc ≤ 60 caracteres), `item.comodo2|comodo3.name|desc` e `room.dig2|dig3[.desc]` (escavação), `room.name`, `pra_que.<x>.help`, `fixed.<id>[.desc]`, `behavior.<id>` (gerúndio: "Lendo"). `pra_que.porta` = pré-requisito que libera a próxima melhoria.
+- `strings_ui.csv` (base para o módulo UI): botões são `*.btn` / `*.btn.*` (≤ 14 caracteres); abas `tab.build|radio|state|options` (4 no máximo); `title.*`, `opt.*` (`opt.scale.auto|1|2|3|4`, `opt.text_size.normal|large|huge` ≙ 1.0/1.25/1.5), `hint.*`, `toast.*`, `welcome.*` (placeholders `{hours} {visits} {scrap} {harvested} {nights} {n}`), `goal.*`, `crop.*`, `buy.*`, `status.*`, `tray.*`, `ending.credits`.
 
 ---
 
@@ -346,6 +350,9 @@ Para não haver conflito de arquivos, a tabela abaixo foi dividida: **[ARTE-AMBI
 | bubble_thought | 24×20 | 1 | balão de pensamento com rabinho |
 | panel_9s | 16×16 | 1 | moldura do painel (margens 5) |
 | button_9s_normal/hover/pressed/disabled | 12×12 | 1 | 9-slice (margens 4) |
+| bar_back_9s / bar_fill_9s | 8×6 | 1 | barra de progresso, margens 3. Ocupam o **mesmo retângulo**: desenhe a calha inteira e a faixa de enchimento por cima, com a largura proporcional (ambas com contorno ink) |
+| tab_normal / tab_active | 12×10 | 1 | abas 9-slice, margens 3; a ativa não tem borda de baixo (cola no painel, mesmo tom do miolo) |
+| (manifest_ui) | | | cada entrada 9-slice traz `"margins": [esq, topo, dir, base]` (usar em `StyleBoxTexture.texture_margin_*`); ícones têm `anchor [4,4]`. Fonte: `assets/fonts/Jersey15-Regular.ttf` (ver `assets/fonts/ui_theme_hint.md`: 13 normal, 12 pequeno, 15 título) |
 | icon_* | 8×8 | 1 | `sucata, cesto, energia, radio, antena, espaco, tempo, porta, historia, renda, estrela, check, lock, arrow_up, arrow_down, close, speaker_on, speaker_off, hide, show, gear, book, hammer, home, plus, crop_batata, crop_feijao, crop_tomate, grab` (ícones legíveis em 8 px; `estrela` e `check` usam a cor signal) |
 
 Plots por estrutura (x,y do pé de cada planta no sprite): vaso `[[8,14]]`; canteiro `[[6,14],[16,14],[26,14]]`; prateleira 5 posições em 2 andares; estufa 6 em 2 fileiras.

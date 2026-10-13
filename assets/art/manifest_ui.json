@@ -1,0 +1,476 @@
+{
+ "panel_9s": {
+  "file": "ui/panel_9s.png",
+  "frame_w": 16,
+  "frame_h": 16,
+  "frames": 1,
+  "fps": 0,
+  "anchor": [
+   0,
+   0
+  ],
+  "margins": [
+   5,
+   5,
+   5,
+   5
+  ]
+ },
+ "button_9s_normal": {
+  "file": "ui/button_9s_normal.png",
+  "frame_w": 12,
+  "frame_h": 12,
+  "frames": 1,
+  "fps": 0,
+  "anchor": [
+   0,
+   0
+  ],
+  "margins": [
+   4,
+   4,
+   4,
+   4
+  ]
+ },
+ "button_9s_hover": {
+  "file": "ui/button_9s_hover.png",
+  "frame_w": 12,
+  "frame_h": 12,
+  "frames": 1,
+  "fps": 0,
+  "anchor": [
+   0,
+   0
+  ],
+  "margins": [
+   4,
+   4,
+   4,
+   4
+  ]
+ },
+ "button_9s_pressed": {
+  "file": "ui/button_9s_pressed.png",
+  "frame_w": 12,
+  "frame_h": 12,
+  "frames": 1,
+  "fps": 0,
+  "anchor": [
+   0,
+   0
+  ],
+  "margins": [
+   4,
+   4,
+   4,
+   4
+  ]
+ },
+ "button_9s_disabled": {
+  "file": "ui/button_9s_disabled.png",
+  "frame_w": 12,
+  "frame_h": 12,
+  "frames": 1,
+  "fps": 0,
+  "anchor": [
+   0,
+   0
+  ],
+  "margins": [
+   4,
+   4,
+   4,
+   4
+  ]
+ },
+ "bar_back_9s": {
+  "file": "ui/bar_back_9s.png",
+  "frame_w": 8,
+  "frame_h": 6,
+  "frames": 1,
+  "fps": 0,
+  "anchor": [
+   0,
+   0
+  ],
+  "margins": [
+   3,
+   3,
+   3,
+   3
+  ]
+ },
+ "bar_fill_9s": {
+  "file": "ui/bar_fill_9s.png",
+  "frame_w": 8,
+  "frame_h": 6,
+  "frames": 1,
+  "fps": 0,
+  "anchor": [
+   0,
+   0
+  ],
+  "margins": [
+   3,
+   3,
+   3,
+   3
+  ]
+ },
+ "tab_normal": {
+  "file": "ui/tab_normal.png",
+  "frame_w": 12,
+  "frame_h": 10,
+  "frames": 1,
+  "fps": 0,
+  "anchor": [
+   0,
+   0
+  ],
+  "margins": [
+   3,
+   3,
+   3,
+   3
+  ]
+ },
+ "tab_active": {
+  "file": "ui/tab_active.png",
+  "frame_w": 12,
+  "frame_h": 10,
+  "frames": 1,
+  "fps": 0,
+  "anchor": [
+   0,
+   0
+  ],
+  "margins": [
+   3,
+   3,
+   3,
+   3
+  ]
+ },
+ "icon_sucata": {
+  "file": "ui/icon_sucata.png",
+  "frame_w": 8,
+  "frame_h": 8,
+  "frames": 1,
+  "fps": 0,
+  "anchor": [
+   4,
+   4
+  ]
+ },
+ "icon_cesto": {
+  "file": "ui/icon_cesto.png",
+  "frame_w": 8,
+  "frame_h": 8,
+  "frames": 1,
+  "fps": 0,
+  "anchor": [
+   4,
+   4
+  ]
+ },
+ "icon_energia": {
+  "file": "ui/icon_energia.png",
+  "frame_w": 8,
+  "frame_h": 8,
+  "frames": 1,
+  "fps": 0,
+  "anchor": [
+   4,
+   4
+  ]
+ },
+ "icon_radio": {
+  "file": "ui/icon_radio.png",
+  "frame_w": 8,
+  "frame_h": 8,
+  "frames": 1,
+  "fps": 0,
+  "anchor": [
+   4,
+   4
+  ]
+ },
+ "icon_antena": {
+  "file": "ui/icon_antena.png",
+  "frame_w": 8,
+  "frame_h": 8,
+  "frames": 1,
+  "fps": 0,
+  "anchor": [
+   4,
+   4
+  ]
+ },
+ "icon_espaco": {
+  "file": "ui/icon_espaco.png",
+  "frame_w": 8,
+  "frame_h": 8,
+  "frames": 1,
+  "fps": 0,
+  "anchor": [
+   4,
+   4
+  ]
+ },
+ "icon_tempo": {
+  "file": "ui/icon_tempo.png",
+  "frame_w": 8,
+  "frame_h": 8,
+  "frames": 1,
+  "fps": 0,
+  "anchor": [
+   4,
+   4
+  ]
+ },
+ "icon_porta": {
+  "file": "ui/icon_porta.png",
+  "frame_w": 8,
+  "frame_h": 8,
+  "frames": 1,
+  "fps": 0,
+  "anchor": [
+   4,
+   4
+  ]
+ },
+ "icon_historia": {
+  "file": "ui/icon_historia.png",
+  "frame_w": 8,
+  "frame_h": 8,
+  "frames": 1,
+  "fps": 0,
+  "anchor": [
+   4,
+   4
+  ]
+ },
+ "icon_renda": {
+  "file": "ui/icon_renda.png",
+  "frame_w": 8,
+  "frame_h": 8,
+  "frames": 1,
+  "fps": 0,
+  "anchor": [
+   4,
+   4
+  ]
+ },
+ "icon_estrela": {
+  "file": "ui/icon_estrela.png",
+  "frame_w": 8,
+  "frame_h": 8,
+  "frames": 1,
+  "fps": 0,
+  "anchor": [
+   4,
+   4
+  ],
+  "note": "cor signal (sinal)"
+ },
+ "icon_check": {
+  "file": "ui/icon_check.png",
+  "frame_w": 8,
+  "frame_h": 8,
+  "frames": 1,
+  "fps": 0,
+  "anchor": [
+   4,
+   4
+  ],
+  "note": "cor signal (sinal)"
+ },
+ "icon_lock": {
+  "file": "ui/icon_lock.png",
+  "frame_w": 8,
+  "frame_h": 8,
+  "frames": 1,
+  "fps": 0,
+  "anchor": [
+   4,
+   4
+  ]
+ },
+ "icon_arrow_up": {
+  "file": "ui/icon_arrow_up.png",
+  "frame_w": 8,
+  "frame_h": 8,
+  "frames": 1,
+  "fps": 0,
+  "anchor": [
+   4,
+   4
+  ]
+ },
+ "icon_arrow_down": {
+  "file": "ui/icon_arrow_down.png",
+  "frame_w": 8,
+  "frame_h": 8,
+  "frames": 1,
+  "fps": 0,
+  "anchor": [
+   4,
+   4
+  ]
+ },
+ "icon_close": {
+  "file": "ui/icon_close.png",
+  "frame_w": 8,
+  "frame_h": 8,
+  "frames": 1,
+  "fps": 0,
+  "anchor": [
+   4,
+   4
+  ]
+ },
+ "icon_speaker_on": {
+  "file": "ui/icon_speaker_on.png",
+  "frame_w": 8,
+  "frame_h": 8,
+  "frames": 1,
+  "fps": 0,
+  "anchor": [
+   4,
+   4
+  ]
+ },
+ "icon_speaker_off": {
+  "file": "ui/icon_speaker_off.png",
+  "frame_w": 8,
+  "frame_h": 8,
+  "frames": 1,
+  "fps": 0,
+  "anchor": [
+   4,
+   4
+  ]
+ },
+ "icon_hide": {
+  "file": "ui/icon_hide.png",
+  "frame_w": 8,
+  "frame_h": 8,
+  "frames": 1,
+  "fps": 0,
+  "anchor": [
+   4,
+   4
+  ]
+ },
+ "icon_show": {
+  "file": "ui/icon_show.png",
+  "frame_w": 8,
+  "frame_h": 8,
+  "frames": 1,
+  "fps": 0,
+  "anchor": [
+   4,
+   4
+  ]
+ },
+ "icon_gear": {
+  "file": "ui/icon_gear.png",
+  "frame_w": 8,
+  "frame_h": 8,
+  "frames": 1,
+  "fps": 0,
+  "anchor": [
+   4,
+   4
+  ]
+ },
+ "icon_book": {
+  "file": "ui/icon_book.png",
+  "frame_w": 8,
+  "frame_h": 8,
+  "frames": 1,
+  "fps": 0,
+  "anchor": [
+   4,
+   4
+  ]
+ },
+ "icon_hammer": {
+  "file": "ui/icon_hammer.png",
+  "frame_w": 8,
+  "frame_h": 8,
+  "frames": 1,
+  "fps": 0,
+  "anchor": [
+   4,
+   4
+  ]
+ },
+ "icon_home": {
+  "file": "ui/icon_home.png",
+  "frame_w": 8,
+  "frame_h": 8,
+  "frames": 1,
+  "fps": 0,
+  "anchor": [
+   4,
+   4
+  ]
+ },
+ "icon_plus": {
+  "file": "ui/icon_plus.png",
+  "frame_w": 8,
+  "frame_h": 8,
+  "frames": 1,
+  "fps": 0,
+  "anchor": [
+   4,
+   4
+  ]
+ },
+ "icon_crop_batata": {
+  "file": "ui/icon_crop_batata.png",
+  "frame_w": 8,
+  "frame_h": 8,
+  "frames": 1,
+  "fps": 0,
+  "anchor": [
+   4,
+   4
+  ]
+ },
+ "icon_crop_feijao": {
+  "file": "ui/icon_crop_feijao.png",
+  "frame_w": 8,
+  "frame_h": 8,
+  "frames": 1,
+  "fps": 0,
+  "anchor": [
+   4,
+   4
+  ]
+ },
+ "icon_crop_tomate": {
+  "file": "ui/icon_crop_tomate.png",
+  "frame_w": 8,
+  "frame_h": 8,
+  "frames": 1,
+  "fps": 0,
+  "anchor": [
+   4,
+   4
+  ]
+ },
+ "icon_grab": {
+  "file": "ui/icon_grab.png",
+  "frame_w": 8,
+  "frame_h": 8,
+  "frames": 1,
+  "fps": 0,
+  "anchor": [
+   4,
+   4
+  ]
+ }
+}

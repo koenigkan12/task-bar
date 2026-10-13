@@ -1,0 +1,3 @@
+Carregar: `var f: FontFile = load("res://assets/fonts/Jersey15-Regular.ttf")` (já importada sem suavização/hinting); no Theme: `theme.default_font = f` e `theme.default_font_size = 13`; nunca use tamanho fracionário nem `Control.scale` em Label.
+Tamanhos (px lógicos, a escala inteira da janela amplia): texto normal **13**, pequeno/dicas **12** (mínimo; abaixo disso 6/8/0 se confundem), título/cabeçalho **15** (tamanho nativo da fonte); o multiplicador "text_size" das opções deve arredondar para inteiro.
+Cores de texto: `paper` (#e9e2d0) sobre `dark2`; `amber2` para números/destaques; `conc2` para texto desabilitado; `signal` só em sinais. Linha de ~16 px de altura para texto 13.
