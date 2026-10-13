@@ -77,6 +77,10 @@ func box_fill() -> float:
 	return float(q("box_fill", 0.0))
 
 
+func box_stock() -> int:
+	return int(q("box_stock", 0.0))
+
+
 func unread_count() -> int:
 	return int(q("unread_count", 0))
 

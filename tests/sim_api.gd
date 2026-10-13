@@ -62,7 +62,7 @@ func _init() -> void:
 	for o in fx:
 		ids.append(o["id"])
 	check(ids == ["ladder", "hatch_box", "radio_table", "bed"], "objetos fixos da sala 1 " + str(ids))
-	check(s.fixed_objects(2).is_empty(), "sala 2 sem objetos fixos")
+	check(s.fixed_objects(2).size() == 1 and s.fixed_objects(2)[0]["id"] == "ladder", "sala 2 só tem o poço da escada")
 	check(s.line_tiers()["energia"] == "bicicleta" and s.line_tiers()["agua"] == "lata", "linhas iniciais")
 	check(s.power_supply() == 3 and s.power_demand() == 2 and s.power_ok(), "energia 3/2")
 	check(s.box_capacity() == 14, "caixa 14")
@@ -178,7 +178,7 @@ func _init() -> void:
 	finish_jobs(s)
 	check(s.rooms() == 2 and int(sigs.get("room_dug", 0)) == 1, "room_dug / rooms()==2")
 	check(s.power_demand() == 3, "lâmpada da sala 2 entra na demanda")
-	check(s.can_place("canteiro", 2, 0), "agora cabe na sala 2")
+	check(s.can_place("canteiro", 2, 1) and not s.can_place("canteiro", 2, 0), "agora cabe na sala 2 (a coluna 0 é o poço)")
 	var r2 := s.buy("canteiro", 2, 11)
 	check(not r2["ok"], "canteiro em 11 não cabe")
 	r2 = s.buy("canteiro", 2, 10)

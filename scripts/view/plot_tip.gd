@@ -121,7 +121,7 @@ func _draw() -> void:
 		var b: Rect2 = o.bounds()
 		var label: String = "%d%%" % int(floorf(float(j["ratio"]) * 100.0))
 		var tw: float = font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
-		var at := Vector2(b.get_center().x - tw * 0.5, maxf(BunkerGeo.WALL_Y + 8.0, b.position.y - 9.0))
+		var at := Vector2(b.get_center().x - tw * 0.5, maxf(BunkerGeo.wall_y(o.room) + 8.0, b.position.y - 9.0))
 		draw_string_outline(font, at.round(), label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, 3, ink)
 		draw_string(font, at.round(), label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, UiTheme.AMBER3)
 	_draw_orders(font, fs, ink)

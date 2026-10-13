@@ -11,7 +11,7 @@ A vista continua lateral e a superfície fica como está hoje: céu, cidade em r
    - estufa: azulejo claro com tom verde e lâmpadas de cultivo de luz magenta;
    - quarto: lambri de madeira na metade de baixo, chão de tábua, tapete, fotos dela e calendário.
 2. **Coisas no seu lugar.** Prateleiras, quadros e objetos ficam presos na parede. Canos e fios correm pelo teto e atravessam todos os cômodos.
-3. **Dois andares (proposto, ainda não confirmado).** Um segundo andar fica embaixo, ligado pelo poço da escada: despensa com latas e caixas etiquetadas e um cômodo em escavação com escoras de madeira. O resto é terra com pedras e raízes. Como progressão, cavar cômodos novos para baixo. A faixa passa de 88 para cerca de 126 px lógicos (252 px na tela em 1080p).
+3. **Dois andares (proposto, ainda não confirmado).** Um segundo andar fica embaixo, ligado pelo poço da escada: despensa com latas e caixas etiquetadas e um cômodo em escavação com escoras de madeira. O resto é terra com pedras e raízes. Como progressão, cavar cômodos novos para baixo (decidido com o Vncs em 13/10: sala 2 abaixo da despensa, sala 3 abaixo dela; a despensa vira o estoque visível). A faixa passa de 88 para cerca de 126 px lógicos (252 px na tela em 1080p).
    - Alternativa: um andar só, com os itens 1 e 2, mantendo os 88 px.
 
 ## Medidas usadas no mockup (px lógicos)

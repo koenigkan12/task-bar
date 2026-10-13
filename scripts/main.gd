@@ -3,7 +3,6 @@ extends Control
 ## Fluxo principal: título -> jogo (faixa + gaveta) -> final. Integra as peças de cada módulo.
 ## A janela é controlada pelo WindowService; aqui só se decide o tamanho lógico pedido.
 
-const STRIP_H: int = BunkerGeo.H
 const DRAWER_H: int = 120
 const DRAWER_MIN_W: int = 344
 const DRAWER_SCENE: String = "res://scenes/ui/drawer.tscn"
@@ -22,6 +21,7 @@ var _playing: bool = false
 var _in_ending: bool = false
 var _ending_layer: CanvasLayer
 var _intro: IntroScreen
+var _strip_h_now: int = BunkerGeo.H
 
 
 func _ready() -> void:
@@ -29,6 +29,9 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	theme = UiTheme.build()
 	Game.room_dug.connect(func(_r: int) -> void: _relayout())
+	Game.state_changed.connect(func() -> void:
+		if _playing and _strip_h() != _strip_h_now:
+			_relayout())   # a escavação começou: a janela cresce para cima
 	Game.game_loaded.connect(_relayout)
 	Game.new_game_started.connect(_relayout)
 	Game.arrival_started.connect(_on_arrival_started)
@@ -37,30 +40,44 @@ func _ready() -> void:
 
 
 func _strip_width() -> int:
-	return 8 + Game.rooms() * 200
+	return BunkerGeo.strip_width(Game.rooms())
+
+
+## Altura da faixa: um andar a mais por sala cavada (já na hora em que a escavação começa).
+func _strip_h() -> int:
+	var n: int = Game.rooms()
+	for j: Dictionary in Game.active_jobs():
+		if String(j.get("item", "")).begins_with("comodo"):
+			n += 1
+			break
+	return BunkerGeo.height(n)
 
 
 ## Tamanho lógico da janela inteira (faixa + gaveta se aberta).
 func _window_size() -> Vector2i:
 	var w: int = _strip_width()
 	if _drawer_open or not _playing:
-		return Vector2i(maxi(w, DRAWER_MIN_W), STRIP_H + DRAWER_H)
-	return Vector2i(w, STRIP_H)
+		return Vector2i(maxi(w, DRAWER_MIN_W), _strip_h() + DRAWER_H)
+	return Vector2i(w, _strip_h())
 
 
 func _relayout() -> void:
 	if not _playing:
 		return
-	WindowService.set_logical_size(Vector2i(_strip_width(), STRIP_H))
+	var strip_h: int = _strip_h()
+	_strip_h_now = strip_h
+	WindowService.set_logical_size(Vector2i(_strip_width(), strip_h))
 	WindowService.set_drawer(_drawer_open, DRAWER_H, DRAWER_MIN_W)
 	var size_l: Vector2i = _window_size()
+	if _drawer != null:
+		_drawer.set_strip_height(strip_h)
 	if _bunker != null:
-		_bunker.position = Vector2(0, size_l.y - STRIP_H)
+		_bunker.position = Vector2(0, size_l.y - strip_h)
 		_bunker.call("set_view_width", size_l.x)
 	if _handle != null:
-		_handle.position = Vector2(size_l.x - 48, size_l.y - STRIP_H)
+		_handle.position = Vector2(size_l.x - 48, size_l.y - strip_h)
 	if _hud != null:
-		_hud.position = Vector2(2, size_l.y - STRIP_H + 2)
+		_hud.position = Vector2(2, size_l.y - strip_h + 2)
 
 
 # ---------------------------------------------------------------- título
@@ -68,7 +85,7 @@ func _relayout() -> void:
 func _show_title() -> void:
 	_playing = false
 	_drawer_open = true
-	WindowService.set_logical_size(Vector2i(DRAWER_MIN_W, STRIP_H))
+	WindowService.set_logical_size(Vector2i(DRAWER_MIN_W, BunkerGeo.H))
 	WindowService.set_drawer(true, DRAWER_H, DRAWER_MIN_W)
 	_hints = HintLayer.new()
 	_hints.enabled = false

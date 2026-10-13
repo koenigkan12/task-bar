@@ -22,7 +22,7 @@ Ao começar um jogo novo há uma introdução de 4 telas (por que o jogo anda so
 3. Clique numa obra: ele vem martelar e a obra adianta.
 4. Junte sucata e compre o **Vaso** extra (o próximo objetivo aparece sempre na faixa de cima).
 
-Cada máquina tira um clique do seu trabalho: o **gotejador** rega sozinho (os vasos deixam de aceitar pedido) e a **calha** leva os cestos sozinha (a caixa deixa de aceitar pedido). A partir daí o homem toca tudo e você só decide o que construir. A faixa de cima mostra sucata, cestos na caixa e o próximo objetivo; clicar nela abre a aba Construir, onde o item sugerido vem marcado com uma estrela. Passe o mouse numa planta para ver cultura, fase, % e quanto falta para a colheita. A aba **Estado** tem a "Mochila" (colhido, vendido, sementes e ferramentas).
+Cada máquina tira um clique do seu trabalho: o **gotejador** rega sozinho (os vasos deixam de aceitar pedido) e a **calha** leva os cestos sozinha (a caixa deixa de aceitar pedido). A partir daí o homem toca tudo e você só decide o que construir. A faixa de cima mostra sucata, cestos na caixa e o próximo objetivo; clicar nela abre a aba Construir, onde o item sugerido vem marcado com uma estrela. Os cestos colhidos vão para a **despensa** (o andar de baixo): quanto mais estoque, mais cestos nas prateleiras. Cavar uma sala nova abre um andar embaixo e a janela cresce para cima; ele usa a escada de verdade para ir de um andar a outro, então um pedido pode demorar se ele estiver longe. Passe o mouse numa planta para ver cultura, fase, % e quanto falta para a colheita. A aba **Estado** tem a "Mochila" (colhido, vendido, sementes e ferramentas).
 
 ## Controles
 

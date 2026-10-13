@@ -22,6 +22,11 @@ var width: int = 344:
 	set(v):
 		width = v
 		queue_redraw()
+var height: int = BunkerGeo.H:
+	set(v):
+		if v != height:
+			height = v
+			queue_redraw()
 var surface_tint: Color = Color(1, 1, 1, 1):
 	set(v):
 		surface_tint = v
@@ -88,7 +93,7 @@ func _draw() -> void:
 	match kind:
 		Kind.SHADE:
 			draw_rect(Rect2(0, 0, width, BunkerGeo.ROOM_Y), surface_tint)
-			draw_rect(Rect2(0, BunkerGeo.ROOM_Y, width, BunkerGeo.H - BunkerGeo.ROOM_Y), tint)
+			draw_rect(Rect2(0, BunkerGeo.ROOM_Y, width, height - BunkerGeo.ROOM_Y), tint)
 		Kind.CONE:
 			if tint.a <= 0.01:
 				return

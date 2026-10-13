@@ -9,11 +9,7 @@ signal spot_picked(room: int, col: int)
 signal instance_picked(instance_id: int)
 signal cancelled()
 
-const COL_PX: int = 16
-const ROOM_STRIDE: int = 200
-const EDGE_PX: int = 8
-const ROOM_TOP: int = 40       # topo da parede do fundo
-const FEET_Y: int = 80         # linha dos pés
+## Geometria única da faixa: BunkerGeo (os andares são empilhados, a sala nova desce).
 ## Primeiro índice de sala da API (balance.json usa sala 1 para a primeira).
 const ROOM_BASE: int = 1
 
@@ -32,8 +28,7 @@ func _ready() -> void:
 
 
 static func block_rect(room: int, col: int, width_cols: int) -> Rect2:
-	var x: int = EDGE_PX + (room - ROOM_BASE) * ROOM_STRIDE + col * COL_PX
-	return Rect2(x, ROOM_TOP, maxi(1, width_cols) * COL_PX, FEET_Y - ROOM_TOP)
+	return BunkerGeo.block_rect(room, col, width_cols)
 
 
 func show_hints(spots: Array, width_cols: int) -> void:

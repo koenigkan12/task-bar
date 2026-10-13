@@ -49,6 +49,7 @@ var _surface: Node2D
 var _objects: Node2D
 var _fx: Node2D
 var _tip: PlotTip
+var _pantry: PantryStock
 var _shade: BunkerLight
 var _lights: Node2D
 var _cone: BunkerLight
@@ -62,6 +63,7 @@ var _scrap: ArtSprite
 var _radio_glow: ArtSprite
 var _lamps: Array[ArtSprite] = []
 var _glows: Array[BunkerLight] = []
+var _lamp_rooms: Array[int] = []   # sala de cada lâmpada (0 = despensa)
 var _fixed: Dictionary = {}        # fixed_id -> BunkerObject
 var _inst: Dictionary = {}         # instance_id -> BunkerObject
 var _caneca: ArtSprite
@@ -107,7 +109,12 @@ func set_view_width(w: int) -> void:
 
 
 func strip_width() -> int:
-	return maxi(view_width, BunkerGeo.strip_width(_rooms + (1 if _dig_job().size() > 0 else 0)))
+	return maxi(view_width, BunkerGeo.strip_width(_rooms))
+
+
+## Altura da faixa: cresce um andar quando uma sala começa a ser cavada (para baixo).
+func strip_height() -> int:
+	return BunkerGeo.height(_rooms + (1 if not _dig_job().is_empty() else 0))
 
 
 func _on_viewport_resized() -> void:
@@ -133,6 +140,9 @@ func _build_layers() -> void:
 	_surface.add_child(_hatch)
 	_objects = Node2D.new()
 	add_child(_objects)
+	_pantry = PantryStock.new()
+	_pantry.view = self
+	_objects.add_child(_pantry)
 	_scrap = ArtSprite.new("scrap_pile")
 	_scrap.position = Vector2(BunkerGeo.col_x(1, 1) - 2, BunkerGeo.FEET_Y)
 	_scrap.visible = false
@@ -168,7 +178,7 @@ func _build_layers() -> void:
 		if _fade_alpha > 0.0:
 			var c := BunkerGeo.pal("ink")
 			c.a = _fade_alpha
-			_fade.draw_rect(Rect2(0, 0, strip_width(), BunkerGeo.H), c))
+			_fade.draw_rect(Rect2(0, 0, strip_width(), strip_height()), c))
 	add_child(_fade)
 
 
@@ -202,6 +212,7 @@ func full_refresh() -> void:
 	_fixed.clear()
 	_caneca = null
 	man.interrupt()
+	man.reset_floor()
 	_sync(true)
 	var bed: Variant = fixed_foot("bed")
 	if link.is_awake():
@@ -244,6 +255,7 @@ func _sync(force: bool = false) -> void:
 	var tod := link.tod_hours()
 	_sky.refresh(tod, w, force)
 	_shade.width = w
+	_shade.height = strip_height()
 	_sync_fixed()
 	_sync_instances()
 	_sync_surface()
@@ -359,7 +371,12 @@ func _sync_surface() -> void:
 
 
 func _sync_lamps() -> void:
-	var pts := BunkerGeo.lamp_points(_rooms)
+	var lamp_defs := BunkerGeo.lamps(_rooms)
+	var pts: Array[Vector2] = []
+	_lamp_rooms.clear()
+	for l: Dictionary in lamp_defs:
+		pts.append(l["pos"])
+		_lamp_rooms.append(int(l["room"]))
 	while _lamps.size() < pts.size():
 		var lamp := ArtSprite.new("lamp", 1)
 		_overlay.add_child(lamp)
@@ -411,7 +428,7 @@ func _sync_light(tod: float) -> void:
 		if attention.current != "power":
 			_lamps[i].frame = lamp_frame
 		# a estufa (sala 2) tem luz de cultivo, mais esverdeada
-		var g := BunkerGeo.pal("leaf4") if (i == 1 and _rooms >= 2) else BunkerGeo.pal("amber2")
+		var g := BunkerGeo.pal("leaf4") if (i < _lamp_rooms.size() and _lamp_rooms[i] == 2) else BunkerGeo.pal("amber2")
 		g.a = (0.85 if _lamps[i].frame == 1 else (0.35 if _lamps[i].frame == 2 else 0.0)) if on else 0.0
 		_glows[i].tint = g
 
@@ -504,14 +521,14 @@ func _on_item_finished(instance_id: int, _item_id: String) -> void:
 	if o != null:
 		var b := o.bounds()
 		spawn_fx("fx_spark", Vector2(b.get_center().x, b.position.y + 4))
-		spawn_fx("fx_dust", Vector2(b.position.x + 2, BunkerGeo.FEET_Y))
-		spawn_fx("fx_dust", Vector2(b.end.x - 2, BunkerGeo.FEET_Y))
+		spawn_fx("fx_dust", Vector2(b.position.x + 2, o.position.y))
+		spawn_fx("fx_dust", Vector2(b.end.x - 2, o.position.y))
 
 
 func _on_room_dug(room: int) -> void:
 	_sync()
-	spawn_fx("fx_dust", Vector2(BunkerGeo.room_x0(room) + 8, BunkerGeo.FEET_Y))
-	spawn_fx("fx_dust", Vector2(BunkerGeo.room_x0(room) + 40, BunkerGeo.FEET_Y))
+	spawn_fx("fx_dust", Vector2(BunkerGeo.room_x0(room) + 8, BunkerGeo.feet_y(room)))
+	spawn_fx("fx_dust", Vector2(BunkerGeo.room_x0(room) + 40, BunkerGeo.feet_y(room)))
 
 
 func _on_radio_line(_line: Dictionary) -> void:
@@ -561,7 +578,7 @@ func spawn_fx(art: String, pos: Vector2, loops: int = 1) -> ArtSprite:
 
 func build_fx(o: BunkerObject) -> void:
 	if o != null and is_instance_valid(o):
-		spawn_fx("fx_dust", Vector2(o.bounds().position.x + _rng.randf_range(0, o.bounds().size.x), BunkerGeo.FEET_Y), 3)
+		spawn_fx("fx_dust", Vector2(o.bounds().position.x + _rng.randf_range(0, o.bounds().size.x), o.position.y), 3)
 
 
 ## Clique do jogador = ordem para o homem. kind "instance" (obra -> martelar, estrutura -> cuidar) ou "box".
@@ -659,7 +676,20 @@ func order_anchor(o: Dictionary) -> Variant:
 
 
 func dig_fx() -> void:
-	spawn_fx("fx_dust", Vector2(dig_spot_x() + 8, BunkerGeo.FEET_Y), 4)
+	spawn_fx("fx_dust", Vector2(dig_spot_x() + 8, dig_spot_y()), 4)
+
+
+## Onde ele fica diante das prateleiras da despensa (estoque).
+func pantry_x() -> float:
+	return float(BunkerGeo.PANTRY_X)
+
+
+func pantry_y() -> float:
+	return float(BunkerGeo.FEET_Y_B)
+
+
+func pantry_fx() -> void:
+	spawn_fx("fx_dust", Vector2(pantry_x() + 4.0, pantry_y()))
 
 
 func drop_fx() -> void:
@@ -675,7 +705,7 @@ func _ambient_fx(delta: float) -> void:
 	_amb_t = _rng.randf_range(7.0, 14.0)
 	# goteira na sala 2 (umidade) e vapor da caneca de manhã no epílogo
 	if _rooms >= 2:
-		spawn_fx("fx_drip", Vector2(BunkerGeo.col_x(2, 8) + 6, BunkerGeo.WALL_Y))
+		spawn_fx("fx_drip", Vector2(BunkerGeo.col_x(2, 8) + 6, BunkerGeo.wall_y(2)))
 	var tod := link.tod_hours()
 	if _caneca != null and _caneca.visible and link.arrived() and tod >= 6.0 and tod <= 10.0:
 		spawn_fx("fx_steam", _caneca.get_parent().position + _caneca.position + Vector2(0, -6), 2)
@@ -726,9 +756,13 @@ func dig_spot_x() -> float:
 	var j := _dig_job()
 	if not j.is_empty():
 		var open := BunkerGeo.ROOM_W * float(j.get("ratio", 0.0))
-		if open >= 16.0:
-			return BunkerGeo.room_x0(_rooms + 1) + open - 10.0
+		return BunkerGeo.room_x0(_rooms + 1) + maxf(open, 24.0) - 10.0
 	return BunkerGeo.room_x0(_rooms) + BunkerGeo.ROOM_W - 10.0
+
+
+## Linha dos pés do andar em escavação (a sala nova fica uma andar abaixo da última).
+func dig_spot_y() -> float:
+	return float(BunkerGeo.feet_y(_rooms + 1)) if not _dig_job().is_empty() else float(BunkerGeo.feet_y(_rooms))
 
 
 func walk_min_x() -> float:
@@ -821,7 +855,7 @@ func play_arrival() -> void:
 	man.mode = "arrival"
 	man.set_bubble("")
 	var lx := BunkerGeo.col_x(1, 2) + 2.0   # na borda do facho, olhando para a escotilha
-	man.walk_to(lx)
+	man.walk_to(lx, false, BunkerGeo.FEET_Y)
 	var waited := 0.0
 	while absf(man.position.x - lx) > 0.5 and waited < 20.0:
 		await _wait(0.1)

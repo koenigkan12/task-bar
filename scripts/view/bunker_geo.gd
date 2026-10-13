@@ -28,6 +28,7 @@ const MAX_ROOMS := 3
 const ANTENNA_X := 56
 const PANEL_X := 88
 const HATCH_X := 8
+const PANTRY_X := 100       ## x onde ele fica diante das prateleiras da despensa
 
 ## Cores da paleta fixa (tools/art/palette.py). `signal` só em sinais de atenção.
 const PAL := {
@@ -52,37 +53,68 @@ static func bayer(x: int, y: int) -> float:
 	return (float(BAYER[posmod(y, 4)][posmod(x, 4)]) + 0.5) / 16.0
 
 
-static func room_x0(room: int) -> int:
-	return MARGIN + (room - 1) * ROOM_STEP
+## Andares: A (sala 1), B (despensa, fixa) e depois uma sala nova por andar, cavada PARA BAIXO:
+## sala 2 no andar C, sala 3 no andar D. Todas começam em x = MARGIN e dividem o poço da escada (coluna 0).
+static func room_floor(room: int) -> int:
+	return 0 if room <= 1 else room
 
 
-static func strip_width(n_rooms: int) -> int:
-	return MARGIN + n_rooms * ROOM_STEP
+## Deslocamento vertical do andar da sala.
+static func floor_dy(room: int) -> int:
+	return room_floor(room) * FLOOR_DY
+
+
+static func room_x0(_room: int) -> int:
+	return MARGIN
+
+
+## Largura mínima da faixa (a sala + a parede da direita); os andares são empilhados, não lado a lado.
+static func strip_width(_n_rooms: int = 1) -> int:
+	return MARGIN + ROOM_STEP
+
+
+## Altura da faixa com `n_rooms` salas (a despensa já conta no andar B).
+static func height(n_rooms: int) -> int:
+	return H + maxi(0, mini(n_rooms, MAX_ROOMS) - 1) * FLOOR_DY
 
 
 static func col_x(room: int, col: int) -> int:
 	return room_x0(room) + col * COL
 
 
+static func feet_y(room: int) -> int:
+	return FEET_Y + floor_dy(room)
+
+
+static func wall_y(room: int) -> int:
+	return WALL_Y + floor_dy(room)
+
+
+static func room_y(room: int) -> int:
+	return ROOM_Y + floor_dy(room)
+
+
 ## Ponto dos pés (base-centro) de um bloco de colunas.
 static func block_foot(room: int, col: int, cols: int) -> Vector2:
-	return Vector2(col_x(room, col) + maxi(cols, 1) * COL * 0.5, FEET_Y)
+	return Vector2(col_x(room, col) + maxi(cols, 1) * COL * 0.5, feet_y(room))
 
 
 ## Retângulo interno (parede até o chão) de um bloco de colunas.
 static func block_rect(room: int, col: int, cols: int) -> Rect2:
-	return Rect2(col_x(room, col), WALL_Y, maxi(cols, 1) * COL, FEET_Y - WALL_Y)
+	return Rect2(col_x(room, col), wall_y(room), maxi(cols, 1) * COL, FEET_Y - WALL_Y)
 
 
 static func room_rect(room: int) -> Rect2:
-	return Rect2(room_x0(room), ROOM_Y, ROOM_W, H - ROOM_Y)
+	return Rect2(room_x0(room), room_y(room), ROOM_W, FLOOR_DY)
 
 
-## Sala e coluna sob um ponto (dentro de uma sala existente), ou (-1, -1).
+## Sala e coluna sob um ponto (dentro de uma sala existente), ou (-1, -1). A despensa não é sala.
 static func room_col_at(p: Vector2, n_rooms: int) -> Vector2i:
-	if p.y < ROOM_Y or p.y >= H:
-		return Vector2i(-1, -1)
 	for r in range(1, n_rooms + 1):
+		var y0 := room_y(r)
+		var y1 := y0 + FLOOR_DY if r > 1 else ROOM_Y + FLOOR_DY + 1
+		if p.y < y0 or p.y >= y1:
+			continue
 		var x0 := room_x0(r)
 		if p.x >= x0 and p.x < x0 + ROOM_W:
 			return Vector2i(r, int((p.x - x0) / COL))
@@ -94,18 +126,23 @@ static func lamp_x(room: int) -> int:
 	return col_x(room, 5 if room == 1 else 6) + 8
 
 
-## Lâmpadas da faixa: uma por sala do andar de cima e as do andar de baixo (despensa; escavação
-## quando existe a sala 2). Devolve a posição do topo (x central, y).
-static func lamp_points(n_rooms: int) -> Array[Vector2]:
-	var out: Array[Vector2] = []
-	for r in range(1, n_rooms + 1):
-		out.append(Vector2(lamp_x(r), WALL_Y))
-	out.append(Vector2(col_x(1, 7) + 8, WALL_Y_B))
-	if n_rooms >= 2:
-		out.append(Vector2(col_x(2, 6) + 8, WALL_Y_B + 6))
+## Lâmpadas da faixa: [{pos, room}] com room 0 = despensa. Uma por andar (sala 1, despensa, salas cavadas).
+static func lamps(n_rooms: int) -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	out.append({"pos": Vector2(lamp_x(1), WALL_Y), "room": 1})
+	out.append({"pos": Vector2(col_x(1, 7) + 8, WALL_Y_B), "room": 0})
+	for r in range(2, n_rooms + 1):
+		out.append({"pos": Vector2(lamp_x(r), wall_y(r)), "room": r})
 	return out
 
 
-## x esquerdo da divisória à direita da sala.
+static func lamp_points(n_rooms: int) -> Array[Vector2]:
+	var out: Array[Vector2] = []
+	for l in lamps(n_rooms):
+		out.append(l["pos"])
+	return out
+
+
+## x esquerdo da parede da direita da sala.
 static func divider_x(room: int) -> int:
 	return room_x0(room) + ROOM_W

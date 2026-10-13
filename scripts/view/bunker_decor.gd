@@ -236,3 +236,16 @@ static func beam(c: CanvasItem, x0: int, x1: int, y: int) -> void:
 static func shovel(c: CanvasItem, x: int, yf: int) -> void:
 	c.draw_line(Vector2(x + 6.5, yf - 17.5), Vector2(x + 0.5, yf - 1.5), _p("rust2"))
 	r(c, x - 2, yf - 4, 6, 4, _p("conc3"))
+
+
+## Cestinho de colheita (6x5 px; y = linha de apoio) para o estoque da despensa.
+static func basket(c: CanvasItem, x: int, y: int) -> void:
+	frame(c, x, y - 5, 6, 5, _p("ink"))
+	r(c, x, y - 5, 6, 5, _p("rust3"))
+	hl(c, x, y - 5, 6, _p("rust4"))
+	hl(c, x, y - 2, 6, _p("rust2"))
+	px(c, x + 2, y - 4, _p("amber3"))     # batata espiando
+	px(c, x + 3, y - 4, _p("amber2"))
+	vl(c, x + 1, y - 7, 2, _p("conc3"))   # alça
+	vl(c, x + 4, y - 7, 2, _p("conc3"))
+	hl(c, x + 1, y - 7, 4, _p("conc3"))

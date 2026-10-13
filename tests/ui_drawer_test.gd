@@ -75,7 +75,7 @@ func _run() -> void:
 	_check(d.overlay().hints.size() == 3, "mostra as 3 posições")
 	_check(_find(d, "CancelButton") != null, "botão cancelar no detalhe")
 	var r: Rect2 = DrawerPlacementOverlay.block_rect(2, 4, 1)
-	_check(r.position == Vector2(8 + 200 + 64, 40) and r.size == Vector2(16, 40), "geometria da coluna (sala 2, col 4)")
+	_check(r.position == Vector2(8 + 64, 40 + 102) and r.size == Vector2(16, 40), "geometria da coluna (sala 2 desce um andar, col 4)")
 	_check(d.overlay().index_at(r.get_center()) == 1, "clique cai na posição certa")
 	d.overlay().pick(1)
 	await _frames(1)

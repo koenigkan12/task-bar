@@ -59,6 +59,12 @@
         { "id": "hatch_box", "col": 1, "cols": 1 },
         { "id": "radio_table", "col": 2, "cols": 1 },
         { "id": "bed", "col": 10, "cols": 2 }
+      ],
+      "2": [
+        { "id": "ladder", "col": 0, "cols": 1 }
+      ],
+      "3": [
+        { "id": "ladder", "col": 0, "cols": 1 }
       ]
     }
   },

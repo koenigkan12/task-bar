@@ -13,6 +13,7 @@ const HUNGRY_SPEED := 0.6           # fator quando faminto (CONTRATOS 9.5)
 const READY_PROGRESS := 0.95
 const NOON_FROM := 11.5
 const NOON_TO := 13.5
+const CLIMB_SPEED := 26.0           # px/s na escada entre os andares
 
 var view: Node                      # BunkerView (consultas de posição)
 var link: GameLink
@@ -22,6 +23,8 @@ var facing: int = 1                 # 1 direita, -1 esquerda
 var mode: String = ""               # "night" | "build" | "day" | "arrival"
 var activity: String = ""           # rótulo do que está fazendo (testes / depuração)
 var carrying: bool = false
+var _feet_y: float = BunkerGeo.FEET_Y   # linha dos pés do andar onde ele está
+var _plan_y: float = BunkerGeo.FEET_Y   # andar em que ele estará ao fim dos passos já planejados
 
 var _queue: Array[Dictionary] = []
 var _cur: Dictionary = {}
@@ -61,6 +64,17 @@ func _init() -> void:
 
 func seed_rng(s: int) -> void:
 	_rng.seed = s
+
+
+## Volta para o andar de cima (cena do final, jogo novo).
+func reset_floor() -> void:
+	_feet_y = BunkerGeo.FEET_Y
+	_plan_y = _feet_y
+	position.y = _feet_y
+
+
+func feet_y() -> float:
+	return _feet_y
 
 
 # ---------------- aparência ----------------
@@ -221,6 +235,17 @@ func _run(delta: float) -> void:
 				_finish()
 			else:
 				position.x += signf(dx) * sp * delta
+		"climb":
+			var to: float = _cur["to"]
+			var csp := CLIMB_SPEED * (HUNGRY_SPEED if link != null and link.hungry() else 1.0)
+			var dy := to - _feet_y
+			if absf(dy) <= csp * delta:
+				_feet_y = to
+				position.y = _feet_y
+				_finish()
+			else:
+				_feet_y += signf(dy) * csp * delta
+				position.y = _feet_y
 		"act":
 			_act_left -= delta
 			if _act_left <= 0.0:
@@ -238,10 +263,14 @@ func _start(s: Dictionary) -> void:
 			set_facing(1 if tx > position.x else -1)
 			carrying = bool(s.get("carry", false))
 			play("man_carry" if carrying else "man_walk")
+		"climb":
+			carrying = bool(s.get("carry", false))
+			set_facing(1)
+			play("man_carry" if carrying else "man_walk")
 		"act":
 			if s.has("face"):
 				set_facing(int(s["face"]))
-			position.y = BunkerGeo.FEET_Y + float(s.get("y_off", 0.0))
+			position.y = _feet_y + float(s.get("y_off", 0.0))
 			play(String(s.get("anim", "man_idle")))
 			_act_left = float(s.get("time", 2.0))
 			activity = String(s.get("label", activity))
@@ -253,7 +282,7 @@ func _start(s: Dictionary) -> void:
 func _finish() -> void:
 	var s := _cur
 	_cur = {}
-	position.y = BunkerGeo.FEET_Y
+	position.y = _feet_y
 	var cb: Callable = s.get("on_end", Callable())
 	if cb.is_valid():
 		cb.call()
@@ -269,16 +298,36 @@ func interrupt() -> void:
 		var cb: Callable = _cur.get("on_end", Callable())
 		if cb.is_valid():
 			cb.call()
+	if String(_cur.get("type", "")) == "climb":
+		_feet_y = float(_cur["to"])   # largou a escada no meio: considera que chegou
 	_cur = {}
 	_queue.clear()
-	position.y = BunkerGeo.FEET_Y
+	position.y = _feet_y
+	_plan_y = _feet_y
 	carrying = false
 	if view != null and view.has_method("release_orders"):
 		view.release_orders()
 
 
-func walk_to(x: float, carry: bool = false) -> void:
+## Anda até x. `fy` = linha dos pés do andar de destino (padrão: o andar em que já estará); se for outro,
+## ele vai até a escada, sobe/desce e só então anda até x.
+func walk_to(x: float, carry: bool = false, fy: float = NAN) -> void:
+	if _queue.is_empty() and _cur.is_empty():
+		_plan_y = _feet_y
+	if is_nan(fy):
+		fy = _plan_y
+	if view != null and not is_equal_approx(fy, _plan_y):
+		var ladder: Variant = view.fixed_foot("ladder")
+		if ladder != null:
+			_queue.append({"type": "walk", "x": (ladder as Vector2).x, "carry": carry})
+		_queue.append({"type": "climb", "to": fy, "carry": carry})
+		_plan_y = fy
 	_queue.append({"type": "walk", "x": x, "carry": carry})
+
+
+## Linha dos pés do andar do objeto (a sala dele).
+func floor_of(o: BunkerObject) -> float:
+	return float(BunkerGeo.feet_y(o.room)) if o != null else BunkerGeo.FEET_Y
 
 
 func act(a: String, time: float, label: String, face: int = 0, extra: Dictionary = {}) -> void:
@@ -345,7 +394,7 @@ func decide() -> void:
 func _plan_sleep() -> void:
 	var bed: Variant = view.fixed_foot("bed")
 	var x: float = bed.x if bed != null else position.x
-	walk_to(x)
+	walk_to(x, false, BunkerGeo.FEET_Y)
 	act("man_sleep", 30.0, "sleep", 1, {"y_off": SLEEP_Y})
 
 
@@ -353,14 +402,16 @@ func _plan_build() -> void:
 	var job: Dictionary = link.active_jobs()[0]
 	var it := String(job.get("item", ""))
 	if it.begins_with("comodo"):
-		walk_to(view.dig_spot_x())
+		walk_to(view.dig_spot_x(), false, view.dig_spot_y())
 		act("man_dig", 6.0, "dig", 1, {"on_start": view.dig_fx})
 		return
 	var o: BunkerObject = view.object_by_id(int(job.get("instance", -1)))
 	var tx: float = o.position.x - 12.0 if o != null else position.x
+	var fy: float = floor_of(o)
 	if o != null and o.position.y < BunkerGeo.ROOM_Y:
 		tx = view.fixed_foot("ladder").x + 4.0   # obra na superfície: martela ao pé da escada
-	walk_to(tx)
+		fy = BunkerGeo.FEET_Y
+	walk_to(tx, false, fy)
 	act("man_hammer", 6.0, "hammer", 1, {"on_start": func() -> void: view.build_fx(o)})
 
 
@@ -378,9 +429,11 @@ func _plan_order() -> void:
 				view.drop_order(o)
 				return
 			var tx: float = obj.position.x - 12.0
+			var ofy: float = floor_of(obj)
 			if obj.position.y < BunkerGeo.ROOM_Y:
 				tx = view.fixed_foot("ladder").x + 4.0
-			walk_to(tx)
+				ofy = BunkerGeo.FEET_Y
+			walk_to(tx, false, ofy)
 			act("man_hammer", 2.5, "hammer", 1, {"on_start": func() -> void: view.build_fx(obj), "on_finish": finish})
 		"tend":
 			var target: Dictionary = {}
@@ -390,14 +443,17 @@ func _plan_order() -> void:
 			if target.is_empty():
 				view.drop_order(o)
 				return
-			walk_to(view.plot_pos(target).x - 9.0)
+			walk_to(view.plot_pos(target).x - 9.0, false, floor_of(view.object_by_id(int(o["id"]))))
 			if float(target.get("progress", 0)) >= READY_PROGRESS:
 				act("man_crouch", 2.0, "harvest", 1, {"on_finish": finish})
 			else:
 				act("man_water", 2.5, "water", 1, {"on_finish": finish})
 		_:
+			# troca da caixa: pega os cestos na despensa (andar de baixo), sobe a escada e entrega na escotilha
+			walk_to(view.pantry_x(), false, view.pantry_y())
+			act("man_crouch", 1.5, "pick", 1, {"on_start": view.pantry_fx})
 			var box: Variant = view.fixed_foot("hatch_box")
-			walk_to((box.x if box != null else 32.0) + 10.0, true)
+			walk_to((box.x if box != null else 32.0) + 10.0, true, BunkerGeo.FEET_Y)
 			act("man_idle", 1.2, "drop", -1, {"on_start": view.drop_fx, "on_finish": finish})
 
 
@@ -422,18 +478,18 @@ func _plan_work() -> bool:
 		"harvest":
 			var p: Dictionary = ready[_rng.randi() % ready.size()]
 			var pos: Vector2 = view.plot_pos(p)
-			walk_to(pos.x - 8.0)
+			walk_to(pos.x - 8.0, false, floor_of(view.object_by_id(int(p["instance"]))))
 			act("man_crouch", 3.0, "harvest", 1)
-			var box: Variant = view.fixed_foot("hatch_box")
-			walk_to((box.x if box != null else 32.0) + 10.0, true)
-			act("man_idle", 1.0, "drop", -1, {"on_start": view.drop_fx})
+			# leva os cestos para a despensa (andar de baixo): é lá que o estoque aparece
+			walk_to(view.pantry_x(), true, view.pantry_y())
+			act("man_idle", 1.0, "drop", 1, {"on_start": view.pantry_fx})
 		"water":
 			var p: Dictionary = plots[_rng.randi() % plots.size()]
 			var pos: Vector2 = view.plot_pos(p)
-			walk_to(pos.x - 9.0)
+			walk_to(pos.x - 9.0, false, floor_of(view.object_by_id(int(p["instance"]))))
 			act("man_water", 3.0, "water", 1)
 		"pedal":
-			walk_to(bike.position.x)
+			walk_to(bike.position.x, false, floor_of(bike))
 			# a bicicleta pode ser trocada (moinho) no meio do passo: procura de novo em vez de capturar
 			act("man_pedal", 6.0, "pedal", 1, {
 				"on_start": func() -> void: _set_bike_spin(true),
@@ -453,9 +509,11 @@ func _plan_free() -> void:
 	if tod >= NOON_FROM and tod <= NOON_TO and _ate_day != link.day_index():
 		_ate_day = link.day_index()
 		var mesa: BunkerObject = view.find_item("mesinha")
-		walk_to(mesa.position.x - 10.0 if mesa != null else position.x)
+		walk_to(mesa.position.x - 10.0 if mesa != null else position.x, false, floor_of(mesa) if mesa != null else NAN)
 		act("man_eat", 5.0, "eat", 1)
 		return
+	if link.box_stock() > 0:
+		opts.append("despensa")   # confere o estoque lá embaixo
 	for b: String in link.unlocked_behaviors():
 		opts.append(b)
 	if link.arrived():
@@ -465,42 +523,45 @@ func _plan_free() -> void:
 	match pick:
 		"ler":
 			if chair != null:
-				walk_to(chair.position.x)
+				walk_to(chair.position.x, false, floor_of(chair))
 				act("man_sit_read", 10.0, "ler", 1)
 			else:
 				var shelf: BunkerObject = view.find_item("estante")
-				walk_to(shelf.position.x + 12.0 if shelf != null else position.x)
+				walk_to(shelf.position.x + 12.0 if shelf != null else position.x, false, floor_of(shelf) if shelf != null else NAN)
 				act("man_idle", 6.0, "ler", -1)
 		"cochilar":
 			if chair != null:
-				walk_to(chair.position.x)
+				walk_to(chair.position.x, false, floor_of(chair))
 				act("man_nap", 10.0, "cochilar", 1)
 		"ouvir_radio":
 			if chair != null:
-				walk_to(chair.position.x)
+				walk_to(chair.position.x, false, floor_of(chair))
 				act("man_sit_listen", 10.0, "ouvir_radio", -1 if chair.position.x > view.fixed_foot("radio_table").x else 1)
 			else:
-				walk_to(view.fixed_foot("radio_table").x + 12.0)
+				walk_to(view.fixed_foot("radio_table").x + 12.0, false, BunkerGeo.FEET_Y)
 				act("man_idle", 6.0, "ouvir_radio", -1)
 		"escrever":
 			var desk: BunkerObject = view.find_item("mesinha")
 			if desk != null:
-				walk_to(desk.position.x - 10.0)
+				walk_to(desk.position.x - 10.0, false, floor_of(desk))
 				act("man_write", 8.0, "escrever", 1)
 		"olhar_foto":
 			var ph: BunkerObject = view.find_item("foto_dela") if link.arrived() and view.find_item("foto_dela") != null else view.find_item("foto")
 			if ph != null:
-				walk_to(ph.position.x - 10.0)
+				walk_to(ph.position.x - 10.0, false, floor_of(ph))
 				act("man_photo", 6.0, "olhar_foto", 1)
 		"sentar_junto":
 			# epílogo: o mesmo ritual, agora com a segunda caneca na mesa
 			var desk: BunkerObject = view.find_item("mesinha")
 			if chair != null:
-				walk_to(chair.position.x)
+				walk_to(chair.position.x, false, floor_of(chair))
 				act("man_sit_listen", 12.0, "sentar_junto", 1)
 			elif desk != null:
-				walk_to(desk.position.x - 10.0)
+				walk_to(desk.position.x - 10.0, false, floor_of(desk))
 				act("man_idle", 8.0, "sentar_junto", 1)
+		"despensa":
+			walk_to(view.pantry_x() - 14.0, false, view.pantry_y())
+			act("man_idle", _rng.randf_range(3.0, 5.0), "despensa", 1)
 		"wander":
 			walk_to(clampf(position.x + _rng.randf_range(-40.0, 40.0), view.walk_min_x(), view.walk_max_x()))
 			act("man_idle", _rng.randf_range(1.5, 3.0), "idle")

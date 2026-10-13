@@ -34,7 +34,7 @@ func _run() -> void:
 	game.sim.scrap = 9999.0
 	game.sim.antenna_level = 5
 	game.sim.rooms_n = 3
-	for it in [["canteiro", 2, 0], ["prateleira", 2, 3], ["gotejador", 2, 7], ["painel", -1, -1], ["bateria", 1, 8], ["estufa", 3, 0], ["mesinha", 3, 6], ["estante", 3, 9]]:
+	for it in [["canteiro", 2, 1], ["prateleira", 2, 4], ["gotejador", 2, 7], ["painel", -1, -1], ["bateria", 1, 8], ["estufa", 3, 1], ["mesinha", 3, 6], ["estante", 3, 9]]:
 		var r: Dictionary = game.buy(it[0], it[1], it[2])
 		print("buy ", it, " ", r.get("ok"), " ", r.get("reason", ""))
 	for i in 12:
@@ -43,6 +43,8 @@ func _run() -> void:
 	while (game.tod_hours() < 10.0 or game.tod_hours() > 12.0) and guard < 400:
 		game.debug_advance_minutes(15.0)
 		guard += 1
+	game.sim.stock = 9
+	game.sim.stock_value = 9.0
 	main.call("_relayout")
 	await _frames(40)
 	await _shot("rooms_1_full")

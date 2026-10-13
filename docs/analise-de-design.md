@@ -438,6 +438,7 @@ O primeiro teste em jogo mostrou o que a seção acima previa e o build não ent
 - **Faixa de status** sempre visível: sucata, cestos na caixa, próximo objetivo (sugerido por `balance.guide.order`, ou o fixado) e o passo atual do tutorial (ajudar, colher, vender, comprar).
 - **Feedback da colheita**: barra de crescimento sob cada planta, etiqueta no hover (cultura, fase, %, tempo restante), "+1 cesto" ao colher.
 - **Mochila** na aba Estado: colhido, vendido, sementes liberadas e ferramentas em uso.
+- **O andar de baixo tem função**: a despensa é o estoque visível (os cestos colhidos aparecem nas prateleiras e, acima da capacidade, no chão) e as salas novas são cavadas para baixo (sala 2 no andar C, sala 3 no andar D), com o poço da escada ligando tudo. O homem usa a escada de verdade: colhe e leva os cestos para a despensa; a ordem da caixa o faz descer, pegar os cestos e subir à escotilha; cavar o faz descer até a escavação. A janela cresce para cima a cada sala (136, 187, 238 px lógicos).
 
 ## 8. Áudio (lente 7)
 

@@ -18,12 +18,13 @@ signal order_requested(instance_id: int)
 
 const DRAWER_H: int = 120
 const MIN_W: int = 344
-const STRIP_H: int = BunkerGeo.H
 const MAX_TABS: int = 4
 const REFRESH_S: float = 0.25
 
 ## Game em uso (o autoload por padrão; os testes injetam um falso com bind_game).
 var game: Node = null
+## Altura da faixa do bunker abaixo da gaveta (cresce a cada sala cavada; quem manda é a Main).
+var strip_h: int = BunkerGeo.H
 
 var _open: bool = false
 var _tab: String = "build"
@@ -104,7 +105,7 @@ func _init() -> void:
 	_overlay.name = "PlacementOverlay"
 	_overlay.set_anchors_preset(Control.PRESET_TOP_WIDE)
 	_overlay.offset_top = DRAWER_H
-	_overlay.offset_bottom = DRAWER_H + STRIP_H
+	_overlay.offset_bottom = DRAWER_H + strip_h
 	_overlay.spot_picked.connect(_on_spot_picked)
 	_overlay.instance_picked.connect(_on_instance_picked)
 	_overlay.cancelled.connect(cancel_placement)
@@ -219,6 +220,12 @@ func show_tab(tab_id: String) -> void:
 	_welcome.visible = false
 	_show_page()
 	refresh(true)
+
+
+func set_strip_height(h: int) -> void:
+	strip_h = h
+	if _overlay != null:
+		_overlay.offset_bottom = DRAWER_H + strip_h
 
 
 ## Clique numa estrutura com a gaveta aberta: seleciona como sempre e, se for uma obra, também é um

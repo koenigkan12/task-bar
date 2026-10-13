@@ -56,10 +56,12 @@ func _test_attention() -> void:
 
 
 func _test_geo() -> void:
-	_check(BunkerGeo.strip_width(1) == 208 and BunkerGeo.strip_width(3) == 608, "W(n)")
+	_check(BunkerGeo.strip_width(1) == 208 and BunkerGeo.strip_width(3) == 208, "largura fixa: os andares são empilhados")
+	_check(BunkerGeo.height(1) == 136 and BunkerGeo.height(2) == 187 and BunkerGeo.height(3) == 238, "a altura cresce um andar por sala")
 	_check(BunkerGeo.room_col_at(Vector2(9, 70), 1) == Vector2i(1, 0), "coluna 0 da sala 1")
-	_check(BunkerGeo.room_col_at(Vector2(210, 70), 2) == Vector2i(2, 0), "sala 2 começa em 208")
-	_check(BunkerGeo.room_col_at(Vector2(203, 70), 2) == Vector2i(-1, -1), "divisória não é coluna")
+	_check(BunkerGeo.room_col_at(Vector2(9, 170), 2) == Vector2i(2, 0), "sala 2 fica um andar abaixo da despensa")
+	_check(BunkerGeo.room_col_at(Vector2(9, 110), 2) == Vector2i(-1, -1), "a despensa não é sala")
+	_check(BunkerGeo.room_col_at(Vector2(203, 70), 2) == Vector2i(-1, -1), "a parede da direita não é coluna")
 	_check(BunkerGeo.block_foot(1, 10, 2) == Vector2(184, 80), "pés da cama")
 
 
@@ -110,11 +112,11 @@ func _test_clicks() -> void:
 	_check(v.get_object_at(Vector2(20, 26)).get("kind") == "hatch", "clique na escotilha")
 	var hit := v.get_object_at(Vector2(64, 74))
 	_check(hit.get("kind") == "instance" and hit.get("id") == ids["vaso"], "clique no vaso")
-	hit = v.get_object_at(Vector2(BunkerGeo.col_x(2, 5), 60))
+	hit = v.get_object_at(Vector2(BunkerGeo.col_x(2, 5), 60 + 102))
 	_check(hit.get("kind") == "instance" and hit.get("id") == ids["estufa"], "clique na estufa")
 	hit = v.get_object_at(Vector2(88, 20))
 	_check(hit.get("kind") == "instance" and hit.get("item") == "painel", "clique no painel solar")
-	hit = v.get_object_at(Vector2(BunkerGeo.col_x(2, 11) + 4, 70))
+	hit = v.get_object_at(Vector2(BunkerGeo.col_x(2, 11) + 4, 70 + 102))
 	_check(hit.get("kind") == "room" and hit.get("room") == 2 and hit.get("col") == 11, "coluna livre")
 	_check(v.get_object_at(Vector2(204, 70)).is_empty(), "divisória: nada")
 	var est: BunkerObject = v.object_by_id(ids["estufa"])

@@ -70,7 +70,7 @@ static func foot_for(it: String, rm: int, c: int, n: int) -> Vector2:
 		return SURFACE_ITEMS[it]
 	var p := BunkerGeo.block_foot(rm, c, n)
 	if WALL_ITEMS.has(it):
-		p.y = WALL_ITEMS[it]
+		p.y = WALL_ITEMS[it] + BunkerGeo.floor_dy(rm)
 	return p
 
 

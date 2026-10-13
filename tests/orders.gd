@@ -96,6 +96,55 @@ func _run() -> void:
 			var ok3: bool = await _until(func() -> bool: return bunker.orders.is_empty(), 3000)
 			_check(ok3 and game.sucata() > scrap0, "ele leva e a sucata sobe (%d -> %d)" % [scrap0, game.sucata()])
 
+	# 3b) a despensa mostra o estoque (mochila): sem cestos nada, com cestos aparecem
+	game.sim.stock = 0
+	game.sim.stock_value = 0.0
+	await _until(func() -> bool: return bunker._pantry.shown_slots() == 0, 600)
+	_check(bunker._pantry.shown_slots() == 0, "despensa vazia sem cestos")
+	game.sim.stock = 8
+	game.sim.stock_value = 8.0
+	await _until(func() -> bool: return bunker._pantry.shown_slots() > 0, 600)
+	_check(bunker._pantry.shown_slots() > 0, "cestos aparecem nas prateleiras (%d)" % bunker._pantry.shown_slots())
+
+	# 3c) ele está lá embaixo e mandam regar um vaso: tem que subir a escada e fazer
+	man.interrupt()
+	man._feet_y = float(BunkerGeo.FEET_Y_B)
+	man.position = Vector2(bunker.pantry_x(), float(BunkerGeo.FEET_Y_B))
+	var p1: float = _progress_of(game, pot)
+	_check(bunker.give_order("instance", pot) == "", "pedido com ele no andar de baixo")
+	var seen := {"ladder": false, "up": false}
+	var ok4: bool = await _until(func() -> bool:
+		if man.position.x < 24.0 and man.position.y > BunkerGeo.FEET_Y + 4.0 and man.position.y < BunkerGeo.FEET_Y_B - 4.0:
+			seen["ladder"] = true
+		return bunker.orders.is_empty(), 3000)
+	_check(ok4 and seen["ladder"], "ele sobe pela escada para atender")
+	_check(_progress_of(game, pot) > p1 or p1 > 0.5, "e a planta é cuidada em cima")
+	_check(absf(man.feet_y() - float(BunkerGeo.FEET_Y)) < 0.5, "ele termina no andar do vaso")
+
+	# 3d) levar à caixa passa pela despensa (desce) e entrega na escotilha (sobe)
+	game.debug_advance_minutes(60.0)
+	var sc1: int = game.sucata()
+	var why3: String = bunker.give_order("box")
+	if why3 == "":
+		var low := {"min": 0.0}
+		var ok5: bool = await _until(func() -> bool:
+			low["min"] = maxf(low["min"], man.position.y)
+			return bunker.orders.is_empty(), 4000)
+		_check(ok5 and low["min"] > float(BunkerGeo.FEET_Y_B) - 2.0, "ele desce até a despensa para pegar os cestos")
+		_check(game.sucata() > sc1, "e a sucata sobe quando ele entrega (%d -> %d)" % [sc1, game.sucata()])
+	else:
+		print("  (pedido da caixa: %s, pulado)" % why3)
+
+	# 3e) cavar uma sala: a faixa cresce um andar e ele desce até lá
+	game.sim.scrap = 500.0
+	var dig: Dictionary = game.dig_room()
+	_check(bool(dig["ok"]), "escavar a sala 2")
+	main.call("_relayout")
+	await _frames(10)
+	_check(main.call("_strip_h") == BunkerGeo.height(2), "a faixa já tem o andar da sala nova (%d)" % int(main.call("_strip_h")))
+	var ok6: bool = await _until(func() -> bool: return absf(man.feet_y() - float(BunkerGeo.feet_y(2))) < 0.5, 4000)
+	_check(ok6, "ele desce até o andar da escavação")
+
 	# 4) dormindo ele não atende
 	var g2 := 0
 	while game.is_awake() and g2 < 200:
