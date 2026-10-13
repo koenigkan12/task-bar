@@ -1,5 +1,6 @@
 {
   "files": [
+    "strings_drawer.csv",
     "strings_items.csv",
     "strings_platform.csv",
     "strings_screens.csv",

@@ -31,7 +31,7 @@ func _run() -> void:
 	game.debug_advance_minutes(60.0 * 24 * 3)
 	await _frames(20)
 	await _shot("main_3_day3")
-	main.call("_toggle_drawer", true)
+	main.get("_drawer").call("open", "build")
 	await _frames(20)
 	await _shot("main_4_drawer")
 	quit(0)

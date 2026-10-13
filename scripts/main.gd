@@ -12,11 +12,13 @@ var _title: TitleScreen
 var _options: OptionsScreen
 var _bunker: Node2D
 var _handle: WindowHandle
-var _drawer: Control
+var _drawer: Drawer
+var _drawer_layer: CanvasLayer
 var _hints: HintLayer
 var _ending: EndingScreen
 var _drawer_open: bool = false
 var _playing: bool = false
+var _in_ending: bool = false
 
 
 func _ready() -> void:
@@ -54,10 +56,6 @@ func _relayout() -> void:
 		_bunker.call("set_view_width", size_l.x)
 	if _handle != null:
 		_handle.position = Vector2(size_l.x - 48, size_l.y - STRIP_H)
-	if _drawer != null:
-		_drawer.position = Vector2.ZERO
-		_drawer.size = Vector2(size_l.x, DRAWER_H)
-		_drawer.visible = _drawer_open
 
 
 # ---------------------------------------------------------------- título
@@ -100,23 +98,47 @@ func _on_game_started(_is_new: bool) -> void:
 	_bunker = packed.instantiate()
 	add_child(_bunker)
 	_bunker.connect("arrival_cut", _on_arrival_cut)
-	_bunker.connect("hatch_clicked", func() -> void: _toggle_drawer(true))
 	_handle = WindowHandle.new()
-	_handle.drawer_toggled.connect(_toggle_drawer)
 	add_child(_handle)
-	if ResourceLoader.exists(DRAWER_SCENE):
-		_drawer = (load(DRAWER_SCENE) as PackedScene).instantiate()
-		add_child(_drawer)
+	_drawer_layer = CanvasLayer.new()
+	_drawer_layer.layer = 5
+	add_child(_drawer_layer)
+	_drawer = (load(DRAWER_SCENE) as PackedScene).instantiate() as Drawer
+	_drawer_layer.add_child(_drawer)
+	_drawer.open_changed.connect(_on_drawer_open_changed)
+	var opts := OptionsScreen.new()
+	opts.show_header = false
+	_drawer.add_tab("options", "tab.options", "gear", opts)
+	_handle.drawer_toggled.connect(func(open: bool) -> void:
+		if open:
+			_drawer.open()
+		else:
+			_drawer.close())
+	_bunker.connect("hatch_clicked", func() -> void: _drawer.open("state"))
+	_bunker.connect("radio_clicked", func() -> void: _drawer.open("radio"))
+	_bunker.connect("box_clicked", func() -> void: _drawer.open("state"))
+	_bunker.connect("object_clicked", func(id: int) -> void: _drawer.select_instance(id))
 	_hints.enabled = true
 	move_child(_hints, get_child_count() - 1)
 	_relayout()
 
 
-func _toggle_drawer(open: bool) -> void:
+func _on_drawer_open_changed(open: bool) -> void:
 	_drawer_open = open
 	if _handle != null:
 		_handle.set_drawer_open(open)
 	_relayout()
+
+
+## Abre/fecha o espaço da gaveta sem passar por ela (final do jogo).
+func _toggle_drawer(open: bool) -> void:
+	if _drawer != null and _drawer.is_open() != open and not _in_ending:
+		if open:
+			_drawer.open()
+		else:
+			_drawer.close()
+		return
+	_on_drawer_open_changed(open)
 
 
 func _on_first_interaction() -> void:
@@ -127,11 +149,13 @@ func _on_first_interaction() -> void:
 
 func _on_arrival_started() -> void:
 	# A cena do bunker conduz a cena; aqui só se segura a gaveta fechada.
-	_toggle_drawer(false)
+	if _drawer != null:
+		_drawer.close()
 
 
 ## Tela preta da cena do bunker: a janela cresce para caber o texto do final.
 func _on_arrival_cut() -> void:
+	_in_ending = true
 	_drawer_open = true
 	_relayout()
 	if _ending != null:
@@ -149,4 +173,5 @@ func _on_ending_finished(kind: String) -> void:
 		_:
 			_ending.queue_free()
 			_ending = null
+			_in_ending = false
 			_toggle_drawer(false)
