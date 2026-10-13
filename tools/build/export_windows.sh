@@ -53,7 +53,9 @@ if [ "$VALIDAR" = 1 ]; then
   # roda fora do projeto, para provar que tudo vem do pck
   ( cd "$CHECK" && bash "$RAIZ/Ferramentas/godot.sh" --headless --main-pack QuantosDias.pck --quit-after 120 ) > "$LOG" 2>&1 || {
     echo "ERRO: o pck não rodou (veja $LOG)" >&2; tail -20 "$LOG" >&2; exit 1; }
-  if grep -E "SCRIPT ERROR|ERROR:|Parse Error|Failed to load" "$LOG"; then
+  # avisos de vazamento ao sair (recursos/ObjectDB) não contam como falha
+  if grep -E "SCRIPT ERROR|ERROR:|Parse Error|Failed to load" "$LOG" \
+      | grep -v -E "still in use at exit|ObjectDB instances leaked|^\s+at: "; then
     echo "ERRO: o pck rodou com erros (acima; log completo em $LOG)" >&2
     exit 1
   fi
