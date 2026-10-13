@@ -7,7 +7,8 @@ extends Node2D
 
 signal step_done(kind: String)
 
-const SPEED := 20.0                 # px/s andando
+const SPEED := 20.0                 # px/s andando (padrão; o manifesto pode trazer speed_px_s)
+const SLEEP_Y := -7.0               # deitado sobre o colchão da cama
 const HUNGRY_SPEED := 0.6           # fator quando faminto (CONTRATOS 9.5)
 const READY_PROGRESS := 0.95
 const NOON_FROM := 11.5
@@ -212,7 +213,8 @@ func _run(delta: float) -> void:
 	match String(_cur.get("type", "")):
 		"walk":
 			var tx: float = _cur["x"]
-			var sp := SPEED * (HUNGRY_SPEED if link != null and link.hungry() else 1.0)
+			var sp := float(BunkerArt.info(anim).get("speed_px_s", SPEED))
+			sp *= HUNGRY_SPEED if link != null and link.hungry() else 1.0
 			var dx := tx - position.x
 			if absf(dx) <= sp * delta:
 				position.x = tx
@@ -328,7 +330,7 @@ func _plan_sleep() -> void:
 	var bed: Variant = view.fixed_foot("bed")
 	var x: float = bed.x if bed != null else position.x
 	walk_to(x)
-	act("man_sleep", 30.0, "sleep", 1)
+	act("man_sleep", 30.0, "sleep", 1, {"y_off": SLEEP_Y})
 
 
 func _plan_build() -> void:
