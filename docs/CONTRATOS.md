@@ -246,6 +246,7 @@ func refresh_machine_loops() -> void            # lê Game.instances() e liga um
 func unlock() -> void                           # primeira interação: libera o som (padrão silencioso até lá)
 ```
 Barramentos: `Master`, `Radio` (filtro passa-banda + chiado), `Ambient`, `UI`. Modo *silent*: nada toca; *ambient*: ambiente e SFX baixos, **rádio só em texto**; *full*: tudo. Padrão `ambient`, mas **silencioso até `unlock()`**. Nada toca em `--headless`.
+Notas da implementação (módulo de áudio): `unlock()` também é chamado sozinho na primeira entrada de mouse/teclado e grava `Settings.sound_unlocked`. Barramentos: SFX de interface (`click, hover, buy, error, page, switch`) vão para `UI`; `radio_on, tune, blip` e a estação/cues para `Radio` (**bloqueados no modo ambient**, exceto a estação ligada pelo jogador); o resto do mundo e os loops, `Ambient`. `play_radio_cue` aceita também `"epilogue"` (tema da chegada; `arrival_started` toca `hatch_open` e, em *full*, o epílogo). Extras para teste: `bind_game(node)`, `bind_settings(node)`, `record_plan`/`plan`, `compute_loops()`, `loop_plan()`. Itens -> loop: `bicicleta→bike, moinho→windmill, bateria→battery, bomba→pump, esteira/roldana→conveyor, estufa→greenhouse, painel→solar, gotejador/cisterna→drip` (só `state=="ready"`).
 
 ---
 
@@ -394,6 +395,7 @@ Geradores Python em `tools/audio/` (numpy; `pip install` permitido para o que fa
 - `loops/` (20–30 s, sem emenda audível): `amb_room, bike, windmill, battery, pump, conveyor, greenhouse, solar, drip, wind_surface, static`
 - `music/` (pelo rádio; abafadas): `far` (valsa distante, 45–60 s, nível 2), `18h` (melodia calorosa do velho, 60 s, nível 4), `numbers` (estação de números: bipes e tons), `station_1, station_2, station_3` (ambiente/estudo, ~90 s cada, calmas), `epilogue` (tema curto da chegada), `her_voice` (**placeholder**: motivo de dois tons com chiado abrindo; a voz real será gravada depois)
 `assets/audio/bus_layout.tres` (barramentos Master, Radio, Ambient, UI; filtro no Radio) também é do módulo de áudio.
+Acréscimo: `loops/amb_night` (loop de noite, usado quando `Game.is_night()`). `music/her_voice` é **PLACEHOLDER** (motivo de dois tons com chiado abrindo, ~8 s): a voz real será gravada depois e substitui o arquivo com o mesmo nome. Geradores: `python3 tools/audio/make_all.py` (gera tudo e imprime tabela) e `python3 tools/audio/analyze.py` (pico, LUFS, clipping, espectro, emenda dos loops). O `bus_layout.tres` é gerado por `tools/audio/make_bus_layout.gd`. Os arquivos têm todos pico -6 dBFS (SFX) ou ~-14 LUFS (máquinas/músicas) ou mais baixo (ambientes); o nível relativo é aplicado pelo `AudioManager` (tabelas `SFX_GAIN_DB`, `LOOP_DB`).
 
 ---
 
