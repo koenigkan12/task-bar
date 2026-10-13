@@ -2,9 +2,10 @@ class_name BunkerView
 extends Node2D
 ## Corte do bunker. Só lê o estado do Game e reage aos sinais dele; nada aqui mexe na economia.
 ## Coordenadas lógicas da CONTRATOS seção 3; a origem do nó é o canto superior esquerdo do MUNDO
-## (todos os andares empilhados). A janela é uma faixa de `view_h` px (2 andares): com `view_h` > 0 a
-## cena rola na vertical sozinha (position.y = -scroll_y; o pai recorta). A câmera segue o homem; roda do
-## mouse e arrastar movem a vista à mão e, uns segundos depois, ela volta a seguir. view_h = 0: sem rolagem.
+## (todos os andares empilhados, cada andar com seus cômodos lado a lado). A janela é uma faixa de `view_h` px
+## (2 andares) por `view_width` px: com `view_h` > 0 a cena rola sozinha (position = -scroll; o pai recorta).
+## A câmera segue o homem; roda do mouse (Shift = para os lados) e arrastar movem a vista à mão e, uns
+## segundos depois, ela volta a seguir. view_h = 0: sem rolagem.
 ##
 ## Para a UI:
 ##   get_object_at(pos) -> Dictionary  {kind: "hatch"|"radio"|"box"|"instance"|"man"|"antenna"|"fixed"|"room",
@@ -16,7 +17,7 @@ extends Node2D
 ##   set_view_height(h)                altura visível (a faixa); liga a rolagem vertical
 ##   pan_by(dy) / reveal(rect)         move a vista à mão / mostra um retângulo do mundo
 ##   world_height() -> int             altura do mundo (cresce um andar por sala, já com a escavação)
-##   max_scroll() -> float             quanto dá para rolar
+##   max_scroll() -> float             quanto dá para rolar na vertical; max_scroll_x() para os lados
 ##   sinais object_clicked(instance_id), radio_clicked, box_clicked, hatch_clicked, man_clicked,
 ##          antenna_clicked, generator_clicked(instance_id),
 ##          arrival_cut (a tela está preta e o Game já recebeu finish_arrival), arrival_scene_finished
@@ -56,6 +57,8 @@ var view_width: int = 0
 var view_h: int = 0
 ## Linha do mundo que está no topo da janela.
 var scroll_y: float = 0.0
+## Coluna do mundo na borda esquerda da janela.
+var scroll_x: float = 0.0
 ## Velocidade da cena do final (testes podem acelerar).
 var cinematic_speed: float = 1.0
 
@@ -76,6 +79,7 @@ var _objects: Node2D
 var _fx: Node2D
 var _tip: PlotTip
 var _pantry: PantryStock
+var _plates: RoomPlates
 var _shade: BunkerLight
 var _lights: Node2D
 var _cone: BunkerLight
@@ -85,8 +89,8 @@ var _fade_alpha: float = 0.0
 var _pan_pause: float = 0.0
 var _drag_armed: bool = false
 var _dragging: bool = false
-var _drag_y0: float = 0.0
-var _drag_scroll0: float = 0.0
+var _drag_p0: Vector2 = Vector2.ZERO
+var _drag_scroll0: Vector2 = Vector2.ZERO
 
 var _antenna: ArtSprite
 var _hatch: ArtSprite
@@ -94,7 +98,7 @@ var _scrap: ArtSprite
 var _radio_glow: ArtSprite
 var _lamps: Array[ArtSprite] = []
 var _glows: Array[BunkerLight] = []
-var _lamp_rooms: Array[int] = []   # sala de cada lâmpada (0 = despensa)
+var _lamp_fns: Array[String] = []   # função do cômodo de cada lâmpada (horta, oficina, ...; despensa)
 var _fixed: Dictionary = {}        # fixed_id -> BunkerObject
 var _inst: Dictionary = {}         # instance_id -> BunkerObject
 var _caneca: ArtSprite
@@ -152,6 +156,15 @@ func world_height() -> int:
 	return strip_height()
 
 
+## Salas já cavadas (para o mapinha).
+func rooms_dug() -> int:
+	return _rooms
+
+
+func plates() -> RoomPlates:
+	return _plates
+
+
 func set_view_height(h: int) -> void:
 	view_h = h
 	snap_scroll()
@@ -161,25 +174,48 @@ func max_scroll() -> float:
 	return maxf(0.0, float(world_height() - view_h)) if view_h > 0 else 0.0
 
 
-## Para onde a câmera quer ir: os pés dele perto da base da janela (ele e o andar de cima ficam à vista).
+func max_scroll_x() -> float:
+	return maxf(0.0, float(BunkerGeo.strip_width(_rooms) - view_width)) if view_h > 0 else 0.0
+
+
+## Para onde a câmera quer ir na vertical: os pés dele perto da base da janela (ele e o andar de cima ficam à vista).
 func follow_target() -> float:
 	return clampf(man.position.y + FOLLOW_FEET_MARGIN - float(view_h), 0.0, max_scroll())
+
+
+## Na horizontal ela só anda quando ele sai do miolo da janela (sem balançar a cada passo).
+func follow_target_x() -> float:
+	var w: float = float(view_width)
+	var rel: float = man.position.x - scroll_x
+	var t: float = scroll_x
+	if rel < w * 0.3:
+		t = man.position.x - w * 0.3
+	elif rel > w * 0.7:
+		t = man.position.x - w * 0.7
+	return clampf(t, 0.0, max_scroll_x())
 
 
 func snap_scroll() -> void:
 	if view_h <= 0:
 		scroll_y = 0.0
-		position.y = 0.0
+		scroll_x = 0.0
+		position = Vector2.ZERO
 		return
 	scroll_y = follow_target() if man != null else 0.0
+	scroll_x = clampf(man.position.x - float(view_width) * 0.5, 0.0, max_scroll_x()) if man != null else 0.0
 	_apply_scroll()
 
 
 ## Move a vista à mão (dy > 0 desce) e segura a câmera um tempo.
 func pan_by(dy: float) -> void:
+	pan_xy(Vector2(0.0, dy))
+
+
+func pan_xy(d: Vector2) -> void:
 	if view_h <= 0:
 		return
-	scroll_y = clampf(scroll_y + dy, 0.0, max_scroll())
+	scroll_y = clampf(scroll_y + d.y, 0.0, max_scroll())
+	scroll_x = clampf(scroll_x + d.x, 0.0, max_scroll_x())
 	_pan_pause = FOLLOW_PAUSE
 	_apply_scroll()
 
@@ -188,18 +224,19 @@ func pan_by(dy: float) -> void:
 func reveal(r: Rect2) -> void:
 	if view_h <= 0:
 		return
-	if r.position.y >= scroll_y and r.end.y <= scroll_y + float(view_h):
+	var inside: bool = r.position.y >= scroll_y and r.end.y <= scroll_y + float(view_h) \
+			and r.position.x >= scroll_x and r.end.x <= scroll_x + float(view_width)
+	if inside:
 		return
-	scroll_y = clampf(r.get_center().y - float(view_h) * 0.5, 0.0, max_scroll())
-	_pan_pause = FOLLOW_PAUSE
-	_apply_scroll()
+	reveal_center(r.get_center())
 
 
-## Leva a vista até a linha `wy` do mundo no meio da janela (clique no indicador de andares).
-func reveal_center(wy: float) -> void:
+## Leva a vista até o ponto `p` do mundo no meio da janela (clique no mapinha de andares).
+func reveal_center(p: Vector2) -> void:
 	if view_h <= 0:
 		return
-	scroll_y = clampf(wy - float(view_h) * 0.5, 0.0, max_scroll())
+	scroll_y = clampf(p.y - float(view_h) * 0.5, 0.0, max_scroll())
+	scroll_x = clampf(p.x - float(view_width) * 0.5, 0.0, max_scroll_x())
 	_pan_pause = FOLLOW_PAUSE
 	_apply_scroll()
 
@@ -210,9 +247,9 @@ func is_panning() -> bool:
 
 
 func _apply_scroll() -> void:
-	var y := -roundf(scroll_y)
-	if position.y != y:
-		position.y = y
+	var p := Vector2(-roundf(scroll_x), -roundf(scroll_y))
+	if position != p:
+		position = p
 		scrolled.emit()
 
 
@@ -224,9 +261,13 @@ func _update_scroll(delta: float) -> void:
 	elif _pan_pause > 0.0:
 		_pan_pause -= delta
 	else:
+		var k: float = 1.0 - exp(-4.0 * delta)
 		var t := follow_target()
-		scroll_y = t if absf(t - scroll_y) < 0.5 else lerpf(scroll_y, t, 1.0 - exp(-4.0 * delta))
+		scroll_y = t if absf(t - scroll_y) < 0.5 else lerpf(scroll_y, t, k)
+		var tx := follow_target_x()
+		scroll_x = tx if absf(tx - scroll_x) < 0.5 else lerpf(scroll_x, tx, k)
 	scroll_y = clampf(scroll_y, 0.0, max_scroll())
+	scroll_x = clampf(scroll_x, 0.0, max_scroll_x())
 	_apply_scroll()
 
 
@@ -277,6 +318,9 @@ func _build_layers() -> void:
 	_tip = PlotTip.new()
 	_tip.view = self
 	add_child(_tip)
+	_plates = RoomPlates.new()
+	_plates.view = self
+	add_child(_plates)
 	_shade = BunkerLight.new(BunkerLight.Kind.SHADE)
 	_shade.z_index = 6
 	add_child(_shade)
@@ -335,7 +379,7 @@ func full_refresh() -> void:
 	_sync(true)
 	var bed: Variant = fixed_foot("bed")
 	if link.is_awake():
-		man.position.x = BunkerGeo.col_x(1, 7)
+		man.position.x = BunkerGeo.col_x(1, 3)
 	elif bed != null:
 		man.position.x = bed.x
 	snap_scroll()
@@ -377,6 +421,7 @@ func _sync(force: bool = false) -> void:
 	_sky.refresh(tod, w, force)
 	_shade.width = w
 	_shade.height = strip_height()
+	_plates.refresh(_rooms)
 	_sync_fixed()
 	_sync_instances()
 	_sync_surface()
@@ -494,10 +539,10 @@ func _sync_surface() -> void:
 func _sync_lamps() -> void:
 	var lamp_defs := BunkerGeo.lamps(_rooms)
 	var pts: Array[Vector2] = []
-	_lamp_rooms.clear()
+	_lamp_fns.clear()
 	for l: Dictionary in lamp_defs:
 		pts.append(l["pos"])
-		_lamp_rooms.append(int(l["room"]))
+		_lamp_fns.append(String(l["fn"]))
 	while _lamps.size() < pts.size():
 		var lamp := ArtSprite.new("lamp", 1)
 		_overlay.add_child(lamp)
@@ -548,8 +593,8 @@ func _sync_light(tod: float) -> void:
 		var lamp_frame := 1 if on else 0
 		if attention.current != "power":
 			_lamps[i].frame = lamp_frame
-		# a estufa (sala 2) tem luz de cultivo, mais esverdeada
-		var g := BunkerGeo.pal("leaf4") if (i < _lamp_rooms.size() and _lamp_rooms[i] == 2) else BunkerGeo.pal("amber2")
+		# a horta (e a estufa) tem luz de cultivo, mais esverdeada
+		var g := BunkerGeo.pal("leaf4") if (i < _lamp_fns.size() and _lamp_fns[i] == "horta") else BunkerGeo.pal("amber2")
 		g.a = (0.85 if _lamps[i].frame == 1 else (0.35 if _lamps[i].frame == 2 else 0.0)) if on else 0.0
 		_glows[i].tint = g
 
@@ -891,9 +936,9 @@ func plot_pos(p: Dictionary) -> Vector2:
 func dig_spot_x() -> float:
 	var j := _dig_job()
 	if not j.is_empty():
-		var open := BunkerGeo.ROOM_W * float(j.get("ratio", 0.0))
+		var open := float(BunkerGeo.room_width(_rooms + 1)) * float(j.get("ratio", 0.0))
 		return BunkerGeo.room_x0(_rooms + 1) + maxf(open, 24.0) - 10.0
-	return BunkerGeo.room_x0(_rooms) + BunkerGeo.ROOM_W - 10.0
+	return BunkerGeo.room_x0(_rooms) + float(BunkerGeo.room_width(_rooms)) - 10.0
 
 
 ## Linha dos pés do andar em escavação (a sala nova fica uma andar abaixo da última).
@@ -905,8 +950,13 @@ func walk_min_x() -> float:
 	return BunkerGeo.col_x(1, 0) + 8.0
 
 
-func walk_max_x() -> float:
-	return BunkerGeo.room_x0(_rooms) + BunkerGeo.ROOM_W - 8.0
+## Até onde ele passeia no andar de `feet_y`: o de cima é o mais largo, a despensa e as salas cavadas são menores.
+func walk_max_x(feet_y: float = float(BunkerGeo.FEET_Y)) -> float:
+	var w: int = BunkerGeo.room_width(1)
+	if feet_y > float(BunkerGeo.FEET_Y) + 1.0:
+		var f: int = int(roundf((feet_y - float(BunkerGeo.FEET_Y)) / float(BunkerGeo.FLOOR_DY)))
+		w = BunkerGeo.PANTRY_W if f <= 1 else BunkerGeo.room_width(mini(f, BunkerGeo.MAX_ROOMS))
+	return float(BunkerGeo.room_x0(1) + w) - 8.0
 
 
 func room_col_at(pos: Vector2) -> Vector2i:
@@ -974,14 +1024,18 @@ func rect_of(hit: Dictionary) -> Rect2:
 
 
 ## Roda do mouse e arrastar movem a vista (antes da interface, para valer também com a camada de posicionar).
+## Roda: sobe/desce (se não há andar para rolar, anda para os lados); Shift+roda anda para os lados.
 func _input(event: InputEvent) -> void:
 	if view_h <= 0:
 		return
 	var mb := event as InputEventMouseButton
 	if mb != null:
-		if mb.pressed and (mb.button_index == MOUSE_BUTTON_WHEEL_UP or mb.button_index == MOUSE_BUTTON_WHEEL_DOWN):
-			if max_scroll() > 0.0 and _view_rect().has_point(mb.position):
-				pan_by(-WHEEL_STEP if mb.button_index == MOUSE_BUTTON_WHEEL_UP else WHEEL_STEP)
+		var wheel: bool = mb.button_index in [MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_DOWN, MOUSE_BUTTON_WHEEL_LEFT, MOUSE_BUTTON_WHEEL_RIGHT]
+		if mb.pressed and wheel:
+			if _view_rect().has_point(mb.position) and (max_scroll() > 0.0 or max_scroll_x() > 0.0):
+				var dir: float = -1.0 if mb.button_index in [MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_LEFT] else 1.0
+				var sideways: bool = mb.shift_pressed or mb.button_index in [MOUSE_BUTTON_WHEEL_LEFT, MOUSE_BUTTON_WHEEL_RIGHT] or max_scroll() <= 0.0
+				pan_xy(Vector2(dir * WHEEL_STEP, 0.0) if sideways else Vector2(0.0, dir * WHEEL_STEP))
 				get_viewport().set_input_as_handled()
 		elif not mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT:
 			var was := _dragging
@@ -992,11 +1046,12 @@ func _input(event: InputEvent) -> void:
 		return
 	var mm := event as InputEventMouseMotion
 	if mm != null and _drag_armed:
-		var dy := mm.position.y - _drag_y0
-		if not _dragging and absf(dy) >= DRAG_MIN:
+		var d: Vector2 = mm.position - _drag_p0
+		if not _dragging and d.length() >= DRAG_MIN:
 			_dragging = true
 		if _dragging:
-			scroll_y = clampf(_drag_scroll0 - dy, 0.0, max_scroll())
+			scroll_y = clampf(_drag_scroll0.y - d.y, 0.0, max_scroll())
+			scroll_x = clampf(_drag_scroll0.x - d.x, 0.0, max_scroll_x())
 			_pan_pause = FOLLOW_PAUSE
 			_apply_scroll()
 			get_viewport().set_input_as_handled()
@@ -1026,11 +1081,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		"antenna":
 			antenna_clicked.emit()
 		_:
-			if view_h > 0 and max_scroll() > 0.0:   # chão vazio: começa a arrastar a vista
+			if view_h > 0 and (max_scroll() > 0.0 or max_scroll_x() > 0.0):   # chão vazio: começa a arrastar a vista
 				_drag_armed = true
 				_dragging = false
-				_drag_y0 = mb.position.y
-				_drag_scroll0 = scroll_y
+				_drag_p0 = mb.position
+				_drag_scroll0 = Vector2(scroll_x, scroll_y)
 			return
 	get_viewport().set_input_as_handled()
 

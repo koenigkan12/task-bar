@@ -19,10 +19,11 @@ const FLOOR_H := 5          ## altura visível do piso (tile de 8, cortado)
 const SLAB_B := 6           ## altura visível do teto do B
 const COL := 16
 const COLS := 12
-const ROOM_W := 192
-const ROOM_STEP := 200
+const PANTRY_W := 192       ## largura da despensa (andar B)
 const MARGIN := 8
-const DIVIDER_W := 8
+const DIVIDER_W := 8        ## parede grossa que fecha o andar à direita
+const ZONE_WALL := 8        ## parede (com porta) entre dois cômodos do mesmo andar
+const WIN_W := 344          ## largura da janela (a faixa): o bunker é mais largo e rola para os lados
 const MIN_W := 344
 const MAX_ROOMS := 3
 const ANTENNA_X := 56
@@ -68,9 +69,38 @@ static func room_x0(_room: int) -> int:
 	return MARGIN
 
 
-## Largura mínima da faixa (a sala + a parede da direita); os andares são empilhados, não lado a lado.
+## Cômodos (zonas) de um andar, da esquerda para a direita: [{id, fn, col0, cols, x0, x1, idx}] com x0..x1 o
+## interior em px do mundo (sem as paredes entre eles). Vêm do balance.json (rooms.layout).
+static func zones(room: int) -> Array[Dictionary]:
+	Balance.ensure_loaded()
+	var out: Array[Dictionary] = []
+	var x: int = room_x0(room)
+	var i: int = 0
+	for z: Dictionary in Balance.room_zones(room):
+		var w: int = int(z["cols"]) * COL
+		out.append({"id": z["id"], "fn": z["fn"], "col0": z["col0"], "cols": z["cols"], "x0": x, "x1": x + w, "idx": i})
+		x += w + ZONE_WALL
+		i += 1
+	return out
+
+
+## Largura (px) do andar da sala: os cômodos mais as paredes entre eles.
+static func room_width(room: int) -> int:
+	var zs: Array[Dictionary] = zones(room)
+	return 0 if zs.is_empty() else int(zs[zs.size() - 1]["x1"]) - room_x0(room)
+
+
+## Cômodo que contém a coluna (índice em zones()), ou -1.
+static func zone_index_of_col(room: int, col: int) -> int:
+	for z: Dictionary in zones(room):
+		if col >= int(z["col0"]) and col < int(z["col0"]) + int(z["cols"]):
+			return int(z["idx"])
+	return -1
+
+
+## Largura do mundo (px): o andar mais largo (o de cima) mais a parede da direita.
 static func strip_width(_n_rooms: int = 1) -> int:
-	return MARGIN + ROOM_STEP
+	return room_x0(1) + room_width(1) + DIVIDER_W
 
 
 ## Altura da faixa com `n_rooms` salas (a despensa já conta no andar B).
@@ -78,8 +108,10 @@ static func height(n_rooms: int) -> int:
 	return H + maxi(0, mini(n_rooms, MAX_ROOMS) - 1) * FLOOR_DY
 
 
+## x esquerdo da coluna (conta as paredes entre os cômodos).
 static func col_x(room: int, col: int) -> int:
-	return room_x0(room) + col * COL
+	var zi: int = zone_index_of_col(room, col)
+	return room_x0(room) + col * COL + maxi(0, zi) * ZONE_WALL
 
 
 static func feet_y(room: int) -> int:
@@ -105,34 +137,30 @@ static func block_rect(room: int, col: int, cols: int) -> Rect2:
 
 
 static func room_rect(room: int) -> Rect2:
-	return Rect2(room_x0(room), room_y(room), ROOM_W, FLOOR_DY)
+	return Rect2(room_x0(room), room_y(room), room_width(room), FLOOR_DY)
 
 
-## Sala e coluna sob um ponto (dentro de uma sala existente), ou (-1, -1). A despensa não é sala.
+## Sala e coluna sob um ponto (dentro de um cômodo de uma sala existente), ou (-1, -1). A despensa não é sala.
 static func room_col_at(p: Vector2, n_rooms: int) -> Vector2i:
 	for r in range(1, n_rooms + 1):
 		var y0 := room_y(r)
 		var y1 := y0 + FLOOR_DY if r > 1 else ROOM_Y + FLOOR_DY + 1
 		if p.y < y0 or p.y >= y1:
 			continue
-		var x0 := room_x0(r)
-		if p.x >= x0 and p.x < x0 + ROOM_W:
-			return Vector2i(r, int((p.x - x0) / COL))
+		for z: Dictionary in zones(r):
+			if p.x >= float(z["x0"]) and p.x < float(z["x1"]):
+				return Vector2i(r, int(z["col0"]) + int((p.x - float(z["x0"])) / COL))
 	return Vector2i(-1, -1)
 
 
-## Centro (x) da lâmpada do teto da sala.
-static func lamp_x(room: int) -> int:
-	return col_x(room, 5 if room == 1 else 6) + 8
-
-
-## Lâmpadas da faixa: [{pos, room}] com room 0 = despensa. Uma por andar (sala 1, despensa, salas cavadas).
+## Lâmpadas da faixa: [{pos, room, fn}] com room 0 = despensa. Uma por cômodo e uma na despensa.
 static func lamps(n_rooms: int) -> Array[Dictionary]:
 	var out: Array[Dictionary] = []
-	out.append({"pos": Vector2(lamp_x(1), WALL_Y), "room": 1})
-	out.append({"pos": Vector2(col_x(1, 7) + 8, WALL_Y_B), "room": 0})
-	for r in range(2, n_rooms + 1):
-		out.append({"pos": Vector2(lamp_x(r), wall_y(r)), "room": r})
+	for r in range(1, n_rooms + 1):
+		for z: Dictionary in zones(r):
+			out.append({"pos": Vector2((float(z["x0"]) + float(z["x1"])) * 0.5, wall_y(r)), "room": r, "fn": String(z["fn"])})
+		if r == 1:
+			out.append({"pos": Vector2(col_x(1, 7) + 8, WALL_Y_B), "room": 0, "fn": "despensa"})
 	return out
 
 
@@ -145,4 +173,4 @@ static func lamp_points(n_rooms: int) -> Array[Vector2]:
 
 ## x esquerdo da parede da direita da sala.
 static func divider_x(room: int) -> int:
-	return room_x0(room) + ROOM_W
+	return room_x0(room) + room_width(room)

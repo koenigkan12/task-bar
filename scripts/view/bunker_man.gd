@@ -563,7 +563,7 @@ func _plan_free() -> void:
 			walk_to(view.pantry_x() - 14.0, false, view.pantry_y())
 			act("man_idle", _rng.randf_range(3.0, 5.0), "despensa", 1)
 		"wander":
-			walk_to(clampf(position.x + _rng.randf_range(-40.0, 40.0), view.walk_min_x(), view.walk_max_x()))
+			walk_to(clampf(position.x + _rng.randf_range(-40.0, 40.0), view.walk_min_x(), view.walk_max_x(_feet_y)))
 			act("man_idle", _rng.randf_range(1.5, 3.0), "idle")
 		_:
 			act("man_idle", _rng.randf_range(2.0, 4.0), "idle")

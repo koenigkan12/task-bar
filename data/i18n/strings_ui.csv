@@ -182,3 +182,8 @@ tray.on_top,Sempre por cima,Always on top
 tray.quit,Sair,Quit
 ending.credits,Obrigado por esperar com Joaquim.,Thanks for waiting with Joaquim.
 buy.have,{cost} · tem {have},{cost} · have {have}
+opt.quit,Fechar o jogo,Close the game
+opt.quit.btn,Sair,Quit
+opt.quit.help,Salva sozinho antes de fechar.,Saves by itself before closing.
+opt.plates,Nomes dos cômodos,Room names
+opt.plates.help,As placas em cima de cada cômodo.,The signs above each room.

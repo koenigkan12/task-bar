@@ -16,6 +16,8 @@ Anote para cada item: ✅ ok, ❌ falhou (com print e o que fez antes) ou ➖ n�
 - [ ] Barra de tarefas em outra posição (direita/esquerda/topo, ou com "ocultar automaticamente"): a janela continua na área útil, encostada embaixo.
 - [ ] A janela abre a gaveta (check-in) **para cima**, e a borda de baixo não sai do lugar. Ao fechar a gaveta, volta ao tamanho de antes.
 - [ ] Quando ele escava um cômodo, a janela **não muda de tamanho** (continua 2 andares); a cena rola para baixo junto com ele.
+- [ ] A janela tem sempre a mesma largura (344 px lógicos): escotilha e horta à vista, oficina e quarto aparecem rolando para a direita (Shift+roda, ou a roda comum quando só há 1 sala).
+- [ ] O X no canto de cima da alça: 1º clique vira "Sair?" (some sozinho em 3 s); 2º clique fecha o jogo; ao reabrir o progresso está salvo. Opções > Fechar o jogo faz o mesmo.
 - [ ] Roda do mouse sobre a faixa rola a cena; arrastar o chão vazio também; uns segundos depois ela volta a seguir o Joaquim. O indicador de andares (abaixo da alça) aparece só depois da 1ª sala nova.
 - [ ] Arrastar pela alça move a janela; soltar perto da borda de baixo não deixa parte dela debaixo da barra de tarefas nem fora da tela.
 

@@ -1,8 +1,8 @@
 class_name StatusHud
 extends Control
 ## Faixa de status sempre visível, de uma linha só: "[sucata] 12 sucata | [estrela] Gotejador".
-## Segunda linha só enquanto junta sucata: barra + "faltam 28". Meta pronta: "[check] Comprar Gotejador".
-## Explicações (o que o item faz, quanto falta) ficam só no hover. Clicar na linha de cima abre a gaveta
+## Meta pronta: "[check] Comprar Gotejador". Sem barra de progresso: o que falta fica só no hover
+## ("Faltam 28 sucata"), junto com a explicação do item. Clicar na linha de cima abre a gaveta
 ## em Construir. O tutorial é uma linha curta abaixo (a seta e o contorno ficam no objeto, ver PlotTip);
 ## só a linha de cima recebe clique: o resto deixa passar, para a escotilha continuar clicável.
 
@@ -12,23 +12,18 @@ signal man_clicked()
 
 const BACK_ALPHA: float = 0.6
 const TIP_W: int = 150
-const BAR_W: int = 36
 const FACE: Rect2 = Rect2(10, 2, 12, 12)   # rosto no quadro do homem parado
 
 var steps: FirstSteps
 
 var _col: VBoxContainer
 var _row1: HBoxContainer
-var _row2: HBoxContainer
 var _face: TextureRect
 var _scrap_icon: TextureRect
 var _scrap: Label
 var _goal_icon: TextureRect
 var _sep: ColorRect
 var _goal: Label
-var _bar: ProgressBar
-var _missing: Label
-var _pad: Control   # alinha a barra de baixo com a meta
 var _tut: Label
 var _tip: PanelContainer
 var _tip_label: Label
@@ -89,24 +84,6 @@ func _build() -> void:
 	_row1.add_child(_goal_icon)
 	_goal = _label()
 	_row1.add_child(_goal)
-	_row2 = HBoxContainer.new()
-	_row2.add_theme_constant_override("separation", 2)
-	_row2.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_col.add_child(_row2)
-	_pad = Control.new()
-	_pad.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_row2.add_child(_pad)
-	_bar = ProgressBar.new()
-	_bar.show_percentage = false
-	_bar.max_value = 1.0
-	_bar.step = 0.0
-	_bar.custom_minimum_size = Vector2(BAR_W, 4)
-	_bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_row2.add_child(_bar)
-	_missing = _label()
-	_missing.add_theme_color_override("font_color", UiTheme.CONC4)
-	_row2.add_child(_missing)
 	_tut = _label()
 	_tut.add_theme_color_override("font_color", UiTheme.AMBER3)
 	_col.add_child(_tut)
@@ -148,7 +125,6 @@ func refresh() -> void:
 		_goal_icon.visible = false
 		_sep.visible = false
 		_goal.text = ""
-		_row2.visible = false
 	else:
 		_goal_icon.visible = true
 		_sep.visible = true
@@ -159,7 +135,6 @@ func refresh() -> void:
 			_goal.text = ScreenUtil.tr_key("hud.ready", {"name": name})
 			_goal.add_theme_color_override("font_color", UiTheme.SIGNAL)
 			_goal_icon.texture = UiTheme.icon("check")
-			_row2.visible = false
 			_tip_text = _join([desc, ScreenUtil.tr_key("hud.tip.ready")])
 		else:
 			var cost: int = int(g["cost"])
@@ -167,9 +142,6 @@ func refresh() -> void:
 			_goal.text = name
 			_goal.add_theme_color_override("font_color", UiTheme.AMBER3)
 			_goal_icon.texture = UiTheme.icon("estrela")
-			_row2.visible = true
-			_bar.value = clampf(float(g["have"]) / maxf(1.0, float(cost)), 0.0, 1.0)
-			_missing.text = ScreenUtil.tr_key("hud.missing", {"n": left})
 			_tip_text = _join([desc, ScreenUtil.tr_key("hud.tip.saving", {"n": left, "cost": cost})])
 	_tut_key = steps.current_key() if steps != null else ""
 	_tut.visible = _tut_key != ""
@@ -192,7 +164,6 @@ func _layout() -> void:
 	_row_w = 2.0 + _row1.get_combined_minimum_size().x + 4.0
 	# posição da meta na linha (calculada pelos mínimos: o contêiner só se ajeita no quadro seguinte)
 	_goal_x = 2.0 + _face.get_combined_minimum_size().x + 2.0 + _scrap_icon.get_combined_minimum_size().x + _scrap.get_combined_minimum_size().x + 1.0 + 4.0 * 2.0
-	_pad.custom_minimum_size.x = _goal_x - 2.0 if _row2.visible else 0.0
 	custom_minimum_size = Vector2(_row_w, _col.get_combined_minimum_size().y)
 	size = custom_minimum_size
 	queue_redraw()
@@ -202,10 +173,6 @@ func _draw() -> void:
 	var back := Color(UiTheme.INK, BACK_ALPHA)
 	draw_rect(Rect2(0, 0, _row_w, _row_h), back)
 	var y: float = _row_h + 1.0
-	if _row2.visible:
-		var r2: Vector2 = _row2.get_combined_minimum_size()
-		draw_rect(Rect2(_goal_x - 1.0, y, r2.x - _pad.custom_minimum_size.x + 2.0, r2.y), back)
-		y += r2.y + 1.0
 	if _tut.visible:
 		var t: Vector2 = _tut.get_combined_minimum_size()
 		draw_rect(Rect2(1, y, t.x + 3.0, t.y), back)

@@ -88,18 +88,35 @@ func _run() -> void:
 	var floors: FloorIndicator = main.get("_floors")
 	var view: Control = main.get("_view")
 
-	# 1 sala: só 2 andares, nada para rolar, sem indicador
-	_check(main.call("_strip_h") == BunkerGeo.H, "janela de %d px" % int(main.call("_strip_h")))
-	_check(bunker.max_scroll() == 0.0, "1 sala: nada para rolar")
+	# 1 sala: 2 andares na vertical (nada para rolar), mas os cômodos são mais largos que a janela
+	_check(main.call("_strip_h") == BunkerGeo.H, "janela de %d px de altura" % int(main.call("_strip_h")))
+	_check(absf(view.size.x - BunkerGeo.WIN_W) < 0.5, "janela de %d px de largura" % int(view.size.x))
+	_check(bunker.max_scroll() == 0.0, "1 sala: nada para rolar na vertical")
+	_check(bunker.max_scroll_x() == float(BunkerGeo.strip_width(1) - BunkerGeo.WIN_W), "1 sala: rola %d px para os lados" % int(bunker.max_scroll_x()))
 	await _frames(3)
-	_check(not floors.visible, "sem indicador quando não há o que rolar")
+	_check(floors.visible, "o mapinha aparece porque dá para rolar para os lados")
+	var side: Vector2 = view.global_position + Vector2(100, 70)
+	bunker.man.cinematic = true
+	bunker.man.position.x = 40.0
+	bunker.snap_scroll()
+	await _wheel(side, false)
+	_check(bunker.scroll_x == BunkerView.WHEEL_STEP and bunker.scroll_y == 0.0, "sem andar para rolar, a roda anda para os lados (%d)" % int(bunker.scroll_x))
+	await _wheel(side, true)
+	_check(bunker.scroll_x == 0.0, "roda para cima volta")
+	bunker.pan_xy(Vector2(1000.0, 0.0))
+	await _frames(2)
+	_check(bunker.scroll_x == bunker.max_scroll_x(), "para no fim do bunker (%d)" % int(bunker.scroll_x))
+	await _shot("0_direita")
+	bunker._pan_pause = 0.05
+	var back0: bool = await _until(func() -> bool: return absf(bunker.scroll_x - bunker.follow_target_x()) < 1.0)
+	_check(back0 and bunker.scroll_x < 40.0, "a câmera volta para ele (%d)" % int(bunker.scroll_x))
 
 	# 3 salas: o mundo cresce, a janela não
 	game.sim.scrap = 9999.0
 	game.sim.antenna_level = 5
 	game.sim.rooms_n = 3
-	for it in [["canteiro", 2, 1], ["estufa", 3, 1], ["mesinha", 3, 6]]:
-		game.buy(it[0], it[1], it[2])
+	for it in ["canteiro", "estufa", "mesinha"]:
+		game.buy(it, -1, -1)
 	for i in 12:
 		game.debug_advance_minutes(60.0)
 	main.call("_relayout")
@@ -108,7 +125,7 @@ func _run() -> void:
 	_check(main.call("_strip_h") == BunkerGeo.H, "3 salas: a janela continua com %d px" % BunkerGeo.H)
 	_check(bunker.world_height() == BunkerGeo.height(3), "mundo de %d px" % bunker.world_height())
 	_check(absf(view.size.y - BunkerGeo.H) < 0.5, "a área recortada tem %d px" % int(view.size.y))
-	_check(floors.visible, "indicador de andares visível")
+	_check(floors.visible, "mapinha visível")
 	_check(bunker.max_scroll() == float(BunkerGeo.height(3) - BunkerGeo.H), "rola até %d" % int(bunker.max_scroll()))
 
 	# começa em cima (ele está no andar A)
@@ -171,10 +188,10 @@ func _run() -> void:
 	await _shot("3_andar_c")
 
 	# indicador: clique numa célula leva a vista até lá
-	var fc: Vector2 = floors.global_position + Vector2(FloorIndicator.W * 0.5, FloorIndicator.PAD + 4.0)
+	var fc: Vector2 = floors.global_position + Vector2(FloorIndicator.PAD, FloorIndicator.PAD) + Vector2(60.0, 50.0) * FloorIndicator.SCALE
 	await _mouse(fc, true, true)
 	await _mouse(fc, false, true)
-	_check(bunker.scroll_y == 0.0, "clicar na célula de cima leva ao topo (%d)" % int(bunker.scroll_y))
+	_check(bunker.scroll_y == 0.0 and bunker.scroll_x == 0.0, "clicar no mapinha leva a vista até lá (%d, %d)" % [int(bunker.scroll_x), int(bunker.scroll_y)])
 	await _shot("4_indicador")
 
 	# camada de posicionar: retângulos do mundo descontam a rolagem
@@ -184,12 +201,12 @@ func _run() -> void:
 	var ov: DrawerPlacementOverlay = drawer.overlay()
 	var r: Rect2 = BunkerGeo.block_rect(3, 2, 2)
 	ov.show_hints([{"room": 3, "col": 2}], 2)
-	ov.set_scroll(0.0)
+	ov.set_scroll(0.0, 0.0)
 	_check(ov.index_at(r.get_center()) == 0, "sem rolagem, o ponto do mundo acerta a posição")
-	ov.set_scroll(100.0)
+	ov.set_scroll(0.0, 100.0)
 	_check(ov.index_at(r.get_center()) == -1 and ov.index_at(r.get_center() - Vector2(0, 100)) == 0, "com rolagem 100, o clique desconta")
 	ov.clear()
-	ov.set_scroll(0.0)
+	ov.set_scroll(0.0, 0.0)
 	# começar a posicionar numa sala fora da janela: a câmera vai até lá
 	bunker.pan_by(-1000.0)
 	await _frames(2)

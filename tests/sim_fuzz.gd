@@ -24,7 +24,7 @@ func invariants(s: Sim, tag: String) -> void:
 	for i in s.instances():
 		if int(i["cols"]) <= 0:
 			continue
-		check(int(i["room"]) >= 1 and int(i["room"]) <= s.rooms() and int(i["col"]) >= 0 and int(i["col"]) + int(i["cols"]) <= 12, tag + ": dentro da sala")
+		check(int(i["room"]) >= 1 and int(i["room"]) <= s.rooms() and int(i["col"]) >= 0 and int(i["col"]) + int(i["cols"]) <= Balance.room_cols(int(i["room"])), tag + ": dentro da sala")
 		for k in range(int(i["col"]), int(i["col"]) + int(i["cols"])):
 			var key := "%d:%d" % [i["room"], k]
 			check(not seen.has(key), tag + ": sem sobreposição em " + key)

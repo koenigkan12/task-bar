@@ -57,7 +57,7 @@ func _initialize() -> void:
 	# obra: clicar ajuda a martelar e a estimativa de tempo aparece
 	var b := Sim.new()
 	b.new_game()
-	var bv: Dictionary = b.buy("vaso", 1, 7)
+	var bv: Dictionary = b.buy("vaso", 1, 9)
 	check(bool(bv["ok"]), "compra um vaso (obra)")
 	var jobs: Array = b.active_jobs()
 	check(jobs.size() == 1 and float(jobs[0]["eta_min"]) > 1.0, "obra com tempo estimado (%s min)" % str(jobs[0].get("eta_min", -1)))
@@ -78,7 +78,7 @@ func _initialize() -> void:
 	# a porcentagem da obra anda entre os passos de 10 min (antes ficava em 0% até o passo fechar)
 	var q := Sim.new()
 	q.new_game(1, 9.0)
-	var qv: Dictionary = q.buy("vaso", 1, 7)
+	var qv: Dictionary = q.buy("vaso", 1, 9)
 	check(float(q.active_jobs()[0]["ratio"]) == 0.0, "obra nova começa em 0%")
 	q.debug_advance_minutes(4.0)
 	var r4: float = float(q.active_jobs()[0]["ratio"])

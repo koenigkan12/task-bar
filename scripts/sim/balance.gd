@@ -9,6 +9,8 @@ static var radio_lines: Array = []          # falas de data/radio.json (ordem do
 static var journey_data: Dictionary = {}    # data/journey.json
 static var _radio_by_id: Dictionary = {}
 static var _item_ids: Array[String] = []
+static var _zones: Dictionary = {}          # room -> zonas (cache de room_zones)
+static var _zone_fn: Dictionary = {}        # linha -> função do cômodo (cache)
 
 
 static func load_all(path_prefix: String = "res://data/") -> bool:
@@ -17,6 +19,8 @@ static func load_all(path_prefix: String = "res://data/") -> bool:
 	journey_data = {}
 	_radio_by_id = {}
 	_item_ids = []
+	_zones = {}
+	_zone_fn = {}
 	var ok := true
 	var b: Variant = _read_json(path_prefix + "balance.json")
 	if b is Dictionary:
@@ -119,6 +123,38 @@ static func line_items(line: String) -> Array[String]:
 		for x in arr:
 			out.append(String(x))
 	return out
+
+
+## Cômodos (zonas) de uma sala, da esquerda para a direita: [{id, fn, col0, cols}]. As colunas da sala
+## são contadas de 0 a room_cols(room)-1 por cima de todas as zonas (o desenho põe uma parede entre elas).
+static func room_zones(room: int) -> Array[Dictionary]:
+	if _zones.has(room):
+		return _zones[room]
+	var out: Array[Dictionary] = []
+	var arr: Variant = val("rooms.layout." + str(room), [])
+	var c0: int = 0
+	if arr is Array:
+		for z in arr:
+			var zd := z as Dictionary
+			out.append({"id": String(zd.get("id", "")), "fn": String(zd.get("fn", "")), "col0": c0, "cols": int(zd.get("cols", 0))})
+			c0 += int(zd.get("cols", 0))
+	_zones[room] = out
+	return out
+
+
+## Colunas da sala (soma das zonas).
+static func room_cols(room: int) -> int:
+	var n: int = 0
+	for z: Dictionary in room_zones(room):
+		n += int(z["cols"])
+	return n
+
+
+## Função do cômodo onde os itens de uma linha de serviço podem ficar ("" = qualquer lugar).
+static func zone_fn_of_line(line: String) -> String:
+	if not _zone_fn.has(line):
+		_zone_fn[line] = String(val("rooms.zone_fn." + line, ""))
+	return _zone_fn[line]
 
 
 static func house_items() -> Array[String]:

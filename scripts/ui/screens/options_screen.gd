@@ -124,6 +124,8 @@ func _build() -> void:
 	_row(grid, "opt.text_size", _options("TextSize", TEXT_KEYS, ti, _on_text_size_picked))
 	# Reduzir piscadas
 	_row(grid, "opt.reduce_flicker", _toggle("ReduceFlicker", bool(ScreenUtil.setting("reduce_flicker", false)), _on_flicker_toggled), "opt.reduce_flicker.help")
+	# Placas com o nome dos cômodos
+	_row(grid, "opt.plates", _toggle("Plates", bool(ScreenUtil.setting("room_plates", true)), func(on: bool) -> void: ScreenUtil.set_setting("room_plates", on)), "opt.plates.help")
 	# Ícone na bandeja (só Windows/macOS têm bandeja)
 	if OS.has_feature("windows") or OS.has_feature("macos"):
 		_row(grid, "opt.tray", _toggle("Tray", bool(ScreenUtil.setting("tray_enabled", true)), _on_tray_toggled))
@@ -142,6 +144,14 @@ func _build() -> void:
 	erase.add_theme_color_override("font_color", UiTheme.RUST3)
 	erase.pressed.connect(_on_erase)
 	_row(grid, "opt.erase", erase, "opt.erase.help")
+	# Sair (no jogo; no título já existe o botão Sair): salva sozinho antes de fechar
+	if not show_header:
+		var quit := Button.new()
+		quit.name = "Quit"
+		quit.text = ScreenUtil.tr_key("opt.quit.btn")
+		quit.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+		quit.pressed.connect(func() -> void: ScreenUtil.call_on("WindowService", "quit_game"))
+		_row(grid, "opt.quit", quit, "opt.quit.help")
 
 	if keep_scroll > 0:
 		_scroll.set_deferred("scroll_vertical", keep_scroll)

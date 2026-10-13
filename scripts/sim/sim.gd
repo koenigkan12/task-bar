@@ -53,6 +53,8 @@ var stock: int = 0                 # cestos na caixa
 var stock_value: float = 0.0       # soma do preço dos cestos na caixa
 var antenna_level: int = 1
 var rooms_n: int = 1
+## Versão da disposição dos cômodos nos saves (2 = cada linha de itens no seu cômodo).
+const LAYOUT_VERSION: int = 2
 var _instances: Array = []         # Array[Dictionary]
 var _plots: Array = []
 var _jobs: Array = []
@@ -921,26 +923,40 @@ func _line_instance(line: String) -> Dictionary:
 
 # ================================================================ grade
 func _occupied(room: int, ignore_id: int) -> PackedByteArray:
-	var cols: int = Balance.integer("rooms.cols", 12)
+	var cols: int = Balance.room_cols(room)
 	var occ := PackedByteArray()
 	occ.resize(cols)
 	for o in fixed_objects(room):
 		for c in range(int(o["col"]), mini(cols, int(o["col"]) + int(o["cols"]))):
 			occ[c] = 1
 	for inst in _instances:
-		if int(inst["id"]) == ignore_id or int(inst["room"]) != room or int(inst["cols"]) <= 0:
+		if int(inst["id"]) == ignore_id or int(inst["room"]) != room or int(inst["cols"]) <= 0 or int(inst["col"]) < 0:
 			continue
 		for c in range(int(inst["col"]), mini(cols, int(inst["col"]) + int(inst["cols"]))):
 			occ[c] = 1
 	return occ
 
 
+## Cada linha de serviço tem o seu cômodo (plantio na horta, água e energia na oficina...): o bloco inteiro
+## tem de caber dentro de um cômodo da função certa.
+func _zone_allows(item_id: String, room: int, col: int, cols_need: int) -> bool:
+	var fn: String = Balance.zone_fn_of_line(String(_def(item_id).get("line", "")))
+	if fn == "":
+		return true
+	for z: Dictionary in Balance.room_zones(room):
+		if String(z["fn"]) == fn and col >= int(z["col0"]) and col + cols_need <= int(z["col0"]) + int(z["cols"]):
+			return true
+	return false
+
+
 func _fits(item_id: String, room: int, col: int, ignore_id: int) -> bool:
 	var cols_need: int = int(_def(item_id).get("cols", 0))
 	if cols_need <= 0:
 		return true
-	var ncols: int = Balance.integer("rooms.cols", 12)
+	var ncols: int = Balance.room_cols(room)
 	if room < 1 or room > rooms_n or col < 0 or col + cols_need > ncols:
+		return false
+	if not _zone_allows(item_id, room, col, cols_need):
 		return false
 	var occ := _occupied(room, ignore_id)
 	for c in range(col, col + cols_need):
@@ -974,17 +990,17 @@ func placement_hints(item_id: String) -> Array[Dictionary]:
 		out.append({"room": 0, "col": -1})
 		return out
 	var ignore := _replace_ignore(item_id)
-	var ncols: int = Balance.integer("rooms.cols", 12)
 	var seen := {}
 	if ignore >= 0:  # posições que cobrem a instância antiga vêm primeiro
 		var old := _inst_by_id(ignore)
 		var oroom: int = int(old["room"])
-		for c in range(maxi(0, int(old["col"]) - cols_need + 1), mini(ncols - cols_need, int(old["col"]) + int(old["cols"]) - 1) + 1):
+		var oncols: int = Balance.room_cols(oroom)
+		for c in range(maxi(0, int(old["col"]) - cols_need + 1), mini(oncols - cols_need, int(old["col"]) + int(old["cols"]) - 1) + 1):
 			if _fits(item_id, oroom, c, ignore):
 				out.append({"room": oroom, "col": c})
 				seen[oroom * 100 + c] = true
 	for r in range(1, rooms_n + 1):
-		for c in range(0, ncols - cols_need + 1):
+		for c in range(0, Balance.room_cols(r) - cols_need + 1):
 			if not seen.has(r * 100 + c) and _fits(item_id, r, c, ignore):
 				out.append({"room": r, "col": c})
 	return out
@@ -1595,7 +1611,7 @@ func catch_up(elapsed_min: float, cap_hours: float = -1.0) -> Dictionary:
 func to_dict() -> Dictionary:
 	return {"format": FORMAT_VERSION, "seed": seed_value, "rng_state": str(rng.state), "t_min": t_min,
 			"start_min": start_min, "acc": _acc, "scrap": scrap, "stock": stock, "stock_value": stock_value,
-			"antenna": antenna_level, "rooms": rooms_n, "instances": _instances.duplicate(true),
+			"antenna": antenna_level, "rooms": rooms_n, "layout": LAYOUT_VERSION, "instances": _instances.duplicate(true),
 			"plots": _plots.duplicate(true), "jobs": _jobs.duplicate(true), "next_id": _next_id,
 			"next_plot_id": _next_plot_id, "next_job_id": _next_job_id, "line_ready": _line_ready.duplicate(),
 			"missed_meals": _missed_meals, "busy": _busy, "diary": _diary.duplicate(true),
@@ -1681,7 +1697,41 @@ func from_dict(d: Dictionary) -> bool:
 		_stats[k] = int(_stats.get(k, 0))
 	_stats["scrap_earned"] = float(_stats.get("scrap_earned", 0.0))
 	_stats["scrap_spent"] = float(_stats.get("scrap_spent", 0.0))
+	if int(d.get("layout", 1)) < LAYOUT_VERSION:
+		_migrate_layout()
 	_order_dirty = true
 	_box_q = -1
 	_box_signal()
 	return true
+
+
+## Save de antes dos cômodos (cada linha no seu): reorganiza o que tem coluna, as peças maiores primeiro,
+## no primeiro lugar que a regra de cômodos aceita (quem não couber em lugar nenhum fica onde estava).
+func _migrate_layout() -> void:
+	var items: Array = []
+	for inst in _instances:
+		if int(inst["cols"]) > 0:
+			items.append(inst)
+	items.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return int(a["cols"]) > int(b["cols"]) or (int(a["cols"]) == int(b["cols"]) and int(a["id"]) < int(b["id"])))
+	var old: Dictionary = {}
+	for inst in items:
+		old[int(inst["id"])] = [int(inst["room"]), int(inst["col"])]
+		inst["col"] = -1000   # sai da grade enquanto se reorganiza
+	for inst in items:
+		var placed := false
+		for r in range(1, rooms_n + 1):
+			for c in range(0, Balance.room_cols(r) - int(inst["cols"]) + 1):
+				if _fits(String(inst["item"]), r, c, int(inst["id"])):
+					inst["room"] = r
+					inst["col"] = c
+					placed = true
+					break
+			if placed:
+				break
+		if not placed:
+			inst["room"] = int((old[int(inst["id"])] as Array)[0])
+			inst["col"] = int((old[int(inst["id"])] as Array)[1])
+		for p in _plots:
+			if int(p["inst"]) == int(inst["id"]):
+				p["room"] = int(inst["room"])

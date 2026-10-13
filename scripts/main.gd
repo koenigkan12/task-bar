@@ -38,8 +38,9 @@ func _ready() -> void:
 	_show_title()
 
 
+## Largura da janela: fixa (o bunker é mais largo que ela e rola para os lados).
 func _strip_width() -> int:
-	return BunkerGeo.strip_width(Game.rooms())
+	return BunkerGeo.WIN_W
 
 
 ## Altura da faixa: fixa em 2 andares (é uma barra de tarefas). Os andares de baixo se alcançam rolando a cena.
@@ -70,11 +71,17 @@ func _relayout() -> void:
 	if _bunker != null:
 		_bunker.set_view_width(size_l.x)
 	if _floors != null:
-		_floors.position = Vector2(size_l.x - FloorIndicator.W - 2, size_l.y - strip_h + 18)   # logo abaixo da alça
-	if _handle != null:
-		_handle.position = Vector2(size_l.x - 48, size_l.y - strip_h)
+		_floors.position = Vector2(size_l.x - FloorIndicator.map_width() - 2, size_l.y - strip_h + 18)   # logo abaixo da alça
+	_place_handle()
 	if _hud != null:
 		_hud.position = Vector2(2, size_l.y - strip_h + 2)
+
+
+## A alça fica no canto de cima, à direita (a largura muda quando o X pergunta "Sair?").
+func _place_handle() -> void:
+	if _handle != null:
+		var size_l: Vector2i = _window_size()
+		_handle.position = Vector2(size_l.x - _handle.size.x, size_l.y - _strip_h())
 
 
 # ---------------------------------------------------------------- título
@@ -124,6 +131,8 @@ func _on_game_started(is_new: bool) -> void:
 	_bunker.connect("arrival_cut", _on_arrival_cut)
 	_handle = WindowHandle.new()
 	add_child(_handle)
+	_handle.resized.connect(_place_handle)
+	_handle.quit_requested.connect(WindowService.quit_game)
 	_floors = FloorIndicator.new()
 	_floors.view = _bunker
 	add_child(_floors)
@@ -134,7 +143,7 @@ func _on_game_started(is_new: bool) -> void:
 	_drawer_layer.add_child(_drawer)
 	_drawer.open_changed.connect(_on_drawer_open_changed)
 	_drawer.reveal_requested.connect(func(r: Rect2) -> void: _bunker.reveal(r))
-	_bunker.scrolled.connect(func() -> void: _drawer.set_scroll(_bunker.scroll_y))
+	_bunker.scrolled.connect(func() -> void: _drawer.set_scroll(_bunker.scroll_x, _bunker.scroll_y))
 	_drawer.order_requested.connect(func(id: int) -> void:
 		var why: String = _bunker.give_order("instance", id)
 		if why != "" and why != "off" and why != "none":   # com a gaveta aberta o clique também seleciona

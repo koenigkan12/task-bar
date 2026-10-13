@@ -31,7 +31,7 @@ func _run() -> void:
 	while not game.is_awake() and guard < 100:
 		game.debug_advance_minutes(30.0)
 		guard += 1
-	var r: Dictionary = game.buy("vaso", 1, 7)
+	var r: Dictionary = game.buy("vaso", 1, 9)
 	_check(bool(r["ok"]), "comprou o vaso")
 	game.debug_advance_minutes(3.0)
 	await _frames(30)

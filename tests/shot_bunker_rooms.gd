@@ -31,11 +31,17 @@ func _run() -> void:
 	while not game.is_awake() and guard < 100:
 		game.debug_advance_minutes(30.0)
 		guard += 1
+	var bunker: BunkerView = main.get("_bunker")
+	# começo do jogo: escotilha + horta à vista, depois o resto andando para a direita
+	await _look(bunker, 0.0, 0.0)
+	await _shot("rooms_0_inicio_esquerda")
+	await _look(bunker, bunker.max_scroll_x(), 0.0)
+	await _shot("rooms_0_inicio_direita")
 	game.sim.scrap = 9999.0
 	game.sim.antenna_level = 5
 	game.sim.rooms_n = 3
-	for it in [["canteiro", 2, 1], ["prateleira", 2, 4], ["gotejador", 2, 7], ["painel", -1, -1], ["bateria", 1, 8], ["estufa", 3, 1], ["mesinha", 3, 6], ["estante", 3, 9]]:
-		var r: Dictionary = game.buy(it[0], it[1], it[2])
+	for it in ["canteiro", "canteiro", "gotejador", "painel", "bateria", "estufa", "prateleira", "mesinha", "estante", "poltrona", "foto", "cama_dela", "cantinho", "planta_dela", "cabide"]:
+		var r: Dictionary = game.buy(it, -1, -1)
 		print("buy ", it, " ", r.get("ok"), " ", r.get("reason", ""))
 	for i in 12:
 		game.debug_advance_minutes(60.0)
@@ -47,10 +53,18 @@ func _run() -> void:
 	game.sim.stock_value = 9.0
 	main.call("_relayout")
 	await _frames(40)
-	await _shot("rooms_1_full")
-	# escavando a sala 4 não existe; mostra a sala 2 sendo aberta numa partida nova
+	bunker.man.cinematic = true
+	await _look(bunker, 0.0, 0.0)
+	await _shot("rooms_1_andar_a_esquerda")
+	await _look(bunker, bunker.max_scroll_x(), 0.0)
+	await _shot("rooms_1_andar_a_direita")
+	await _look(bunker, 0.0, bunker.max_scroll())
+	await _shot("rooms_1_fundo_esquerda")
+	await _look(bunker, bunker.max_scroll_x(), bunker.max_scroll())
+	await _shot("rooms_1_fundo_direita")
+	# escavando a sala 2 numa partida nova
 	game.new_game()
-	main.get("_bunker").call("full_refresh")
+	bunker.full_refresh()
 	game.sim.scrap = 9999.0
 	print("dig ", game.dig_room())
 	var g2 := 0
@@ -62,5 +76,14 @@ func _run() -> void:
 			break
 	main.call("_relayout")
 	await _frames(40)
+	await _look(bunker, 0.0, bunker.max_scroll())
 	await _shot("rooms_2_dig")
 	quit(0)
+
+
+func _look(bunker: BunkerView, sx: float, sy: float) -> void:
+	bunker._pan_pause = 99.0
+	bunker.scroll_x = sx
+	bunker.scroll_y = sy
+	bunker._apply_scroll()
+	await _frames(4)

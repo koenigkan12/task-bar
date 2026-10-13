@@ -18,7 +18,8 @@ var cols: int = 1              # largura do bloco sendo posicionado
 var hints: Array = []          # [{room,col}]
 var targets: Array = []        # [{id,room,col,cols}]
 var selected_id: int = -1
-## Linha do mundo no topo da faixa (a vista rola na vertical): os retângulos são do mundo, o desenho e o clique descontam isto.
+## Canto da janela no mundo (a vista rola): os retângulos são do mundo, o desenho e o clique descontam isto.
+var scroll_x: float = 0.0
 var scroll_y: float = 0.0
 var _hover: int = -1
 var _blink: float = 0.0
@@ -30,8 +31,9 @@ func _ready() -> void:
 	set_process(false)
 
 
-func set_scroll(y: float) -> void:
-	if y != scroll_y:
+func set_scroll(x: float, y: float) -> void:
+	if x != scroll_x or y != scroll_y:
+		scroll_x = x
 		scroll_y = y
 		queue_redraw()
 
@@ -93,7 +95,7 @@ func _rects() -> Array[Rect2]:
 ## `p` em coordenadas do nó (a faixa na tela); os retângulos são do mundo.
 func index_at(p: Vector2) -> int:
 	var rs: Array[Rect2] = _rects()
-	var wp: Vector2 = p + Vector2(0, scroll_y)
+	var wp: Vector2 = p + Vector2(scroll_x, scroll_y)
 	for i in rs.size():
 		if rs[i].has_point(wp):
 			return i
@@ -132,7 +134,7 @@ func pick(i: int) -> void:
 
 func _draw() -> void:
 	var rs: Array[Rect2] = _rects()
-	draw_set_transform(Vector2(0, -roundf(scroll_y)))
+	draw_set_transform(Vector2(-roundf(scroll_x), -roundf(scroll_y)))
 	for i in rs.size():
 		var r: Rect2 = rs[i]
 		if mode == "place":

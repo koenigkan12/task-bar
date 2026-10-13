@@ -79,10 +79,10 @@ func _draw() -> void:
 	_draw_pantry(w, h)
 	# andar de cima e as salas cavadas para baixo
 	for r in range(1, n_rooms + 1):
-		_draw_room(r, BunkerGeo.ROOM_W)
+		_draw_room(r, BunkerGeo.room_width(r))
 		_draw_wall(r)
 	if drawing_dig:
-		_draw_room(dig_room, int(floorf(BunkerGeo.ROOM_W * dig_ratio / 16.0)) * 16)
+		_draw_room(dig_room, int(floorf(BunkerGeo.room_width(dig_room) * dig_ratio / 16.0)) * 16)
 	# poço da escada: do alçapão até o andar mais fundo
 	var bottom: int = BunkerGeo.feet_y(floors) if floors > 1 else BunkerGeo.FEET_Y_B
 	var ly := BunkerGeo.ROOM_Y
@@ -95,18 +95,34 @@ func _draw() -> void:
 		ly += 16
 
 
+## Um andar com seus cômodos lado a lado: cada um com material de parede e de chão próprios e uma parede com
+## porta entre eles. `open_w` = quanto do andar já está aberto (a escavação abre da esquerda para a direita).
 ## `dy` = deslocamento do andar da sala; salas 2+ têm o teto cortado como o da despensa (laje de 6 px).
 func _draw_room(r: int, open_w: int) -> void:
 	var x0 := BunkerGeo.room_x0(r)
+	var zs: Array[Dictionary] = BunkerGeo.zones(r)
+	for z: Dictionary in zs:
+		var zx0: int = int(z["x0"]) - x0
+		if zx0 >= open_w:
+			break
+		var zx1: int = int(z["x1"]) - x0
+		_draw_zone(r, z, mini(zx1, open_w))
+		if int(z["idx"]) < zs.size() - 1 and zx1 + BunkerGeo.ZONE_WALL <= open_w:
+			_draw_zone_wall(r, x0 + zx1)
+
+
+func _draw_zone(r: int, z: Dictionary, open_w: int) -> void:
+	var zx0: int = int(z["x0"])
+	var fn: String = String(z["fn"])
 	var dy := BunkerGeo.floor_dy(r)
 	var i := r - 1
-	var theme := (r - 1) % 3          # 0 oficina (entrada), 1 estufa, 2 quarto
 	var wy := BunkerGeo.wall_y(r)
 	var fy := BunkerGeo.feet_y(r)
+	var col0: int = int(z["col0"])
 	var cx := 0
 	while cx < open_w:
-		var c := cx / 16
-		var x := x0 + cx
+		var c := col0 + cx / 16
+		var x := zx0 + cx
 		var cname := "ceiling_%d" % (1 if (c + i) % 3 == 0 else 0)
 		if r == 1:
 			_tile(cname, Vector2(x, BunkerGeo.ROOM_Y))
@@ -117,44 +133,64 @@ func _draw_room(r: int, open_w: int) -> void:
 		_tile_part("wall_%d" % WALL_ROW3[(c + i * 7) % 12], Vector2(x, wy + 32), Rect2(0, 0, 16, 8))
 		_tile_part("floor_%d" % (1 if (c + i) % 5 == 2 else 0), Vector2(x, fy), Rect2(0, 0, 16, BunkerGeo.FLOOR_H))
 		cx += 16
-	var x1 := x0 + open_w
-	match theme:
-		0:
-			_tint(Rect2(x0, wy, open_w, 40), BunkerGeo.pal("amber2"), 0.07)
-		1:
-			BunkerDecor.tiles_wall(self, x0, wy, x1, fy)
-		2:
-			BunkerDecor.wood_panels(self, x0, 62 + dy, x1, fy)
-			BunkerDecor.plank_floor(self, x0, fy, x1, BunkerGeo.FLOOR_H)
-	_shade(Rect2(x0, wy, open_w, 2), 0.35)
-	_shade(Rect2(x0, fy - 3, open_w, 3), 0.18)
-	BunkerDecor.ceiling_runs(self, x0, x1, wy + 1)
-	if open_w >= BunkerGeo.ROOM_W:
-		_draw_room_decor(r, theme, x0, dy)
+	var x1 := zx0 + open_w
+	match fn:
+		"horta":
+			BunkerDecor.tiles_wall(self, zx0, wy, x1, fy)
+		"quarto", "casa":
+			BunkerDecor.wood_panels(self, zx0, 62 + dy, x1, fy)
+			BunkerDecor.plank_floor(self, zx0, fy, x1, BunkerGeo.FLOOR_H)
+		_:
+			_tint(Rect2(zx0, wy, open_w, 40), BunkerGeo.pal("amber2"), 0.07)
+	_shade(Rect2(zx0, wy, open_w, 2), 0.35)
+	_shade(Rect2(zx0, fy - 3, open_w, 3), 0.18)
+	BunkerDecor.ceiling_runs(self, zx0, x1, wy + 1)
+	if open_w >= int(z["x1"]) - zx0:
+		_draw_zone_decor(r, z, dy)
 
 
-func _draw_room_decor(_r: int, theme: int, x0: int, dy: int) -> void:
+## Enfeites de parede de cada cômodo (as placas de nome ficam no canto de cima, à esquerda: ver RoomPlates).
+func _draw_zone_decor(r: int, z: Dictionary, dy: int) -> void:
+	var zx: int = int(z["x0"])
 	var fy := BunkerGeo.FEET_Y + dy
-	match theme:
-		0:
-			BunkerDecor.wall_map(self, x0 + 50, 46 + dy)
-			BunkerDecor.calendar(self, x0 + 84, 47 + dy)
-			BunkerDecor.tally(self, x0 + 103, 50 + dy, 12)
-			BunkerDecor.pegboard(self, x0 + 128, 46 + dy)
-			# cantinho de dormir: lambri de madeira atrás da cama
-			BunkerDecor.wood_panels(self, x0 + 160, 62 + dy, x0 + 192, fy)
-			BunkerDecor.picture(self, x0 + 168, 46 + dy, 13, 10)
-		1:
-			BunkerDecor.valve_pipe(self, x0 + 3, BunkerGeo.WALL_Y + dy + 4, fy)
-			BunkerDecor.growth_chart(self, x0 + 66, 47 + dy)
-			BunkerDecor.growth_chart(self, x0 + 130, 49 + dy)
-		2:
-			BunkerDecor.picture(self, x0 + 20, 46 + dy, 14, 11)
-			BunkerDecor.picture(self, x0 + 42, 48 + dy, 10, 13)
-			BunkerDecor.calendar(self, x0 + 88, 47 + dy)
-			BunkerDecor.tally(self, x0 + 112, 50 + dy, 23)
-			BunkerDecor.r(self, x0 + 52, fy, 60, 1, BunkerGeo.pal("tomato"))
-			BunkerDecor.r(self, x0 + 52, fy + 1, 60, 1, BunkerGeo.pal("amber2"))
+	match String(z["fn"]):
+		"escotilha":
+			BunkerDecor.wall_map(self, zx + 56, 46 + dy)
+			BunkerDecor.calendar(self, zx + 80, 47 + dy)
+		"oficina":
+			BunkerDecor.pegboard(self, zx + 56, 46 + dy)
+			BunkerDecor.tally(self, zx + 8, 62 + dy, 12)
+		"horta":
+			if r == 1:
+				BunkerDecor.valve_pipe(self, zx + 3, BunkerGeo.WALL_Y + dy + 4, fy)
+				BunkerDecor.growth_chart(self, zx + 70, 47 + dy)
+				BunkerDecor.growth_chart(self, zx + 122, 49 + dy)
+			else:
+				BunkerDecor.valve_pipe(self, zx + 20, BunkerGeo.WALL_Y + dy + 4, fy)
+				BunkerDecor.growth_chart(self, zx + 62, 47 + dy)
+				BunkerDecor.growth_chart(self, zx + 100, 49 + dy)
+		"quarto":
+			BunkerDecor.picture(self, zx + 56, 46 + dy, 14, 11)
+			BunkerDecor.calendar(self, zx + 90, 47 + dy)
+			BunkerDecor.r(self, zx + 24, fy, 40, 1, BunkerGeo.pal("tomato"))
+			BunkerDecor.r(self, zx + 24, fy + 1, 40, 1, BunkerGeo.pal("amber2"))
+		"casa":
+			BunkerDecor.picture(self, zx + 56, 46 + dy, 14, 11)
+			BunkerDecor.picture(self, zx + 78, 48 + dy, 10, 13)
+			BunkerDecor.calendar(self, zx + 100, 47 + dy)
+			BunkerDecor.tally(self, zx + 24, 66 + dy, 23)
+			BunkerDecor.r(self, zx + 36, fy, 56, 1, BunkerGeo.pal("tomato"))
+			BunkerDecor.r(self, zx + 36, fy + 1, 56, 1, BunkerGeo.pal("amber2"))
+
+
+## Parede (com porta de aço) entre dois cômodos do mesmo andar; piso e laje seguem por baixo e por cima.
+func _draw_zone_wall(r: int, xd: int) -> void:
+	var y0 := BunkerGeo.room_y(r) if r == 1 else BunkerGeo.room_y(r) + 2
+	var fy := BunkerGeo.feet_y(r)
+	BunkerDecor.wall_with_door(self, xd, y0, fy, true)
+	_tile_part("floor_0", Vector2(xd, fy), Rect2(0, 0, 8, BunkerGeo.FLOOR_H))
+	if r > 1:
+		_tile_part("ceiling_0", Vector2(xd, BunkerGeo.room_y(r) + 2), Rect2(0, 2, 8, BunkerGeo.SLAB_B))
 
 
 ## Parede grossa de concreto fechando a sala à direita (os andares não se ligam de lado).
@@ -171,11 +207,11 @@ func _draw_wall(r: int) -> void:
 ## Andar B: a despensa (estoque). Os cestos são desenhados à parte (PantryStock), conforme o estoque.
 func _draw_pantry(w: int, _h: int) -> void:
 	var x0 := BunkerGeo.room_x0(1)
-	var x1 := x0 + BunkerGeo.ROOM_W
+	var x1 := x0 + BunkerGeo.PANTRY_W
 	var ceil_y := BunkerGeo.FEET_Y + BunkerGeo.FLOOR_H
-	_shade(Rect2(x0 - 1, ceil_y, BunkerGeo.ROOM_W + 2, BunkerGeo.FLOOR_DY), 0.6)
+	_shade(Rect2(x0 - 1, ceil_y, BunkerGeo.PANTRY_W + 2, BunkerGeo.FLOOR_DY), 0.6)
 	var cx := 0
-	while cx < BunkerGeo.ROOM_W:
+	while cx < BunkerGeo.PANTRY_W:
 		var c := cx / 16
 		var x := x0 + cx
 		_tile_part("ceiling_%d" % (1 if c % 3 == 1 else 0), Vector2(x, ceil_y), Rect2(0, 2, 16, BunkerGeo.SLAB_B))
@@ -184,8 +220,8 @@ func _draw_pantry(w: int, _h: int) -> void:
 		_tile_part("wall_%d" % WALL_ROW3[(c + 2) % 12], Vector2(x, BunkerGeo.WALL_Y_B + 32), Rect2(0, 0, 16, 8))
 		_tile_part("floor_0", Vector2(x, BunkerGeo.FEET_Y_B), Rect2(0, 0, 16, BunkerGeo.FLOOR_H))
 		cx += 16
-	_tint(Rect2(x0, BunkerGeo.WALL_Y_B, BunkerGeo.ROOM_W, 40), BunkerGeo.pal("ink"), 0.22)
-	_shade(Rect2(x0, BunkerGeo.WALL_Y_B, BunkerGeo.ROOM_W, 2), 0.35)
+	_tint(Rect2(x0, BunkerGeo.WALL_Y_B, BunkerGeo.PANTRY_W, 40), BunkerGeo.pal("ink"), 0.22)
+	_shade(Rect2(x0, BunkerGeo.WALL_Y_B, BunkerGeo.PANTRY_W, 2), 0.35)
 	var fy := BunkerGeo.FEET_Y_B
 	BunkerDecor.ceiling_runs(self, x0, x1, BunkerGeo.WALL_Y_B + 1)
 	# prateleiras: a da esquerda com latas (conserva), a do meio fica livre para os cestos; caixas e a cisterna

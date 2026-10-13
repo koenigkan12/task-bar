@@ -6,10 +6,13 @@ extends Control
 
 signal drawer_toggled(open: bool)
 signal collapsed_changed(on: bool)
+## Segundo clique no X (o primeiro só pergunta "Sair?"): quem escuta fecha o jogo (o WindowService salva antes).
+signal quit_requested()
 
 const TAB_SIZE := Vector2i(48, 16)
 const PULSE_SECONDS: float = 10.0
 const DRAG_THRESHOLD: float = 3.0
+const QUIT_ASK_SECONDS: float = 3.0
 
 var collapsed: bool = false
 var drawer_open: bool = false
@@ -19,6 +22,8 @@ var _grab: Button
 var _drawer_btn: Button
 var _sound_btn: Button
 var _collapse_btn: Button
+var _close_btn: Button
+var _quit_ask_left: float = 0.0
 var _tab_layer: CanvasLayer
 var _tab: Control
 var _light: ColorRect
@@ -115,6 +120,11 @@ func _build() -> void:
 	_collapse_btn.pressed.connect(func() -> void: set_collapsed(true))
 	_row.add_child(_collapse_btn)
 
+	_close_btn = ScreenUtil.icon_button("quit", "screens.handle.quit")
+	_close_btn.name = "Close"
+	_close_btn.pressed.connect(_on_close_pressed)
+	_row.add_child(_close_btn)
+
 	custom_minimum_size = _row.get_combined_minimum_size()
 	size = custom_minimum_size
 	_build_tab()
@@ -193,6 +203,35 @@ func _apply_collapsed_view() -> void:
 	_update_light()
 
 
+## X da janela: o primeiro clique pergunta "Sair?" por uns segundos; o segundo fecha (salvando).
+func _on_close_pressed() -> void:
+	if _quit_ask_left > 0.0:
+		_quit_ask_left = 0.0
+		_refresh_close()
+		quit_requested.emit()
+		return
+	_quit_ask_left = QUIT_ASK_SECONDS
+	_refresh_close()
+
+
+func is_asking_quit() -> bool:
+	return _quit_ask_left > 0.0
+
+
+func _refresh_close() -> void:
+	var ask: bool = _quit_ask_left > 0.0
+	if ask:
+		_close_btn.icon = null
+		_close_btn.text = ScreenUtil.tr_key("screens.handle.quit.ask")
+		_close_btn.add_theme_color_override("font_color", UiTheme.AMBER3)
+	else:
+		_close_btn.icon = UiTheme.icon("quit")
+		_close_btn.text = ""
+		_close_btn.remove_theme_color_override("font_color")
+	custom_minimum_size = _row.get_combined_minimum_size()
+	size = custom_minimum_size
+
+
 func _update_icons() -> void:
 	if _drawer_btn == null:
 		return
@@ -210,6 +249,11 @@ func _sound_on() -> bool:
 
 
 func _process(delta: float) -> void:
+	if _quit_ask_left > 0.0:
+		_quit_ask_left -= delta
+		if _quit_ask_left <= 0.0:
+			_quit_ask_left = 0.0
+			_refresh_close()
 	if _pulse_left > 0.0:
 		_pulse_left = maxf(0.0, _pulse_left - delta)
 		_update_light()

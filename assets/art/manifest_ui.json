@@ -363,6 +363,17 @@
    4
   ]
  },
+ "icon_quit": {
+  "file": "ui/icon_quit.png",
+  "frame_w": 8,
+  "frame_h": 8,
+  "frames": 1,
+  "fps": 0,
+  "anchor": [
+   4,
+   4
+  ]
+ },
  "icon_show": {
   "file": "ui/icon_show.png",
   "frame_w": 8,

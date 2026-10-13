@@ -100,7 +100,7 @@ func _run() -> void:
 
 	# Joaquim: congela num lugar livre; hover mostra "Joaquim · ..."; clique abre o cartão
 	bunker.man.cinematic = true
-	bunker.man.position = Vector2(150, BunkerGeo.FEET_Y)
+	bunker.man.position = Vector2(76, BunkerGeo.FEET_Y)
 	await _frames(3)
 	var mc: Vector2 = bunker.man.body_rect().get_center()
 	_check(String(bunker.get_object_at(mc).get("kind", "")) == "man", "a posição livre acerta o Joaquim (%s)" % str(bunker.get_object_at(mc)))
@@ -197,7 +197,7 @@ func _run() -> void:
 	bunker.man.cinematic = false
 
 	# obra: relógio sempre visível, com tempo; planta pronta: check
-	var r: Dictionary = game.buy("vaso", 1, 7)
+	var r: Dictionary = game.buy("vaso", 1, 9)
 	game.debug_advance_minutes(3.0)
 	await _frames(30)
 	_check(not tip._jobs.is_empty(), "obra em curso")

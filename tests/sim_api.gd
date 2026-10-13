@@ -83,21 +83,21 @@ func _init() -> void:
 	check(pl[0]["crop"] == "batata" and pl[0]["progress"] < 0.2, "replantou batata")
 
 	print("== grade")
-	check(s.can_place("vaso", 1, 7) and not s.can_place("vaso", 1, 6) and not s.can_place("vaso", 1, 2), "vaso: 7 livre, 6 e 2 ocupados")
-	check(not s.can_place("canteiro", 1, 9) and not s.can_place("canteiro", 2, 0), "canteiro não cabe em 9 (borda) nem na sala 2 (não escavada)")
+	check(s.can_place("vaso", 1, 9) and not s.can_place("vaso", 1, 6) and not s.can_place("vaso", 1, 2) and not s.can_place("vaso", 1, 17), "vaso: 9 livre; 6 ocupado; 2 (escotilha) e 17 (oficina) são do cômodo errado")
+	check(not s.can_place("canteiro", 1, 15) and not s.can_place("canteiro", 2, 0), "canteiro não cabe em 15 (borda da horta) nem na sala 2 (não escavada)")
 	var h := s.placement_hints("canteiro")
-	check(h.size() == 2 and h[0]["col"] == 7, "canteiro: 2 posições na sala 1 " + str(h))
+	check(h.size() == 6 and h[0]["col"] == 9, "canteiro: 6 posições na horta da sala 1 " + str(h))
 	check(s.placement_hints("balde").size() == 1 or true, "hints de item sem coluna")
 	var hm := s.placement_hints("moinho")
-	check(hm[0]["room"] == 1 and hm[0]["col"] == 6, "moinho: 1ª posição = onde está a bicicleta " + str(hm[0]))
+	check(hm[0]["room"] == 1 and hm[0]["col"] == 16, "moinho: 1ª posição = onde está a bicicleta " + str(hm[0]))
 
 	print("== compras e obras")
-	var r := s.buy("canteiro", 1, 7)
+	var r := s.buy("canteiro", 1, 9)
 	check(not r["ok"] and r["reason"] == "missing.cost", "sem sucata: " + str(r["reason"]))
 	give(s, 500)
 	r = s.buy("vaso", 1, 6)
 	check(not r["ok"] and r["reason"] == "missing.free_cols", "vaso sobre a bicicleta: " + str(r["reason"]))
-	r = s.buy("vaso", 1, 7)
+	r = s.buy("vaso", 1, 9)
 	check(r["ok"] and r["instance_id"] > 0, "compra vaso")
 	check(int(sigs.get("item_placed", 0)) == 1, "item_placed")
 	var jobs := s.active_jobs()
@@ -112,7 +112,7 @@ func _init() -> void:
 	check(int(sigs.get("item_finished", 0)) == 1 and s.plots().size() == 4, "obra terminou: 4 plots")
 	check(s.sucata() == 494 or s.sucata() > 400, "custo debitado")
 	# máximo
-	s.buy("vaso", 1, 8)
+	s.buy("vaso", 1, 10)
 	finish_jobs(s)
 	var c := s.can_buy("vaso")
 	check(not c["ok"], "vaso no máximo (5)")
@@ -120,13 +120,12 @@ func _init() -> void:
 	var st := {}
 	for e in cat:
 		st[e["item"]] = e["status"]
-	check(st["vaso"] == "maxed" and st["canteiro"] == "locked", "catálogo: vaso maxed, canteiro locked (sem espaço) " + str(st))
-	var canteiro: Dictionary = {}
+	check(st["vaso"] == "maxed" and st["canteiro"] == "available" and st["prateleira"] == "locked", "catálogo: vaso maxed, canteiro livre, prateleira locked " + str(st))
+	var prateleira: Dictionary = {}
 	for e in cat:
-		if e["item"] == "canteiro":
-			canteiro = e
-	check(canteiro["missing"].has("missing.free_cols"), "canteiro: falta espaço " + str(canteiro["missing"]))
-	check(canteiro["missing"].size() == canteiro["missing_args"].size(), "missing_args paralelo")
+		if e["item"] == "prateleira":
+			prateleira = e
+	check(prateleira["missing"].size() >= 1 and prateleira["missing"].size() == prateleira["missing_args"].size(), "missing_args paralelo " + str(prateleira["missing"]))
 
 	print("== substituição de linha")
 	var info := s.antenna_info()
@@ -142,7 +141,7 @@ func _init() -> void:
 	for i in s.instances():
 		if i["item"] == "moinho":
 			moinho_inst = i
-	check(moinho_inst["col"] == 6, "moinho ocupa a posição da bicicleta")
+	check(moinho_inst["col"] == 16, "moinho ocupa a posição da bicicleta")
 	check(not s.can_buy("moinho")["ok"], "moinho em obra: não compra de novo")
 	finish_jobs(s)
 	check(s.line_tiers()["energia"] == "moinho" and s.power_supply() == 5, "moinho pronto: oferta 5")
@@ -152,7 +151,7 @@ func _init() -> void:
 	print("== demolir / mover")
 	var vaso_new: int = -1
 	for i in s.instances():
-		if i["item"] == "vaso" and i["col"] == 8:
+		if i["item"] == "vaso" and i["col"] == 10:
 			vaso_new = i["id"]
 	var money := s.sucata()
 	var d := s.demolish(vaso_new)
@@ -160,13 +159,14 @@ func _init() -> void:
 	check(s.plots().size() == 4, "plots do vaso demolido saem")
 	var start_vaso: int = -1
 	for i in s.instances():
-		if i["item"] == "vaso" and i["col"] == 3:
+		if i["item"] == "vaso" and i["col"] == 6:
 			start_vaso = i["id"]
 	check(not s.demolish(start_vaso)["ok"], "vaso inicial não demolível")
-	var mv := s.move(start_vaso, 1, 9)
-	check(mv["ok"], "mover vaso inicial para col 9")
-	check(not s.move(start_vaso, 1, 4)["ok"], "mover para coluna ocupada falha")
-	check(s.can_place("vaso", 1, 3), "coluna 3 liberada")
+	var mv := s.move(start_vaso, 1, 11)
+	check(mv["ok"], "mover vaso inicial para col 11")
+	check(not s.move(start_vaso, 1, 7)["ok"], "mover para coluna ocupada falha")
+	check(s.can_place("vaso", 1, 6), "coluna 6 liberada")
+	check(not s.move(start_vaso, 1, 17)["ok"], "mover para o cômodo errado falha")
 
 	print("== escavar")
 	give(s, 1000)
@@ -179,9 +179,9 @@ func _init() -> void:
 	check(s.rooms() == 2 and int(sigs.get("room_dug", 0)) == 1, "room_dug / rooms()==2")
 	check(s.power_demand() == 3, "lâmpada da sala 2 entra na demanda")
 	check(s.can_place("canteiro", 2, 1) and not s.can_place("canteiro", 2, 0), "agora cabe na sala 2 (a coluna 0 é o poço)")
-	var r2 := s.buy("canteiro", 2, 11)
-	check(not r2["ok"], "canteiro em 11 não cabe")
-	r2 = s.buy("canteiro", 2, 10)
+	var r2 := s.buy("canteiro", 2, 7)
+	check(not r2["ok"], "canteiro em 7 não cabe")
+	r2 = s.buy("canteiro", 2, 6)
 	check(r2["ok"], "canteiro na sala 2")
 	finish_jobs(s)
 	check(s.plots().size() == 7, "canteiro dá 3 plots")

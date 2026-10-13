@@ -318,16 +318,17 @@ func start_placement(mode: String, item_id: String, instance_id: int, hints: Arr
 
 ## Alguma posição já está dentro da janela (faixa de strip_h px a partir da rolagem atual)?
 func _hints_visible(rs: Array[Rect2]) -> bool:
+	var view := Rect2(_overlay.scroll_x, _overlay.scroll_y, maxf(_overlay.size.x, 1.0), float(strip_h))
 	for r: Rect2 in rs:
-		if r.position.y >= _overlay.scroll_y and r.end.y <= _overlay.scroll_y + float(strip_h):
+		if view.encloses(r):
 			return true
 	return false
 
 
 ## A vista rolou: a camada de posicionar acompanha.
-func set_scroll(y: float) -> void:
+func set_scroll(x: float, y: float) -> void:
 	if _overlay != null:
-		_overlay.set_scroll(y)
+		_overlay.set_scroll(x, y)
 
 
 func cancel_placement() -> void:

@@ -78,3 +78,10 @@ time.now,agora,now
 time.h,{h}h,{h}h
 time.hm,{h}h{m},{h}h{m}
 time.min,{m}min,{m}min
+room.escotilha,Escotilha,Hatch
+room.horta,Horta,Garden
+room.oficina,Oficina,Workshop
+room.quarto,Quarto,Bedroom
+room.estufa,Estufa,Greenhouse
+room.quarto_dela,Quarto dela,Her room
+room.despensa,Despensa,Pantry

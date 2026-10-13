@@ -72,7 +72,7 @@ func _run() -> void:
 	await _frames(10)
 
 	# 2) obra: ele larga o que fazia e vem martelar; cliques repetidos viram fila (máximo 4)
-	var r: Dictionary = game.buy("vaso", 1, 7)
+	var r: Dictionary = game.buy("vaso", 1, 9)
 	var site: int = int(r["instance_id"])
 	game.debug_advance_minutes(1.0)
 	await _frames(40)

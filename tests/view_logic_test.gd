@@ -56,13 +56,17 @@ func _test_attention() -> void:
 
 
 func _test_geo() -> void:
-	_check(BunkerGeo.strip_width(1) == 208 and BunkerGeo.strip_width(3) == 208, "largura fixa: os andares são empilhados")
+	_check(BunkerGeo.strip_width(1) == 504 and BunkerGeo.strip_width(3) == 504, "largura do mundo fixa (504): o andar de cima, mais largo, manda")
+	_check(BunkerGeo.zones(1).size() == 4 and BunkerGeo.room_width(1) == 488, "o andar de cima tem 4 cômodos (488 px com as paredes)")
+	_check(BunkerGeo.col_x(1, 5) == 88 and BunkerGeo.col_x(1, 6) == 112 and BunkerGeo.col_x(1, 16) == 280, "cada parede entre cômodos empurra as colunas 8 px")
 	_check(BunkerGeo.height(1) == 136 and BunkerGeo.height(2) == 187 and BunkerGeo.height(3) == 238, "a altura cresce um andar por sala")
 	_check(BunkerGeo.room_col_at(Vector2(9, 70), 1) == Vector2i(1, 0), "coluna 0 da sala 1")
 	_check(BunkerGeo.room_col_at(Vector2(9, 170), 2) == Vector2i(2, 0), "sala 2 fica um andar abaixo da despensa")
 	_check(BunkerGeo.room_col_at(Vector2(9, 110), 2) == Vector2i(-1, -1), "a despensa não é sala")
-	_check(BunkerGeo.room_col_at(Vector2(203, 70), 2) == Vector2i(-1, -1), "a parede da direita não é coluna")
-	_check(BunkerGeo.block_foot(1, 10, 2) == Vector2(184, 80), "pés da cama")
+	_check(BunkerGeo.room_col_at(Vector2(500, 70), 1) == Vector2i(-1, -1), "a parede da direita não é coluna")
+	_check(BunkerGeo.room_col_at(Vector2(108, 70), 1) == Vector2i(-1, -1), "a parede entre cômodos não é coluna")
+	_check(BunkerGeo.room_col_at(Vector2(113, 70), 1) == Vector2i(1, 6), "primeira coluna da horta")
+	_check(BunkerGeo.block_foot(1, 27, 2) == Vector2(480, 80), "pés da cama")
 
 
 func _make(setup: Callable) -> Array:
@@ -116,9 +120,9 @@ func _test_clicks() -> void:
 	_check(hit.get("kind") == "instance" and hit.get("id") == ids["estufa"], "clique na estufa")
 	hit = v.get_object_at(Vector2(88, 20))
 	_check(hit.get("kind") == "instance" and hit.get("item") == "painel", "clique no painel solar")
-	hit = v.get_object_at(Vector2(BunkerGeo.col_x(2, 11) + 4, 70 + 102))
-	_check(hit.get("kind") == "room" and hit.get("room") == 2 and hit.get("col") == 11, "coluna livre")
-	_check(v.get_object_at(Vector2(204, 70)).is_empty(), "divisória: nada")
+	hit = v.get_object_at(Vector2(BunkerGeo.col_x(2, 7) + 4, 70 + 102))
+	_check(hit.get("kind") == "room" and hit.get("room") == 2 and hit.get("col") == 7, "coluna livre")
+	_check(v.get_object_at(Vector2(108, 70)).is_empty(), "parede entre cômodos: nada")
 	var est: BunkerObject = v.object_by_id(ids["estufa"])
 	_check(est._crops.size() == 6, "estufa com 6 plantas")
 	# sinais de atenção vindos do estado

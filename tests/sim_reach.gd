@@ -4,32 +4,18 @@ extends RefCounted
 
 ## Reorganiza todas as instâncias com colunas (first-fit, as maiores primeiro), como o jogador faria com "mover".
 static func repack(c: Sim) -> void:
-	var ncols: int = Balance.integer("rooms.cols", 12)
-	var occ: Array = [null]
-	for r in range(1, c.rooms_n + 1):
-		var a := PackedByteArray()
-		a.resize(ncols)
-		for o in c.fixed_objects(r):
-			for k in range(int(o["col"]), int(o["col"]) + int(o["cols"])):
-				a[k] = 1
-		occ.append(a)
 	var items: Array = []
 	for inst in c._instances:
 		if int(inst["cols"]) > 0:
 			items.append(inst)
 	items.sort_custom(func(x: Dictionary, y: Dictionary) -> bool: return int(x["cols"]) > int(y["cols"]))
 	for inst in items:
+		inst["col"] = -1000   # sai da grade enquanto se reorganiza
+	for inst in items:
 		var placed := false
 		for r in range(1, c.rooms_n + 1):
-			var a: PackedByteArray = occ[r]
-			for col in range(0, ncols - int(inst["cols"]) + 1):
-				var free := true
-				for k in range(col, col + int(inst["cols"])):
-					if a[k] != 0:
-						free = false
-				if free:
-					for k in range(col, col + int(inst["cols"])):
-						a[k] = 1
+			for col in range(0, Balance.room_cols(r) - int(inst["cols"]) + 1):
+				if c._fits(String(inst["item"]), r, col, int(inst["id"])):
 					inst["room"] = r
 					inst["col"] = col
 					for p in c._plots:

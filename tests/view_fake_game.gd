@@ -87,7 +87,7 @@ func fixed_objects(room: int) -> Array[Dictionary]:
 	var out: Array[Dictionary] = []
 	if room == 1:
 		out.assign([{"id": "ladder", "col": 0, "cols": 1}, {"id": "hatch_box", "col": 1, "cols": 1},
-			{"id": "radio_table", "col": 2, "cols": 1}, {"id": "bed", "col": 10, "cols": 2}])
+			{"id": "radio_table", "col": 2, "cols": 1}, {"id": "bed", "col": 27, "cols": 2}])
 	return out
 func catalog(_f: String = "") -> Array[Dictionary]:
 	var out: Array[Dictionary] = []

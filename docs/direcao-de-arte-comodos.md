@@ -24,3 +24,9 @@ A vista continua lateral e a superfície fica como está hoje: céu, cidade em r
 - Faixa de 136 px lógicos (272 px na tela em 1080p com escala 2), com 2 andares. Código em `scripts/view/bunker_terrain.gd` (fundo), `bunker_decor.gd` (enfeites por código na paleta fixa) e `bunker_geo.gd` (medidas; o andar B é o A deslocado em 51 px).
 - O andar de baixo é cenário por enquanto: despensa sob a sala 1 e escavação com escoras sob a sala 2. Escavar sala nova continua para o lado; tornar o andar de baixo jogável é um passo futuro.
 - Materiais por sala: 1 concreto quente, 2 azulejo com luz de cultivo, 3 lambri e piso de tábua. A cama continua na sala 1 (cantinho de dormir com lambri).
+
+## Atualização de 13/10 (tarde): um cômodo por função
+O Vncs achou confuso ter tudo no mesmo espaço, então cada andar virou uma fileira de cômodos com parede e porta de aço entre eles, e cada linha de itens só vai no cômodo da sua função (ver `docs/CONTRATOS.md` seção 3 e `balance.json > rooms.layout`):
+- andar de cima: escotilha (poço, caixa, rádio, transporte) | horta (plantio) | oficina (água e energia) | quarto (cama, decoração), com 488 px de largura;
+- despensa embaixo da escotilha; sala 2 = estufa (mais horta); sala 3 = quarto dela (itens da casa).
+Cada cômodo tem placa de nome (Opções liga/desliga), material próprio de parede e de chão e luz própria. A janela tem 344×136 px lógicos e o bunker (504 px de largura) rola para os lados e para baixo.

@@ -66,6 +66,7 @@ static func font() -> Font:
 		fv.base_font = load(FONT_PATH) as Font
 		fv.spacing_top = -2
 		fv.spacing_bottom = -1
+		fv.opentype_features = {"liga": 0, "clig": 0, "dlig": 0, "calt": 0}   # sem ligaduras: o "fi" da fonte vira um A
 		_font = fv
 	return _font
 

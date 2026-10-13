@@ -114,7 +114,7 @@ func _handle(host: Control) -> void:
 	var h: WindowHandle = (load("res://scenes/ui/handle.tscn") as PackedScene).instantiate()
 	host.add_child(h)
 	await process_frame
-	_ok(h.size.x <= 50 and h.size.y <= 13, "alça pequena (%s)" % h.size)
+	_ok(h.size.x <= 62 and h.size.y <= 13, "alça pequena (%s)" % h.size)
 	var tab_layer: CanvasLayer = h.find_child("TabLayer", true, false)
 	_ok(not tab_layer.visible, "aba escondida ao abrir")
 	(h.find_child("Collapse", true, false) as Button).pressed.emit()
