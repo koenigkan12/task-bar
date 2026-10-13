@@ -76,6 +76,8 @@ func _main(g: Node) -> void:
 	check(FileAccess.get_modified_time(path) > m0, "autosave aos 60 s")
 
 	print("== carregar após 10 h fora")
+	# hora do dia fixa (9 h): senão o resultado dependia do relógio da máquina (visitas só em certos horários)
+	g.sim.start_min = fposmod(9.0 * 60.0 - g.sim.t_min - g.sim._acc, 1440.0)
 	var snap: Dictionary = g.sim.to_dict()
 	g.save_game()
 	var txt := FileAccess.get_file_as_string(path)
