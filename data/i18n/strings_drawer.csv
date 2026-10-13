@@ -1,0 +1,17 @@
+key,pt_BR,en
+drawer.btn.buy_for,Comprar {n},Buy {n}
+drawer.build.select_hint,Clique num objeto lá embaixo para mover ou desmontar.,Click something down below to move or dismantle it.
+drawer.antenna.next,Próxima: {name},Next: {name}
+drawer.place.help,"Clique num lugar verde na sala. Botão direito cancela.","Click a green spot in the room. Right click cancels."
+drawer.toast.cant,Agora não dá,Can't do that now
+drawer.station,Estação,Station
+drawer.station.help,Música baixinha no rádio do bunker.,Soft music on the bunker radio.
+drawer.station.next,Trocar estação,Change station
+drawer.diary.away_tag,fora,away
+drawer.box.stock,{have} de {cap} cestos,{have} of {cap} baskets
+drawer.box.visits,{n} trocas por dia,{n} trades a day
+drawer.journey.days,Chega em uns {n} dias,About {n} days away
+drawer.journey.soon,Ela está quase chegando,She's almost here
+drawer.journey.home,Ela está em casa.,She's home.
+drawer.welcome.radio,Ler o rádio,Read the radio
+drawer.welcome.night_one,Ele dormiu 1 noite.,He slept 1 night.
