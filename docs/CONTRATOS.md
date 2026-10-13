@@ -226,6 +226,7 @@ func quit_game() -> void                         # salva e sai
 - Governador de FPS (`Engine.max_fps`): ativo/hover 30; ocioso (sem input 10 s) 12; sem foco e sem hover 8; recolhido ou `energy_mode=low` 2. Sempre `max_fps` explícito; vsync desligado.
 - Ícone de bandeja (`StatusIndicator`, só Windows/macOS): menu Mostrar/Recolher, Resetar posição, Sempre por cima, Sair.
 - `--reset-window` na linha de comando reseta a posição.
+- **Recolher (pedido do dono):** um botão fixo (`icon_hide`) na alça da janela chama `set_collapsed(true)`: a janela encolhe para uma aba pequena (≈48×16 lógicos) colada na borda inferior do canto onde estava, e a simulação continua. Um clique na aba (`icon_show`) restaura o tamanho e a posição anteriores. A aba pode pulsar o sinal de atenção (seção 10) com no máximo uma luz verde. O estado recolhido é salvo em Settings.
 
 ### 4.5 `AudioManager` (scripts/audio/audio_manager.gd) [ÁUDIO]
 Conecta-se sozinho aos sinais de `Game` no `_ready()` (`item_finished`, `item_placed`, `visit_happened`, `radio_line`, `antenna_changed`, `arrival_started`, `plot_harvested`, `room_dug`, `welcome_back`); não exige chamadas da cena, exceto sfx de interface.
