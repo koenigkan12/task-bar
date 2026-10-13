@@ -10,6 +10,10 @@ signal action(kind: String)
 signal closed()
 
 const W: int = 92
+const W_MAN: int = 124
+const GAUGE: int = 14          # diâmetro do medidor redondo
+const NEEDS: Array[String] = ["food", "water", "sleep"]
+const NEED_COL: Dictionary = {"food": Color("e0852e"), "water": Color("4f9fe0"), "sleep": Color("9a78e0")}
 const REFRESH_S: float = 0.25
 const SQ_MAX: int = 8
 
@@ -51,6 +55,7 @@ func open_for(k: String, target: Rect2, window: Vector2, id: int = -1) -> void:
 	_target = target
 	_bounds = window
 	_sig = ""
+	_col.custom_minimum_size = Vector2(W_MAN if k == "man" else W, 0)
 	visible = true
 	refresh(true)
 
@@ -107,6 +112,8 @@ static func doing_key(g: Node) -> String:
 		return "status.digging" if str((jobs[0] as Dictionary).get("item", "")).begins_with("comodo") else "status.building"
 	if bool(g.hungry()):
 		return "status.hungry"
+	if g.has_method("need_state") and String(g.need_state("water")) == "bad":
+		return "status.thirsty"
 	if not bool(g.power_ok()):
 		return "status.no_power"
 	if float(g.busy()) >= 0.5:
@@ -117,12 +124,21 @@ static func doing_key(g: Node) -> String:
 func _rows_man(g: Node) -> Array:
 	var key: String = doing_key(g)
 	var icon: String = {"status.sleeping": "tempo", "status.building": "hammer", "status.digging": "hammer",
-		"status.hungry": "cesto", "status.no_power": "energia"}.get(key, "home")
-	var rows: Array = [{"t": "title", "text": ScreenUtil.tr_key("man.name")},
-		{"t": "icon", "icon": icon, "text": ScreenUtil.tr_key(key), "tone": "bad" if key in ["status.hungry", "status.no_power"] else ""}]
+		"status.hungry": "cesto", "status.thirsty": "energia", "status.no_power": "energia"}.get(key, "home")
+	var rows: Array = [{"t": "title", "text": "%s · %s" % [ScreenUtil.tr_key("man.name"), DrawerUi.clock(float(g.tod_hours()))]},
+		{"t": "icon", "icon": icon, "text": ScreenUtil.tr_key("card.now", {"s": ScreenUtil.tr_key(key)}),
+			"tone": "bad" if key in ["status.hungry", "status.thirsty", "status.no_power"] else ""}]
 	if key == "status.sleeping":
 		rows.append({"t": "muted", "text": ScreenUtil.tr_key("card.wakes", {"h": int(Balance.num("time.awake_from_min", 360.0) / 60.0)})})
-	rows.append({"t": "small", "text": "%s · %s" % [ScreenUtil.tr_key("ui.day", {"n": int(g.day_index()) + 1}), DrawerUi.clock(float(g.tod_hours()))]})
+	if g.has_method("need_level"):
+		for n in NEEDS:
+			var st: String = String(g.need_state(n))
+			var hint: String = "" if st == "ok" else ScreenUtil.tr_key("need.%s.%s" % [n, st])   # bem: só o medidor (o cartão é baixo)
+			if st == "bad" and n != "sleep" and g.has_method("death_left_min"):
+				var left: float = float(g.death_left_min(n))
+				if left >= 0.0:
+					hint += " " + ScreenUtil.tr_key("need.left", {"t": ClockText.of(left)})
+			rows.append({"t": "need", "need": n, "pct": int(roundf(float(g.need_level(n)) * 100.0)), "state": st, "hint": hint})
 	return rows
 
 
@@ -161,6 +177,11 @@ func _rows_gen(g: Node) -> Array:
 	else:
 		rows.append({"t": "icon", "icon": "energia", "text": ScreenUtil.tr_key("card.gen.lack", {"n": need - supply}), "tone": "bad"})
 	rows.append({"t": "squares", "used": mini(need, supply), "free": maxi(0, supply - need), "lack": maxi(0, need - supply)})
+	rows.append({"t": "muted", "text": ScreenUtil.tr_key("card.gen.use", {"use": need, "have": supply})})
+	if bool(g.has_method("line_tiers")) and String((g.line_tiers() as Dictionary).get("energia", "bicicleta")) == "bicicleta":
+		rows.append({"t": "small", "text": ScreenUtil.tr_key("card.gen.bike")})
+	else:
+		rows.append({"t": "small", "text": ScreenUtil.tr_key("card.gen.self")})
 	if supply < need:
 		rows.append({"t": "btn", "text": ScreenUtil.tr_key("card.gen.btn"), "act": "gens", "icon": "hammer"})
 	return rows
@@ -211,6 +232,8 @@ func _make(r: Dictionary) -> Control:
 			return _cell(r)
 		"squares":
 			return _squares(r)
+		"need":
+			return _need_row(r)
 		"sell":
 			return _sell_button(int(r["baskets"]), int(r["scrap"]))
 		"btn_off":
@@ -241,6 +264,32 @@ func _cell(r: Dictionary) -> Control:
 	bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	h.add_child(bar)
+	return h
+
+
+## Necessidade: medidor redondo (nível = líquido que sobe, aro = estado) + "Comida 25%" e o que fazer.
+func _need_row(r: Dictionary) -> Control:
+	var n: String = String(r["need"])
+	var st: String = String(r["state"])
+	var h := HBoxContainer.new()
+	h.add_theme_constant_override("separation", 3)
+	h.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var gauge := NeedGauge.new()
+	gauge.level = float(r["pct"]) / 100.0
+	gauge.state = st
+	gauge.color = NEED_COL[n]
+	h.add_child(gauge)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 0)
+	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var col: Color = {"ok": UiTheme.PAPER, "warn": UiTheme.AMBER3, "bad": UiTheme.TOMATO}[st]
+	v.add_child(DrawerUi.colored("%s %d%%" % [ScreenUtil.tr_key("need." + n), int(r["pct"])], col, "LabelSmall"))
+	if String(r["hint"]) != "":
+		var hint: Label = DrawerUi.label(String(r["hint"]), "LabelMuted")
+		hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		hint.custom_minimum_size = Vector2(W_MAN - GAUGE - 3, 0)
+		v.add_child(hint)
+	h.add_child(v)
 	return h
 
 

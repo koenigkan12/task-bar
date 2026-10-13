@@ -34,6 +34,18 @@
   "auto_water_plots": { "lata": 0, "gotejador": 4, "cisterna": 10, "bomba": 99 },
   "power_supply": { "bicicleta": 3, "moinho": 5, "bateria": 8, "painel": 12 },
   "radio_power_demand": { "1": 1, "2": 1, "3": 2, "4": 2, "5": 3 },
+  "needs": {
+    "_comment": "Fome, água e sono do Joaquim (0..1). Sono nunca mata; comida e água só depois de dias no vermelho com o aviso visto.",
+    "food_drain_per_h": 0.08,
+    "water_drain_per_h": 0.1,
+    "sleep_drain_per_h": 0.045,
+    "sleep_recover_per_h": 0.14,
+    "water_drink_below": 0.6,
+    "yellow": 0.5,
+    "red": 0.1,
+    "death_food_min": 2880,
+    "death_water_min": 1440
+  },
   "lamp_power_per_room": 1,
   "antenna": {
     "cost": { "2": 50, "3": 100, "4": 190, "5": 400 },

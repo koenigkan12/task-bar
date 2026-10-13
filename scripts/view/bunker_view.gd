@@ -639,6 +639,10 @@ func _update_pulses(delta: float) -> void:
 	if cur == "power" and _lamp_on():
 		for i in _lamps.size():
 			_lamps[i].frame = 1 if phase else 2
+	var lack: bool = not link.power_ok()
+	for o: BunkerObject in _inst.values():
+		if is_generator(o.item):
+			o.set_glow(lack and not o.building, phase)
 	if _arrival_running or man.anim == "man_sleep":
 		man.set_bubble("")
 	elif cur == "goal":

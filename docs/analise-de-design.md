@@ -246,7 +246,7 @@ Sem offline, o jogador que fecha o jogo para jogar outro título ou desliga o PC
 
 - O estado do bunker avança por **tempo de relógio** (`Time.get_unix_time_from_system()` guardado no save), em passos grossos (ex.: 10 min), com **o mesmo código** usado com o jogo aberto. Nada de "fórmula de offline" separada (é onde nascem os bugs).
 - Teto prático: 72 h (cobre um fim de semana). O próprio limite da caixa da escotilha já trava o acúmulo.
-- **Nada piora ausente**: sem estrago, sem fome extra, sem punição (anti-pilar).
+- **Nada piora ausente**: sem estrago, sem fome extra, sem punição (anti-pilar). Decisão posterior do autor (13/10): comida e água podem matar, mas só **depois que o jogador viu o aviso vermelho com o jogo aberto**; com o jogo fechado o prazo para e ele espera no vermelho (ver 7.2).
 - Ao voltar, não mostrar uma janela de resumo "bônus": mostrar **linhas no Diário** (4.4). É mais coerente e mais bonito.
 - Detalhes de robustez: relógio do PC que volta no tempo (ignorar o delta negativo), horário de verão, suspensão/hibernação (a retomada cai no mesmo caminho do offline), salvamento **atômico** (escrever arquivo temporário e renomear) porque o jogo roda o dia todo e o PC pode desligar a qualquer momento.
 
@@ -428,6 +428,10 @@ Objetivo: o jogador entende, **sem ler texto**, o que fazer, que o jogo continua
 Princípios: **revelação progressiva** (sucata só depois da primeira venda; energia só quando algo a pedir; antena só quando houver sucata para ela); **o mouse com contorno** é o tutorial; um único texto no início é aceitável se for um rádio. O Rusty's é criticado por "sem tutorial" (as avaliações dizem que mecânicas-chave ficam obscuras): a resposta aqui é ícone e consequência, não pop-up.
 
 ---
+
+### 7.2 Necessidades e vitais na barra (13/10, versão simples)
+
+Pedido do playtest: "não tem as infos do personagem, a gente não fala que dia é, não tenho info da energia". Implementado: **fome, água e sono** (0..1) com três medidores redondos no cartão do Joaquim (porcentagem, aro cinza/âmbar/vermelho); o retrato na barra ganha moldura da pior necessidade; **"Dia N"** sempre na barra; **raio de energia** "uso/oferta" que fica vermelho e pisca quando falta (o gerador pisca no bunker; o cartão do gerador mostra "Ele pedala: gasta tempo dele" quando é a bicicleta). Comida = estoque de cestos (o mesmo que se vende), água flui sozinha (a bomba precisa de energia), sono volta à noite. Morte só por comida (2 dias no vermelho) ou água (1 dia) **depois do aviso visto**, com tela de fim (dias vividos, Ler o diário, Recomeçar). Diferenças do mock v6/v8: sem máquinas geladeira/filtro/cama ainda; os medidores moram no cartão, não na barra; vermelho de comida/água não para o trabalho (só o piso de 60% que já existia), porque parar travaria a colheita que o tira do vermelho.
 
 ### 7.1 Revisão depois do primeiro playtest (início guiado)
 

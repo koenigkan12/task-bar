@@ -109,7 +109,7 @@ func _run() -> void:
 	await _click(mc)
 	_check(card.is_open() and card.kind == "man", "clique no Joaquim abre o cartão")
 	var rows: Array = card._rows(game)
-	_check(String(rows[0]["text"]) == "Joaquim", "cartão tem o nome")
+	_check(String(rows[0]["text"]).begins_with("Joaquim"), "cartão tem o nome")
 	await _shot("3_cartao_joaquim")
 
 	# um clique fora fecha o cartão

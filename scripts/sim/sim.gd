@@ -35,6 +35,8 @@ signal arrival_started()
 signal arrival_finished()
 signal new_game_started()
 signal game_loaded()
+## Joaquim morreu de fome ou de sede (dias vividos no bunker).
+signal died(days: int)
 
 const FORMAT_VERSION := 1
 const SERVICE_LINES: Array[String] = ["agua", "energia", "transporte"]
@@ -78,6 +80,13 @@ var _house_bought: Dictionary = {}
 var _epi_next: int = 0
 var _pinned: String = ""
 var _stats: Dictionary = {}
+## Necessidades (0..1): comida, água e sono. Os minutos no vermelho só correm depois que o jogador viu o aviso.
+var _food: float = 1.0
+var _water: float = 1.0
+var _rest: float = 1.0
+var _red_min: Dictionary = {"food": 0.0, "water": 0.0}
+var _dead: bool = false
+var _death_days: int = 0
 
 # ---------------------------------------------------------------- estado transitório
 var _muted: bool = false           # catch-up: sem sinais finos
@@ -91,6 +100,7 @@ var _step: float = 10.0
 var _wake: float = 360.0
 var _sleep: float = 1320.0
 var _price_scale: float = 1.0
+var _warn_seen: Dictionary = {"food": false, "water": false}   # o jogador viu o vermelho nesta sessão
 
 
 func _init() -> void:
@@ -134,6 +144,13 @@ func _reset_state() -> void:
 	_pinned = ""
 	_order_dirty = true
 	_box_q = -1
+	_food = 1.0
+	_water = 1.0
+	_rest = 1.0
+	_red_min = {"food": 0.0, "water": 0.0}
+	_warn_seen = {"food": false, "water": false}
+	_dead = false
+	_death_days = 0
 	_stats = {"visits": 0, "harvested": 0, "scrap_earned": 0.0, "scrap_spent": 0.0,
 			"sold_baskets": 0, "wasted_baskets": 0, "eaten": 0, "nights": 0, "bought": 0}
 
@@ -176,7 +193,7 @@ func _make_instance(item_id: String, room: int, col: int, state: String) -> Dict
 
 # ================================================================ relógio
 func advance(game_minutes: float) -> void:
-	if game_minutes <= 0.0:
+	if game_minutes <= 0.0 or _dead:
 		return
 	_acc += game_minutes
 	var steps := 0
@@ -227,6 +244,7 @@ func _do_step() -> void:
 	else:
 		_busy = 0.0
 	t_min += _step
+	_needs_step(awake)
 	_deliver_due(b)
 	if _arrival == "done":
 		_epilogue(a, b)
@@ -270,6 +288,7 @@ func _eat_one() -> void:
 	if stock == 0:
 		stock_value = 0.0
 	_missed_meals = 0
+	_food = 1.0
 	_stats["eaten"] = int(_stats["eaten"]) + 1
 	_box_signal()
 
@@ -277,6 +296,93 @@ func _eat_one() -> void:
 func _speed() -> float:
 	var floor_v: float = Balance.num("economy.hunger_speed_floor", 0.6)
 	return maxf(floor_v, 1.0 - float(_missed_meals) * (1.0 - floor_v) * 0.5)
+
+
+# ---------------------------------------------------------------- necessidades
+func _needs_step(awake: bool) -> void:
+	var h: float = _step / 60.0
+	if awake:
+		_food = maxf(0.0, _food - Balance.num("needs.food_drain_per_h", 0.08) * h)
+		_water = maxf(0.0, _water - Balance.num("needs.water_drain_per_h", 0.1) * h)
+		_rest = maxf(0.0, _rest - Balance.num("needs.sleep_drain_per_h", 0.045) * h)
+		# bebe sozinho quando a água chega (a bomba precisa de energia)
+		if _water < Balance.num("needs.water_drink_below", 0.6) and water_flows():
+			_water = 1.0
+	else:
+		_rest = minf(1.0, _rest + Balance.num("needs.sleep_recover_per_h", 0.14) * h)
+	for n in ["food", "water"]:
+		if need_state(n) != "bad":
+			_red_min[n] = 0.0
+			_warn_seen[n] = false
+		elif bool(_warn_seen[n]) and not _away:
+			_red_min[n] = float(_red_min[n]) + _step
+	if not _dead and (float(_red_min["food"]) >= Balance.num("needs.death_food_min", 2880.0) \
+			or float(_red_min["water"]) >= Balance.num("needs.death_water_min", 1440.0)):
+		_dead = true
+		_death_days = day_index() + 1
+		if not _muted:
+			died.emit(_death_days)
+
+
+## A água chega na torneira: a linha de água não depende de energia, ou tem energia sobrando.
+func water_flows() -> bool:
+	var line: String = String(_line_ready["agua"])
+	return int(_def(line).get("power", 0)) == 0 or power_ok()
+
+
+## Nível de uma necessidade ("food", "water", "sleep"), de 0 a 1. Quem faltou à refeição aparece no fundo.
+func need_level(n: String) -> float:
+	match n:
+		"food":
+			return minf(_food, Balance.num("needs.red", 0.1) * 0.9) if _missed_meals > 0 else _food
+		"water":
+			return _water
+	return _rest
+
+
+## "ok" | "warn" (amarelo) | "bad" (vermelho). Sono nunca passa de "warn" (nunca mata).
+func need_state(n: String) -> String:
+	var v: float = need_level(n)
+	if v < Balance.num("needs.red", 0.1):
+		return "bad"
+	if v <= Balance.num("needs.yellow", 0.5):
+		return "warn"
+	return "ok"
+
+
+## A pior das três: "ok" | "warn" | "bad" (a moldura do retrato).
+func worst_need_state() -> String:
+	var worst := "ok"
+	for n in ["food", "water", "sleep"]:
+		var st: String = need_state(n)
+		if st == "bad":
+			return "bad"
+		if st == "warn":
+			worst = "warn"
+	return worst
+
+
+## O jogador está vendo o vermelho (a janela mostra o aviso): daqui em diante o prazo corre.
+func ack_warning() -> void:
+	for n in ["food", "water"]:
+		if need_state(n) == "bad":
+			_warn_seen[n] = true
+
+
+func is_dead() -> bool:
+	return _dead
+
+
+func death_days() -> int:
+	return _death_days
+
+
+## Minutos que faltam para a morte pela necessidade `n` ("food"|"water"); -1 se não está no vermelho/aviso não visto.
+func death_left_min(n: String) -> float:
+	if not bool(_warn_seen.get(n, false)) or need_state(n) != "bad":
+		return -1.0
+	var lim: float = Balance.num("needs.death_%s_min" % n, 1440.0)
+	return maxf(0.0, lim - float(_red_min[n]))
 
 
 # ---------------------------------------------------------------- trabalho e produção
@@ -1618,7 +1724,8 @@ func to_dict() -> Dictionary:
 			"next_diary_id": _next_diary_id, "pending": _pending.duplicate(true),
 			"antenna_t": _antenna_t.duplicate(), "contact_min": contact_min, "arrival": _arrival,
 			"house_bought": _house_bought.duplicate(), "epi_next": _epi_next, "pinned": _pinned,
-			"stats": _stats.duplicate(true)}
+			"stats": _stats.duplicate(true), "food": _food, "water": _water, "rest": _rest,
+			"red_min": _red_min.duplicate(), "dead": _dead, "death_days": _death_days}
 
 
 func from_dict(d: Dictionary) -> bool:
@@ -1697,6 +1804,13 @@ func from_dict(d: Dictionary) -> bool:
 		_stats[k] = int(_stats.get(k, 0))
 	_stats["scrap_earned"] = float(_stats.get("scrap_earned", 0.0))
 	_stats["scrap_spent"] = float(_stats.get("scrap_spent", 0.0))
+	_food = clampf(float(d.get("food", 1.0)), 0.0, 1.0)
+	_water = clampf(float(d.get("water", 1.0)), 0.0, 1.0)
+	_rest = clampf(float(d.get("rest", 1.0)), 0.0, 1.0)
+	var rm: Dictionary = d.get("red_min", {}) as Dictionary
+	_red_min = {"food": float(rm.get("food", 0.0)), "water": float(rm.get("water", 0.0))}
+	_dead = bool(d.get("dead", false))
+	_death_days = int(d.get("death_days", 0))
 	if int(d.get("layout", 1)) < LAYOUT_VERSION:
 		_migrate_layout()
 	_order_dirty = true

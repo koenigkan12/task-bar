@@ -110,6 +110,7 @@ Modelo (resumo; detalhes no código e em `tools/sim_oracle/economia_sim.py`, que
 - Cada vaso/plot tem `progress` (0..1) que avança `step/cycle_min × labor_factor` quando ele está acordado (06–22h de relógio do jogo); ao chegar a 1 colhe 1 cesto (soma ao estoque da caixa) e replanta sozinho (**ordem permanente**: o plot guarda a cultura).
 - `labor_factor = min(1, tempo_disponível / tempo_exigido)` (o tempo do homem é o recurso escondido). Tarefas por ciclo por plot: plantar+colher, regar (zero se coberto pela irrigação automática), carregar (depende do transporte e do fator da sala do plot, `carry_room_factor`). Pedalar enquanto o gerador for a bicicleta. Obras consomem parte do tempo (`build_labor_share`).
 - Caixa da escotilha: estoque em cestos; `visits_per_day[antena]` visitas igualmente espaçadas no período acordado; cada visita vende `min(estoque, capacidade)` pelo preço médio e soma sucata; excedente acima de `box_overflow_factor × capacidade` é perdido. Ele come `eat_per_day` por dia; sem comida a velocidade cai até `hunger_speed_floor` (nunca zero).
+- Necessidades (`needs.*` no balance): comida, água e sono em 0..1. Comida desce acordado e volta a 1 ao comer um cesto; água desce e ele bebe sozinho quando passa do limite se a água flui (a bomba precisa de energia); sono desce acordado e sobe dormindo. Vermelho de comida ou água: os minutos só contam depois de `ack_warning()` (o jogador viu o aviso) e **não correm em `catch_up`** (jogo fechado); fora do vermelho o prazo zera. `death_food_min` (2 dias) / `death_water_min` (1 dia) → `died(days)`, `is_dead()`; morto, `advance` não faz nada. O efeito na economia continua só o `hunger_speed_floor` (nunca para de trabalhar, senão o estoque nunca voltaria).
 - Energia: compra checa `oferta >= demanda + necessidade`; não há liga/desliga. Demanda = rádio(nível) + lâmpadas(salas) + itens com `power`.
 - Antena: sobe se `supply >= max(supply_min, demanda+headroom)`, salas ≥ requisito, sucata ≥ custo.
 - Substituição de linha: itens com `replaces_line` substituem a instância anterior da linha (que some sem reembolso; a nova ocupa a posição, e a checagem de colunas livres considera a antiga já removida). Demolir qualquer outro item devolve 100%.
@@ -158,6 +159,14 @@ func is_awake() -> bool
 func is_night() -> bool
 func busy() -> float                  # 0..1 fração do tempo dele ocupada com tarefas
 func hungry() -> bool
+func need_level(n: String) -> float    # "food"|"water"|"sleep", 0..1 (quem faltou à refeição aparece no fundo)
+func need_state(n: String) -> String   # "ok" | "warn" (<=0,5) | "bad" (<0,1); sono nunca mata
+func worst_need_state() -> String      # a pior das três: é a moldura do retrato
+func ack_warning() -> void             # a janela mostrou o vermelho: o prazo da morte passa a correr
+func is_dead() -> bool
+func death_days() -> int
+func death_left_min(n: String) -> float  # -1 se fora do vermelho ou aviso não visto
+func water_flows() -> bool             # a linha de água tem o que precisa (bomba exige energia)
 func power_supply() -> int
 func power_demand() -> int
 func power_ok() -> bool

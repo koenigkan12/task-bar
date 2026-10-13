@@ -22,6 +22,7 @@ var sprite: ArtSprite
 var _ghost: ArtSprite
 var _crops: Dictionary = {}   # índice do plot -> ArtSprite
 var _scaffold: Node2D
+var _glow_icon: Sprite2D
 
 
 func _init(art_name: String = "") -> void:
@@ -37,6 +38,22 @@ func _init(art_name: String = "") -> void:
 	_scaffold.z_index = 2
 	add_child(_scaffold)
 	_auto_play()
+
+
+## Destaque do gerador quando falta energia: o objeto pisca em âmbar e um raio sobe e desce em cima dele.
+func set_glow(on: bool, phase: bool) -> void:
+	if on and _glow_icon == null:
+		_glow_icon = Sprite2D.new()
+		_glow_icon.texture = UiTheme.icon("energia")
+		_glow_icon.z_index = 5
+		var b := sprite.bounds()
+		_glow_icon.position = Vector2(b.get_center().x, b.position.y - 6.0)
+		add_child(_glow_icon)
+	if _glow_icon != null:
+		_glow_icon.visible = on
+		_glow_icon.modulate = Color(1, 0.35, 0.3) if phase else Color.WHITE
+		_glow_icon.offset = Vector2(0, 0.0 if phase else -1.0)
+	sprite.modulate = Color(1.4, 1.15, 0.7) if on and phase else Color.WHITE
 
 
 func _auto_play() -> void:

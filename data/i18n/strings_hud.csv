@@ -85,3 +85,30 @@ room.quarto,Quarto,Bedroom
 room.estufa,Estufa,Greenhouse
 room.quarto_dela,Quarto dela,Her room
 room.despensa,Despensa,Pantry
+card.now,Agora: {s},Now: {s}
+need.food,Comida,Food
+need.water,Água,Water
+need.sleep,Sono,Sleep
+need.food.ok,Come sozinho.,Eats on his own.
+need.food.warn,Acabando. Guarde cestos.,Running low. Keep baskets.
+need.food.bad,Sem comida! Colha cestos.,Out of food! Harvest baskets.
+need.water.ok,Bebe sozinho.,Drinks on his own.
+need.water.warn,Falta água. Veja a energia.,Water is short. Check the power.
+need.water.bad,Sem água! A bomba precisa de energia.,No water! The pump needs power.
+need.sleep.ok,Dorme à noite.,Sleeps at night.
+need.sleep.warn,Cansado. Dorme à noite.,Tired. Sleeps at night.
+need.sleep.bad,Exausto. Dorme à noite.,Worn out. Sleeps at night.
+need.left,Resolva em {t}.,Fix it in {t}.
+status.thirsty,Com sede,Thirsty
+hud.energy.ok,Energia: usa {use} de {have}.,Power: uses {use} of {have}.
+hud.energy.lack,Falta energia! Usa {use} e só tem {have}.,Out of power! Uses {use} but only {have}.
+hud.energy.bike,Ele pedala a bicicleta.,He pedals the bike.
+hud.energy.click,Clique: ver o gerador,Click: see the generator
+card.gen.bike,Ele pedala: gasta tempo dele.,He pedals: costs his time.
+card.gen.self,Gera sozinho.,Makes power on its own.
+card.gen.use,Usa {use} de {have},Uses {use} of {have}
+ending.death.title,Joaquim não aguentou.,Joaquim could not hold on.
+ending.death.line,Ele viveu {n} dias no bunker.,He lived {n} days in the bunker.
+ending.death.line.one,Ele viveu 1 dia no bunker.,He lived 1 day in the bunker.
+ending.death.restart,Recomeçar,Start over
+ending.death.diary,Ler o diário,Read the diary

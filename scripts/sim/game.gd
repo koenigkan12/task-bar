@@ -20,6 +20,7 @@ signal arrival_started()
 signal arrival_finished()
 signal new_game_started()
 signal game_loaded()
+signal died(days: int)
 
 const AUTOSAVE_S := 60.0
 const STATE_INTERVAL_S := 0.25
@@ -71,6 +72,7 @@ func _connect_sim() -> void:
 	sim.house_item_bought.connect(func(i: String) -> void: house_item_bought.emit(i))
 	sim.arrival_started.connect(func() -> void: arrival_started.emit())
 	sim.arrival_finished.connect(func() -> void: arrival_finished.emit())
+	sim.died.connect(func(d: int) -> void: died.emit(d))
 
 
 # ================================================================ relógio de parede
@@ -189,6 +191,14 @@ func hungry() -> bool: return sim.hungry()
 func power_supply() -> int: return sim.power_supply()
 func power_demand() -> int: return sim.power_demand()
 func power_ok() -> bool: return sim.power_ok()
+func need_level(n: String) -> float: return sim.need_level(n)
+func need_state(n: String) -> String: return sim.need_state(n)
+func worst_need_state() -> String: return sim.worst_need_state()
+func ack_warning() -> void: sim.ack_warning()
+func is_dead() -> bool: return sim.is_dead()
+func death_days() -> int: return sim.death_days()
+func death_left_min(n: String) -> float: return sim.death_left_min(n)
+func water_flows() -> bool: return sim.water_flows()
 func box_stock() -> float: return sim.box_stock()
 func box_capacity() -> int: return sim.box_capacity()
 func box_fill() -> float: return sim.box_fill()

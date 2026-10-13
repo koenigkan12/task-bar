@@ -7,6 +7,9 @@ const DRAWER_H: int = 120
 const DRAWER_MIN_W: int = 344
 const DRAWER_SCENE: String = "res://scenes/ui/drawer.tscn"
 
+## "Recomeçar" na tela de fim: a cena recarrega e já entra num jogo novo (sem passar pelo título).
+static var restart_new: bool = false
+
 var _title: TitleScreen
 var _options: OptionsScreen
 var _view: Control   # recorta a cena: a faixa mostra só 2 andares, o resto se alcança rolando
@@ -34,8 +37,13 @@ func _ready() -> void:
 	Game.game_loaded.connect(_relayout)
 	Game.new_game_started.connect(_relayout)
 	Game.arrival_started.connect(_on_arrival_started)
+	Game.died.connect(func(days: int) -> void: _show_death(days))
 	WindowService.first_interaction.connect(_on_first_interaction)
 	_show_title()
+	if Main.restart_new:
+		Main.restart_new = false
+		Game.new_game()
+		_on_game_started(true)
 
 
 ## Largura da janela: fixa (o bunker é mais largo que ela e rola para os lados).
@@ -168,6 +176,8 @@ func _on_game_started(is_new: bool) -> void:
 	_hud.clicked.connect(func() -> void: _drawer.open("build"))
 	_hud.man_clicked.connect(func() -> void:
 		_card.open_for("man", _hud.face_rect(), Vector2(_window_size())))
+	_hud.energy_clicked.connect(func() -> void:
+		_card.open_for("gen", _hud.energy_rect(), Vector2(_window_size()), _generator_id()))
 	add_child(_hud)
 	_card = InfoCard.new()
 	_card.action.connect(_on_card_action)
@@ -175,7 +185,9 @@ func _on_game_started(is_new: bool) -> void:
 	add_child(_card)
 	_drawer.open_changed.connect(func(open: bool) -> void:
 		if open:
-			_card.close())
+			_card.close()
+		elif Game.is_dead():
+			_show_death(Game.death_days()))   # leu o diário: a tela de fim volta
 	_hud.steps.changed.connect(func() -> void: _bunker.tutorial_key = _hud.steps.current_key())
 	if is_new:
 		_hud.steps.start()
@@ -183,7 +195,9 @@ func _on_game_started(is_new: bool) -> void:
 	_hints.enabled = not is_new
 	move_child(_hints, get_child_count() - 1)
 	_relayout()
-	if is_new and not bool(Settings.get_value("intro_seen", false)):
+	if Game.is_dead():
+		call_deferred("_show_death", Game.death_days())
+	elif is_new and not bool(Settings.get_value("intro_seen", false)):
 		_show_intro()
 	elif is_new:
 		_hints.enabled = true
@@ -355,8 +369,45 @@ func _on_arrival_cut() -> void:
 	_ending.play_arrival()
 
 
+## Id da instância do gerador pronto (bicicleta, moinho...) para o cartão de energia aberto pela barra.
+func _generator_id() -> int:
+	for e: Dictionary in Game.instances():
+		if String(e.get("state", "")) == "ready" and _bunker.is_generator(String(e.get("item", ""))):
+			return int(e["id"])
+	return -1
+
+
+## Joaquim não aguentou: a janela cresce para caber o texto; o diário se lê pela gaveta e a tela volta ao fechá-la.
+func _show_death(days: int) -> void:
+	if _ending != null or not _playing:
+		return
+	_card.close()
+	_in_ending = true
+	_drawer_open = true
+	_relayout()
+	_ending = EndingScreen.new()
+	_ending.finished.connect(_on_ending_finished)
+	_ending_layer = CanvasLayer.new()
+	_ending_layer.layer = 20
+	add_child(_ending_layer)
+	_ending_layer.add_child(_ending)
+	_ending.show_death(days)
+
+
 func _on_ending_finished(kind: String) -> void:
 	match kind:
+		"restart":
+			Game.delete_save()
+			Main.restart_new = true
+			get_tree().reload_current_scene()
+			return
+		"diary":
+			_ending_layer.queue_free()
+			_ending_layer = null
+			_ending = null
+			_in_ending = false
+			_drawer.open("radio")
+			return
 		"arrival":
 			_ending.show_next_day()
 		_:

@@ -5,6 +5,7 @@ extends Control
 ## play_arrival(): batidas, luz, "Vai demorar, ela disse." ... créditos -> finished("arrival")
 ## show_next_day(): "Na manhã seguinte" + 3 linhas -> finished("next_day")
 ## show_demo_end(): fim da demonstração -> finished("demo_continue") ou finished("demo_quit")
+## show_death(dias): "Joaquim não aguentou." + dias vividos -> finished("restart") ou finished("diary")
 ## Não chama Game.finish_arrival(): quem integra decide quando (contrato 5.2).
 
 signal finished(kind: String)
@@ -28,6 +29,7 @@ var _wait: float = 0.0
 var _final_buttons: Array = []   # [[chave, tipo de saída]]
 var _final_title: String = ""
 var _final_lines: Array = []
+var _final_args: Dictionary = {}
 
 
 func _ready() -> void:
@@ -76,6 +78,16 @@ func show_demo_end() -> void:
 	_final_title = "ending.demo.title"
 	_final_lines = ["ending.demo.line", "ending.demo.wish"]
 	_final_buttons = [["title.btn.quit", "demo_quit"], ["ending.continue", "demo_continue"]]
+	_start()
+
+
+func show_death(days: int) -> void:
+	kind = "death"
+	_pages = []
+	_final_title = "ending.death.title"
+	_final_args = {"n": days}
+	_final_lines = ["ending.death.line.one" if days <= 1 else "ending.death.line"]
+	_final_buttons = [["ending.death.diary", "diary"], ["ending.death.restart", "restart"]]
 	_start()
 
 
@@ -146,7 +158,7 @@ func _next_page() -> void:
 
 
 func _add_line(key: String, variation: String) -> void:
-	var l: Label = ScreenUtil.label(key, variation)
+	var l: Label = ScreenUtil.label(key, variation, _final_args)
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	l.custom_minimum_size = Vector2(minf(size.x - 16.0, 300.0) if size.x > 32.0 else 300.0, 0)
