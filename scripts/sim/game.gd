@@ -86,6 +86,7 @@ func _process(delta: float) -> void:
 		# suspensão/hibernação: mesmo caminho do offline
 		var summary := sim.catch_up((gap - delta) / 60.0 * Balance.num("time.time_scale", 1.0))
 		_after_catch_up(summary)
+	sim.fast_forward = time_scale > 2.0
 	sim.advance(delta * time_scale / 60.0)
 	_state_timer += delta
 	if _dirty and _state_timer >= STATE_INTERVAL_S:
@@ -244,3 +245,4 @@ func house_status() -> Array[Dictionary]: return sim.house_status()
 func journey() -> Dictionary: return sim.journey()
 func arrival_line() -> Dictionary: return sim.arrival_line()
 func debug_advance_minutes(m: float) -> void: sim.debug_advance_minutes(m)
+func debug_skip(m: float) -> void: sim.debug_skip(m)
