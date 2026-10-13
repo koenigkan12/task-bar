@@ -324,8 +324,9 @@ func run() -> void:
 	ws.mouse_override = null
 
 	# ------------------------------------------------------------------ bandeja: textos com fallback
-	eq(ws.tr_tray("ui.tray_show"), "Show", "fallback em inglês (I18n stub ou sem a chave)")
-	eq(ws.tr_tray("ui.tray_quit"), "Quit", "fallback quit")
+	# com o I18n real o texto vem do CSV (pt ou en, conforme o idioma do sistema); sem ele, cai no inglês
+	ok(["Show", "Mostrar"].has(ws.tr_tray("ui.tray_show")), "texto da bandeja (CSV ou fallback em inglês)")
+	ok(["Quit", "Sair"].has(ws.tr_tray("ui.tray_quit")), "texto da bandeja: sair")
 	eq(ws.tr_tray("ui.tray_inexistente"), "ui.tray_inexistente", "chave desconhecida: devolve a chave")
 	ok(ws.get_node_or_null("Tray") == null, "sem bandeja em --headless / Linux")
 

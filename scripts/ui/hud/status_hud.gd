@@ -1,0 +1,138 @@
+class_name StatusHud
+extends Control
+## Faixa de status sempre visível: sucata e a próxima meta ("o que faço agora?").
+## Clicar abre a gaveta na aba Construir. Fica no canto de cima, sobre o céu.
+
+signal clicked()
+
+const BACK_ALPHA: float = 0.6
+
+var _back: ColorRect
+var _scrap_icon: TextureRect
+var _scrap: Label
+var _stock_icon: TextureRect
+var _stock: Label
+var _goal_icon: TextureRect
+var _goal: Label
+var _last_text: String = ""
+var _tut: Label
+var _col: VBoxContainer
+var steps: FirstSteps
+var _ready_state: bool = false
+
+
+func _ready() -> void:
+	mouse_filter = Control.MOUSE_FILTER_STOP
+	mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	theme = UiTheme.build()
+	_build()
+	steps = FirstSteps.new()
+	add_child(steps)
+	steps.changed.connect(refresh)
+	ScreenUtil.connect_to("Game", "state_changed", refresh)
+	ScreenUtil.connect_to("Game", "visit_happened", func(_i: Dictionary) -> void: refresh())
+	ScreenUtil.connect_to("I18n", "locale_changed", func(_c: String) -> void: refresh())
+	refresh()
+
+
+func _build() -> void:
+	_back = ColorRect.new()
+	_back.color = Color(UiTheme.INK, BACK_ALPHA)
+	_back.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_back.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(_back)
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 1)
+	col.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	col.position = Vector2(2, 0)
+	add_child(col)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 2)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	col.add_child(row)
+	_tut = _label()
+	_tut.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_tut.custom_minimum_size = Vector2(142, 0)
+	_tut.add_theme_color_override("font_color", UiTheme.AMBER3)
+	col.add_child(_tut)
+	_col = col
+	_scrap_icon = _icon("sucata")
+	row.add_child(_scrap_icon)
+	_scrap = _label()
+	row.add_child(_scrap)
+	_stock_icon = _icon("cesto")
+	row.add_child(_stock_icon)
+	_stock = _label()
+	row.add_child(_stock)
+	var sep := Control.new()
+	sep.custom_minimum_size = Vector2(3, 0)
+	sep.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(sep)
+	_goal_icon = _icon("arrow_up")
+	row.add_child(_goal_icon)
+	_goal = _label()
+	row.add_child(_goal)
+
+
+func _icon(name: String) -> TextureRect:
+	var t := TextureRect.new()
+	t.texture = UiTheme.icon(name)
+	t.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
+	t.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return t
+
+
+func _label() -> Label:
+	var l := Label.new()
+	l.theme_type_variation = "LabelSmall"
+	l.add_theme_color_override("font_color", UiTheme.PAPER)
+	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return l
+
+
+func refresh() -> void:
+	var game: Node = ScreenUtil.node("Game")
+	if game == null or not game.has_method("sucata"):
+		return
+	_scrap.text = str(int(game.call("sucata")))
+	_stock.text = str(int(game.call("box_stock")))
+	var g: Dictionary = Guide.next_goal(game)
+	var text: String
+	if g.is_empty():
+		_goal_icon.visible = false
+		_goal.text = ""
+		text = ""
+	else:
+		var name: String = ScreenUtil.tr_key(String(g["name_key"]))
+		_goal_icon.visible = true
+		_ready_state = bool(g["ready"])
+		if _ready_state:
+			_goal.text = ScreenUtil.tr_key("hud.ready", {"name": name})
+			_goal.add_theme_color_override("font_color", UiTheme.SIGNAL)
+			_goal_icon.texture = UiTheme.icon("check")
+		else:
+			_goal.text = ScreenUtil.tr_key("hud.goal", {"name": name, "have": int(g["have"]), "cost": int(g["cost"])})
+			_goal.add_theme_color_override("font_color", UiTheme.PAPER)
+			_goal_icon.texture = UiTheme.icon("arrow_up")
+		text = _goal.text
+	_last_text = text
+	await get_tree().process_frame
+	var w: float = 6.0 + _scrap_icon.size.x + _scrap.size.x + _stock_icon.size.x + _stock.size.x + 9.0
+	if _goal_icon.visible:
+		w += _goal_icon.size.x + _goal.size.x + 2.0
+	var tut_key: String = steps.current_key() if steps != null else ""
+	_tut.visible = tut_key != ""
+	if tut_key != "":
+		_tut.text = ScreenUtil.tr_key(tut_key)
+		w = maxf(w, 148.0)
+	await get_tree().process_frame
+	var h: float = 12.0 + (_tut.size.y + 1.0 if _tut.visible else 0.0)
+	custom_minimum_size = Vector2(w, h)
+	size = custom_minimum_size
+
+
+func _gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and (event as InputEventMouseButton).pressed \
+			and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
+		clicked.emit()
+		accept_event()

@@ -2,7 +2,7 @@ class_name HintLayer
 extends Control
 ## Dicas de primeiro uso (hint.*), sem tutorial: um balão discreto por vez no canto de cima,
 ## some sozinho (ou com um clique) e nunca repete (Settings "hints_seen").
-## Gatilhos automáticos: novo jogo (first_run, drag, hide), welcome_back (offline),
+## Gatilhos automáticos: novo jogo (drag, hide), welcome_back (offline),
 ## primeira fala (radio), caixa transbordando (box), falta de energia (power).
 ## Os demais (build, planting, goal, demolish, move, pra_que, dig) a gaveta pede:
 ##   HintLayer.request("build")
@@ -114,7 +114,7 @@ func _show(id: String) -> void:
 	l.theme_type_variation = "LabelSmall"
 	l.add_theme_color_override("font_color", UiTheme.PAPER)
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	l.custom_minimum_size = Vector2(minf(220.0, maxf(120.0, size.x - 40.0)), 0)
+	l.custom_minimum_size = Vector2(minf(220.0, maxf(100.0, size.x - 30.0)), 0)
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(l)
 	panel.gui_input.connect(func(e: InputEvent) -> void:
@@ -140,7 +140,6 @@ func _mark_seen(id: String) -> void:
 
 
 func _on_new_game() -> void:
-	show_hint("first_run")
 	show_hint("drag")
 	show_hint("hide")
 

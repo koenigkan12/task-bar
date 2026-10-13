@@ -13,6 +13,16 @@ Idle cozy numa faixa baixa da tela. Um homem sozinho num bunker depois do fim do
 2. Na primeira vez o Windows SmartScreen pode avisar que o app não é reconhecido (o exe não é assinado): clique em **Mais informações → Executar assim mesmo**.
 3. O progresso e as opções ficam em `%APPDATA%\QuantosDias\` (`settings.json` e o save). Apague a pasta para começar do zero.
 
+## Primeiros minutos
+
+Ao começar um jogo novo há uma introdução de 4 telas (por que o jogo anda sozinho, o que é a sucata, o que fazer). Depois, enquanto o homem ainda não tem máquinas, **você ajuda com cliques**:
+
+1. Clique num vaso: ajuda a planta a crescer (cada clique adianta o ciclo; cinco cliques fecham a primeira colheita).
+2. Clique na caixa da escotilha: troca os cestos por sucata na hora (com um tempo de espera).
+3. Junte sucata e compre o **Vaso** extra (o próximo objetivo aparece sempre na faixa de cima).
+
+Cada máquina tira um clique do seu trabalho: o **gotejador** rega sozinho (os vasos deixam de aceitar clique) e a **calha** leva os cestos sozinha (a caixa deixa de aceitar clique). A partir daí o homem toca tudo e você só decide o que construir. A faixa de cima mostra sucata, cestos na caixa e o próximo objetivo; clicar nela abre a aba Construir, onde o item sugerido vem marcado com uma estrela. Passe o mouse numa planta para ver cultura, fase, % e quanto falta para a colheita. A aba **Estado** tem a "Mochila" (colhido, vendido, sementes e ferramentas).
+
 ## Controles
 
 Tudo é com o mouse.

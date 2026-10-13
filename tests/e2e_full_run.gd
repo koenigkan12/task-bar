@@ -27,6 +27,7 @@ func _initialize() -> void:
 func _run() -> void:
 	var game: Node = root.get_node("/root/Game")
 	game.delete_save()
+	root.get_node("/root/Settings").set_value("intro_seen", false)
 	var main: Node = (load("res://scenes/main.tscn") as PackedScene).instantiate()
 	root.add_child(main)
 	await _frames(5)

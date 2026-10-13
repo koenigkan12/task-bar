@@ -27,6 +27,7 @@ signal radio_line(line: Dictionary)
 signal diary_changed()
 signal visit_happened(info: Dictionary)
 signal plot_harvested(plot_id: int)
+signal helped(instance_id: int)   # clique de ajuda aceito (a cena faz uma faísca)
 signal box_state_changed(fill: float, overflow: bool)
 signal welcome_back(summary: Dictionary)
 signal house_item_bought(item_id: String)
@@ -61,11 +62,15 @@ var _next_job_id: int = 1
 var _line_ready: Dictionary = {}   # linha -> item pronto ("agua": "lata", ...)
 var _missed_meals: int = 0
 var _busy: float = 0.0
+var _labor_f: float = 1.0   ## fração do trabalho que o homem dá conta (para estimar a colheita)
 var _diary: Array = []             # do mais antigo para o mais novo
 var _next_diary_id: int = 1
 var _pending: Array = []           # falas agendadas {src, id, due(abs), kind}
 var _antenna_t: Dictionary = {}    # nível -> t_min em que chegou
 var contact_min: float = -1.0
+var _help_day: int = -1           # dia em que `_help_used` vale
+var _help_used: float = 0.0       # minutos de ciclo ajudados hoje
+var _last_visit_abs: float = -1.0e9
 var _arrival: String = "none"      # "none" | "pending" | "done"
 var _house_bought: Dictionary = {}
 var _epi_next: int = 0
@@ -333,6 +338,7 @@ func _work_step() -> void:
 	var cap: float = _step * _speed()
 	var f: float = 1.0 if total <= cap else cap / total
 	_busy = minf(1.0, total / _step)
+	_labor_f = f
 	if obra > 0.0:
 		_spend_labor(obra * f)
 	for i in n:
@@ -445,6 +451,7 @@ func _visits(a: float, b: float) -> void:
 
 func _do_visit() -> void:
 	_stats["visits"] = int(_stats["visits"]) + 1
+	_last_visit_abs = abs_min()
 	var units: int = mini(stock, box_capacity())
 	if units <= 0:
 		return
@@ -460,6 +467,72 @@ func _do_visit() -> void:
 	_box_signal()
 	if not _muted:
 		visit_happened.emit({"units": units, "scrap": int(roundf(gain)), "box_after": float(stock)})
+
+
+# ---------------------------------------------------------------- ajuda manual (cliques do começo)
+## Enquanto a antena for baixa o jogador pode ajudar: clicar numa estrutura de plantio empurra o ciclo dela
+## e clicar na caixa troca a colheita por sucata agora. Cada máquina tira a necessidade; passando de
+## o gotejador/calha cada clique some (o jogo já anda sozinho). Sem punição se não clicar.
+func help_available() -> bool:
+	return help_plots_available() or help_box_available()
+
+
+## Regar com a lata é manual: o gotejador (e acima) tira esse clique.
+func help_plots_available() -> bool:
+	return String(_line_ready["agua"]) == "lata"
+
+
+## Levar no balde é manual: a calha (e acima) tira esse clique.
+func help_box_available() -> bool:
+	return String(_line_ready["transporte"]) == "balde"
+
+
+func _help_budget() -> float:
+	var d: int = day_index()
+	if d != _help_day:
+		_help_day = d
+		_help_used = 0.0
+	return maxf(0.0, Balance.num("help.day_cap_min", 300.0) - _help_used)
+
+
+func help_instance(instance_id: int) -> Dictionary:
+	if not help_plots_available():
+		return {"ok": false, "reason": "off"}
+	var inst: Dictionary = _inst_by_id(instance_id)
+	if inst.is_empty() or String(inst.get("state", "ready")) == "building":
+		return {"ok": false, "reason": "none"}
+	var click: float = Balance.num("help.click_min", 4.0)
+	var n: int = 0
+	for p in _plots:
+		if int(p["inst"]) != instance_id:
+			continue
+		var budget: float = _help_budget()
+		if budget <= 0.0:
+			return {"ok": false, "reason": "cap"}
+		var use: float = minf(click, budget)
+		_help_used += use
+		p["progress"] = float(p["progress"]) + use / _cycle_of(p)
+		if float(p["progress"]) >= 1.0 - 1e-9:
+			_harvest(p)
+		n += 1
+	if n == 0:
+		return {"ok": false, "reason": "none"}
+	if not _muted:
+		helped.emit(instance_id)
+		state_changed.emit()
+	return {"ok": true, "plots": n}
+
+
+func help_box() -> Dictionary:
+	if not help_box_available():
+		return {"ok": false, "reason": "off"}
+	if stock <= 0:
+		return {"ok": false, "reason": "empty"}
+	if abs_min() - _last_visit_abs < Balance.num("help.box_cooldown_min", 30.0):
+		return {"ok": false, "reason": "cooldown"}
+	var before: float = scrap
+	_do_visit()
+	return {"ok": true, "scrap": int(roundf(scrap - before))}
 
 
 # ================================================================ consultas de estado
@@ -593,8 +666,30 @@ func plots() -> Array[Dictionary]:
 		var prog: float = float(p["progress"])
 		out.append({"id": int(p["id"]), "instance": int(p["inst"]), "index": int(p["index"]),
 				"room": int(p["room"]), "crop": String(p["crop"]), "progress": prog,
-				"stage": mini(3, int(prog * 4.0)), "ready": prog >= 0.95, "greenhouse": bool(p["gh"])})
+				"stage": mini(3, int(prog * 4.0)), "ready": prog >= 0.95, "greenhouse": bool(p["gh"]),
+				"eta_min": _clock_eta((1.0 - prog) * _cycle_of(p) / maxf(0.05, _labor_f))})
 	return out
+
+
+## Converte minutos de trabalho acordado em minutos de relógio (conta as noites de sono no meio).
+func _clock_eta(work_min: float) -> float:
+	var awake_len: float = maxf(1.0, _sleep - _wake)
+	var sleep_len: float = 1440.0 - awake_len
+	var tod: float = fposmod(start_min + t_min + _acc, 1440.0)
+	var asleep: bool = tod < _wake or tod >= _sleep
+	var wait := 0.0
+	var left_today := 0.0
+	if tod < _wake:
+		wait = _wake - tod
+	elif tod >= _sleep:
+		wait = 1440.0 - tod + _wake
+	else:
+		left_today = _sleep - tod
+	if asleep:
+		return wait + work_min + maxf(0.0, ceilf(work_min / awake_len - 1e-9) - 1.0) * sleep_len
+	if work_min <= left_today:
+		return work_min
+	return work_min + ceilf((work_min - left_today) / awake_len - 1e-9) * sleep_len
 
 
 func active_jobs() -> Array[Dictionary]:

@@ -429,6 +429,16 @@ Princípios: **revelação progressiva** (sucata só depois da primeira venda; e
 
 ---
 
+### 7.1 Revisão depois do primeiro playtest (início guiado)
+
+O primeiro teste em jogo mostrou o que a seção acima previa e o build não entregava: ao abrir, não ficava claro o que fazer, de onde vem a sucata nem por que o jogo roda sozinho. Mudanças:
+
+- **Introdução** de 4 telas só no primeiro jogo (quem é ele, por que anda sozinho, colheita → cesto → sucata → máquina).
+- **Clique ajuda, máquina automatiza**: no começo o jogador adianta o ciclo clicando nos vasos e vende a caixa clicando nela. O gotejador encerra o clique nos vasos, a calha encerra o clique na caixa. A automação chega por volta do primeiro dia, não na antena 3. (Rusty's Retirement não pede cliques; o ritmo dele vem de sempre haver a próxima compra, que é o que o HUD de objetivo copia.)
+- **Faixa de status** sempre visível: sucata, cestos na caixa, próximo objetivo (sugerido por `balance.guide.order`, ou o fixado) e o passo atual do tutorial (ajudar, colher, vender, comprar).
+- **Feedback da colheita**: barra de crescimento sob cada planta, etiqueta no hover (cultura, fase, %, tempo restante), "+1 cesto" ao colher.
+- **Mochila** na aba Estado: colhido, vendido, sementes liberadas e ferramentas em uso.
+
 ## 8. Áudio (lente 7)
 
 O rádio é o meio da história **e** o jogo toca em segundo plano, perto de reuniões, vídeos e música do jogador. Princípios:

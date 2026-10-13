@@ -207,15 +207,21 @@ func _filter_visible(line: String) -> bool:
 	return line != "casa" or bool(drawer.game.contact_made())
 
 
+var _suggested: String = ""
+var _auto_picked: bool = false
+
+
 func _refresh_list(force: bool) -> void:
 	var g: Node = drawer.game
+	var sg: Dictionary = Guide.next_goal(g)
+	_suggested = "" if sg.is_empty() else String(sg["id"])
 	if not _filter_visible(FILTERS[_filter]):
 		_filter = 0
 	var line: String = FILTERS[_filter]
 	_catalog = g.catalog(line)
 	var contact: bool = bool(g.contact_made())
 	var ant: Dictionary = g.antenna_info()
-	var sig: String = "%s|%s|%s|%s|%s" % [line, str(_catalog), str(ant), _sel_item, I18nRef.locale()]
+	var sig: String = "%s|%s|%s|%s|%s|%s" % [line, str(_catalog), str(ant), _sel_item, I18nRef.locale(), _suggested]
 	if sig == _list_sig and not force:
 		return
 	_list_sig = sig
@@ -269,6 +275,8 @@ func _add_antenna_row(ant: Dictionary) -> void:
 	h.add_child(DrawerUi.icon("antena"))
 	var name_l: Label = DrawerUi.fill_label(I18nRef.t("ui.antenna", {"n": int(ant.get("level", 1))}))
 	h.add_child(name_l)
+	if _suggested == "antenna":
+		h.add_child(DrawerUi.icon("estrela"))
 	if not bool(ant.get("max", false)):
 		var c: Label = DrawerUi.label(str(int(ant.get("next_cost", 0))), "LabelAmber" if bool(ant.get("can", false)) else "LabelMuted")
 		h.add_child(c)
@@ -282,7 +290,7 @@ func _add_item_row(e: Dictionary) -> void:
 	var h: HBoxContainer = parts[1]
 	var status: String = str(e.get("status", "available"))
 	var ic: String = ""
-	if bool(e.get("pinned", false)):
+	if bool(e.get("pinned", false)) or _suggested == id:
 		ic = "estrela"
 	elif status == "locked":
 		ic = "lock"
@@ -329,6 +337,13 @@ func _refresh_detail(force: bool) -> void:
 		_detail_item()
 	else:
 		_sel_inst = -1
+		var sg: Dictionary = Guide.next_goal(g)
+		if not _auto_picked and not sg.is_empty():
+			# abre já na próxima meta sugerida (o jogador não precisa descobrir o que comprar)
+			_auto_picked = true
+			_sel_item = ANTENNA if bool(sg["antenna"]) else String(sg["id"])
+			_refresh_detail(true)
+			return
 		_detail_empty()
 
 
@@ -339,17 +354,17 @@ func _detail_empty() -> void:
 
 
 func _goal_line() -> void:
-	var goal: String = str(drawer.game.pinned_goal())
-	if goal == "":
+	var g: Dictionary = Guide.next_goal(drawer.game)
+	if g.is_empty():
 		return
-	var e: Dictionary = _entry_any(goal)
-	var h: HBoxContainer = DrawerUi.icon_text("estrela", I18nRef.t("goal.pinned", {"item": I18nRef.t("item.%s.name" % goal)}))
+	var pinned: bool = str(drawer.game.pinned_goal()) != "" and str(drawer.game.pinned_goal()) == String(g["id"])
+	var key: String = "goal.pinned" if pinned else "goal.next"
+	var h: HBoxContainer = DrawerUi.icon_text("estrela", I18nRef.t(key, {"item": I18nRef.t(String(g["name_key"]))}))
 	_detail.add_child(h)
-	if not e.is_empty():
-		var have: int = int(drawer.game.sucata())
-		var need: int = int(e.get("cost", 0))
-		var txt: String = I18nRef.t("goal.ready") if bool(drawer.game.goal_ready()) else I18nRef.t("goal.progress", {"have": mini(have, need), "need": need})
-		_detail.add_child(DrawerUi.label(txt, "LabelAmber"))
+	var have: int = int(g["have"])
+	var need: int = int(g["cost"])
+	var txt: String = I18nRef.t("goal.ready") if bool(g["ready"]) else I18nRef.t("goal.progress", {"have": mini(have, need), "need": need})
+	_detail.add_child(DrawerUi.label(txt, "LabelAmber"))
 
 
 func _title(text: String, right_text: String = "", right_icon: String = "") -> void:

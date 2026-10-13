@@ -12,6 +12,7 @@ var _title: TitleScreen
 var _options: OptionsScreen
 var _bunker: Node2D
 var _handle: WindowHandle
+var _hud: StatusHud
 var _drawer: Drawer
 var _drawer_layer: CanvasLayer
 var _hints: HintLayer
@@ -20,6 +21,7 @@ var _drawer_open: bool = false
 var _playing: bool = false
 var _in_ending: bool = false
 var _ending_layer: CanvasLayer
+var _intro: IntroScreen
 
 
 func _ready() -> void:
@@ -57,6 +59,8 @@ func _relayout() -> void:
 		_bunker.call("set_view_width", size_l.x)
 	if _handle != null:
 		_handle.position = Vector2(size_l.x - 48, size_l.y - STRIP_H)
+	if _hud != null:
+		_hud.position = Vector2(2, size_l.y - STRIP_H + 2)
 
 
 # ---------------------------------------------------------------- título
@@ -89,7 +93,7 @@ func _on_options_requested() -> void:
 	add_child(_options)
 
 
-func _on_game_started(_is_new: bool) -> void:
+func _on_game_started(is_new: bool) -> void:
 	if _title != null:
 		_title.queue_free()
 		_title = null
@@ -117,11 +121,63 @@ func _on_game_started(_is_new: bool) -> void:
 			_drawer.close())
 	_bunker.connect("hatch_clicked", func() -> void: _drawer.open("state"))
 	_bunker.connect("radio_clicked", func() -> void: _drawer.open("radio"))
-	_bunker.connect("box_clicked", func() -> void: _drawer.open("state"))
-	_bunker.connect("object_clicked", func(id: int) -> void: _drawer.select_instance(id))
-	_hints.enabled = true
+	_bunker.connect("box_clicked", _on_box_clicked)
+	_bunker.connect("object_clicked", _on_object_clicked)
+	_hud = StatusHud.new()
+	_hud.clicked.connect(func() -> void: _drawer.open("build"))
+	add_child(_hud)
+	if is_new:
+		_hud.steps.start()
+	_hints.enabled = not is_new
 	move_child(_hints, get_child_count() - 1)
 	_relayout()
+	if is_new and not bool(Settings.get_value("intro_seen", false)):
+		_show_intro()
+	elif is_new:
+		_hints.enabled = true
+
+
+## Introdução do primeiro jogo: ocupa a área da gaveta, com a faixa rodando embaixo.
+func _show_intro() -> void:
+	_drawer_open = true
+	_relayout()
+	_intro = IntroScreen.new()
+	_intro.finished.connect(func() -> void:
+		Settings.set_value("intro_seen", true)
+		_intro.get_parent().queue_free()
+		_intro = null
+		_drawer_open = false
+		_hints.enabled = true
+		_relayout())
+	var layer := CanvasLayer.new()
+	layer.layer = 15
+	add_child(layer)
+	layer.add_child(_intro)
+
+
+## Com a gaveta fechada e a ajuda ligada (começo do jogo): clicar numa estrutura de plantio ajuda o ciclo.
+func _on_object_clicked(id: int) -> void:
+	if not _drawer.is_open() and bool(Game.help_plots_available()):
+		if bool(Game.help_instance(id)["ok"]):
+			return
+	_drawer.select_instance(id)
+
+
+## Clicar na caixa troca a colheita por sucata agora (começo); depois só abre o estado.
+func _on_box_clicked() -> void:
+	if not _drawer.is_open() and bool(Game.help_box_available()):
+		var r: Dictionary = Game.help_box()
+		if bool(r["ok"]):
+			_drawer.toast("hud.box_sold", {"n": int(r["scrap"])})
+			return
+		match String(r["reason"]):
+			"empty":
+				_drawer.toast("hud.box_empty")
+				return
+			"cooldown":
+				_drawer.toast("hud.box_wait")
+				return
+	_drawer.open("state")
 
 
 func _on_drawer_open_changed(open: bool) -> void:

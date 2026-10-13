@@ -54,7 +54,7 @@ func _init() -> void:
 	hook(s)
 	s.new_game(3, 9.0)
 	check(int(sigs.get("new_game_started", 0)) == 1, "new_game_started emitido")
-	check(s.antenna() == 1 and s.rooms() == 1 and s.sucata() == 0, "antena 1, 1 sala, sucata 0")
+	check(s.antenna() == 1 and s.rooms() == 1 and s.sucata() == 6, "antena 1, 1 sala, sucata 6")
 	check(s.instances().size() == 4, "4 instâncias iniciais (3 vasos + bicicleta)")
 	check(s.plots().size() == 3, "3 plots")
 	var fx := s.fixed_objects(1)
@@ -92,7 +92,7 @@ func _init() -> void:
 	check(hm[0]["room"] == 1 and hm[0]["col"] == 6, "moinho: 1ª posição = onde está a bicicleta " + str(hm[0]))
 
 	print("== compras e obras")
-	var r := s.buy("vaso", 1, 7)
+	var r := s.buy("canteiro", 1, 7)
 	check(not r["ok"] and r["reason"] == "missing.cost", "sem sucata: " + str(r["reason"]))
 	give(s, 500)
 	r = s.buy("vaso", 1, 6)

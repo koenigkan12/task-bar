@@ -43,6 +43,7 @@ var _terrain: BunkerTerrain
 var _surface: Node2D
 var _objects: Node2D
 var _fx: Node2D
+var _tip: PlotTip
 var _shade: BunkerLight
 var _lights: Node2D
 var _cone: BunkerLight
@@ -139,6 +140,9 @@ func _build_layers() -> void:
 	_fx = Node2D.new()
 	_fx.z_index = 4
 	add_child(_fx)
+	_tip = PlotTip.new()
+	_tip.view = self
+	add_child(_tip)
 	_shade = BunkerLight.new(BunkerLight.Kind.SHADE)
 	_shade.z_index = 6
 	add_child(_shade)
@@ -172,6 +176,7 @@ func _connect_game() -> void:
 	link.connect_signal("radio_line", _on_radio_line)
 	link.connect_signal("visit_happened", _on_visit)
 	link.connect_signal("plot_harvested", _on_plot_harvested)
+	link.connect_signal("helped", _on_helped)
 	link.connect_signal("box_state_changed", func(_f: float, _o: bool) -> void: _sync())
 	link.connect_signal("state_changed", func() -> void: _sync_t = 0.0)
 	link.connect_signal("arrival_started", play_arrival)
@@ -517,10 +522,17 @@ func _on_visit(_info: Dictionary) -> void:
 	_sync()
 
 
+func _on_helped(instance_id: int) -> void:
+	var o: BunkerObject = _inst.get(instance_id)
+	if o != null:
+		spawn_fx("fx_spark", o.bounds().get_center() + Vector2(0, -6))
+
+
 func _on_plot_harvested(plot_id: int) -> void:
 	for p: Dictionary in link.plots():
 		if int(p.get("id", -1)) == plot_id:
 			spawn_fx("fx_dust", plot_pos(p))
+			_tip.pop(plot_pos(p))
 			return
 
 
@@ -590,6 +602,16 @@ func find_item(item: String) -> BunkerObject:
 				return o
 			fallback = o
 	return fallback
+
+
+func is_arrival_running() -> bool:
+	return _arrival_running
+
+
+## A planta só aparece (barra, etiqueta) quando a estrutura está pronta.
+func plot_shown(p: Dictionary) -> bool:
+	var o: BunkerObject = _inst.get(int(p.get("instance", -1)))
+	return o != null and not o.building
 
 
 func plot_pos(p: Dictionary) -> Vector2:

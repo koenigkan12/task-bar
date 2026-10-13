@@ -1,0 +1,34 @@
+key,pt_BR,en
+hud.goal,{name} {have}/{cost},{name} {have}/{cost}
+hud.ready,Comprar {name}!,Buy {name}!
+hint.intro_build,Gaste sucata em gambiarras: toque na meta ali em cima.,Spend scrap on contraptions: tap the goal up there.
+hint.intro_click,Clique nos vasos pra ajudar e na caixa pra trocar.,"Click the pots to help, the box to trade."
+hud.box_sold,+{n} de sucata,+{n} scrap
+hud.box_empty,A caixa está vazia.,The box is empty.
+hud.box_wait,Ele acabou de trocar. Espere um pouco.,He just traded. Give it a moment.
+bag.title,Mochila,Backpack
+bag.counts,Colhido {h} · trocado {s},Harvested {h} · traded {s}
+bag.seeds,Sementes (nunca acabam): {list},Seeds (never run out): {list}
+bag.tools,Ferramentas: {list},Tools: {list}
+intro.1,"Depois do fim do mundo, ele ficou sozinho num bunker. Ela ficou lá fora. O rádio é o único fio.","After the end of the world he was left alone in a bunker. She stayed outside. The radio is the only thread."
+intro.2,"Ele cuida de tudo sozinho: planta, rega e leva a colheita à caixa da escotilha. A caixa vira sucata. Pode deixar a janela no canto.","He runs everything alone: plants, waters, hauls the harvest to the hatch box. The box turns into scrap. Leave the window in a corner."
+intro.3,"Seu papel: gastar a sucata em gambiarras que automatizam a vida dele e melhorar a antena. Cada nível traz uma voz nova.","Your part: spend scrap on contraptions that automate his life, and upgrade the antenna. Each level brings a new voice."
+intro.4,"No começo ele precisa de você: clique nos vasos e na caixa. A meta aparece no canto de cima.","At first he needs you: click the pots and the box. Your goal shows in the top corner."
+intro.next,Próximo,Next
+intro.start,Começar,Start
+tut.1,1/4 Clique num vaso pra ajudar a planta a crescer.,1/4 Click a pot to help the plant grow.
+tut.2,2/4 Continue clicando até colher: a colheita vira cestos.,2/4 Keep clicking until it's ready: the harvest becomes baskets.
+tut.3,3/4 Clique na caixa da escotilha: cestos viram sucata.,3/4 Click the hatch box: baskets turn into scrap.
+tut.4,4/4 Toque na meta ali em cima e compre uma gambiarra.,4/4 Tap the goal up there and buy a contraption.
+goal.next,Próxima meta: {item},Next goal: {item}
+plot.stage.0,Semente,Seed
+plot.stage.1,Brotando,Sprouting
+plot.stage.2,Crescendo,Growing
+plot.stage.3,Quase pronta,Almost ready
+plot.ready,Pronta! Ele já vai colher.,Ready! He'll pick it soon.
+plot.line,"{crop} · {stage} {pct}%","{crop} · {stage} {pct}%"
+plot.eta,Colhe em ~{t},Harvest in ~{t}
+plot.eta_h,"{h} h {m} min","{h} h {m} min"
+plot.eta_m,{m} min,{m} min
+plot.gain,+1 cesto,+1 basket
+plot.asleep,Ele está dormindo. A planta espera.,He is asleep. The plant waits.

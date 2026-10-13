@@ -63,7 +63,7 @@
     }
   },
   "start": {
-    "sucata": 0,
+    "sucata": 6,
     "antenna": 1,
     "rooms": 1,
     "owned": [
@@ -127,6 +127,16 @@
     "ouvir_radio": { "needs": "poltrona" },
     "escrever": { "needs": "mesinha" },
     "olhar_foto": { "needs": "foto" }
+  },
+  "help": {
+    "_comment": "Ajuda manual do começo (cliques). click_min = minutos de ciclo por clique em estrutura de plantio; day_cap_min = teto diário; a ajuda ao plantio some com o gotejador e a da caixa some com a calha (cada máquina tira um clique).",
+    "click_min": 6.0,
+    "day_cap_min": 720.0,
+    "box_cooldown_min": 30.0
+  },
+  "guide": {
+    "_comment": "Ordem das metas sugeridas na faixa (HUD). 'item:N' = até ter N; 'antena@N' = só quando o próximo nível é N.",
+    "order": ["vaso:4", "gotejador", "calha", "antena@2", "moinho", "comodo2", "canteiro:1", "canteiro:2", "gotejador", "antena@3", "prateleira", "bateria", "antena@4", "cisterna", "estufa", "roldana", "comodo3", "painel", "antena@5", "bomba", "esteira"]
   },
   "test_targets": {
     "antenna5_day_min": 12.0,

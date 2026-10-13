@@ -43,7 +43,7 @@ func _main(g: Node) -> void:
 	g.radio_line.connect(func(_d: Dictionary) -> void: ev.append("radio"))
 	g.new_game()
 	check(g.in_game and "new" in ev, "new_game: in_game e sinal")
-	check(g.instances().size() == 4 and g.sucata() == 0 and g.antenna() == 1, "estado inicial pela API do Game")
+	check(g.instances().size() == 4 and g.sucata() == 6 and g.antenna() == 1, "estado inicial pela API do Game")
 	check(g.catalog("plantio").size() == 4 and g.catalog("escavacao").size() == 2, "catalog filtrado")
 	check(g.plots().size() == 3 and g.fixed_objects(1).size() == 4, "plots/fixos")
 	check(g.journey()["items_total"] == 6 and g.house_status().size() == 6, "journey/house_status")

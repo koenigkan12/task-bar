@@ -81,8 +81,28 @@ func _col_him(g: Node) -> void:
 	c.add_child(DrawerUi.icon_text(icon, I18nRef.t(key), ""))
 	c.add_child(DrawerUi.label("%s · %s" % [I18nRef.t("ui.day", {"n": int(g.day_index()) + 1}), DrawerUi.clock(float(g.tod_hours()))], "LabelSmall"))
 	var busy: float = float(g.busy())
-	c.add_child(DrawerUi.label(I18nRef.t("status.busy", {"pct": roundi(busy * 100.0)}), "LabelSmall"))
 	_bar(c, busy)
+	_bag(c, g)
+
+
+## "Mochila": o que ele já colheu/trocou, sementes e ferramentas (o jogador vê o que existe).
+func _bag(c: VBoxContainer, g: Node) -> void:
+	if not g.has_method("line_tiers") or not g.has_method("stats"):
+		return
+	var st: Dictionary = g.stats()
+	_head(c, I18nRef.t("bag.title"))
+	c.add_child(DrawerUi.label(I18nRef.t("bag.counts", {"h": int(st.get("harvested", 0)), "s": int(st.get("sold_baskets", 0))}), "LabelSmall"))
+	var crops: Array[String] = []
+	for id: String in Balance.crop_ids():
+		var cr: Dictionary = Balance.crop(id)
+		if int(cr.get("requires_antenna", 1)) <= int(g.antenna()):
+			crops.append(I18nRef.t("crop.%s.name" % id))
+	c.add_child(DrawerUi.label(I18nRef.t("bag.seeds", {"list": ", ".join(crops)}), "LabelSmall", true))
+	var tiers: Dictionary = g.line_tiers()
+	var tools: Array[String] = []
+	for ln: String in ["agua", "transporte", "energia"]:
+		tools.append(I18nRef.t("item.%s.name" % str(tiers.get(ln, ""))))
+	c.add_child(DrawerUi.label(I18nRef.t("bag.tools", {"list": ", ".join(tools)}), "LabelSmall", true))
 
 
 func _col_box(g: Node, st: Dictionary) -> void:

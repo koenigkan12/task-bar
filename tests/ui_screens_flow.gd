@@ -184,9 +184,9 @@ func _hints(host: Control) -> void:
 	f["Game"].new_game_started.emit()
 	await process_frame
 	await process_frame
-	_ok(hl.current_id() == "first_run", "novo jogo mostra first_run (%s)" % hl.current_id())
-	_ok((st.data.get("hints_seen", []) as Array).has("first_run"), "marca como vista")
-	_ok(not HintLayer.request("first_run"), "não repete")
+	_ok(hl.current_id() == "drag", "novo jogo mostra drag (%s)" % hl.current_id())
+	_ok((st.data.get("hints_seen", []) as Array).has("drag"), "marca como vista")
+	_ok(not HintLayer.request("drag"), "não repete")
 	_ok(HintLayer.request("build"), "gaveta pede dica nova")
 	hl.dismiss()
 	hl.queue_free()
