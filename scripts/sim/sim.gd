@@ -496,11 +496,15 @@ func _help_budget() -> float:
 
 
 func help_instance(instance_id: int) -> Dictionary:
-	if not help_plots_available():
+	if not help_available():
 		return {"ok": false, "reason": "off"}
 	var inst: Dictionary = _inst_by_id(instance_id)
-	if inst.is_empty() or String(inst.get("state", "ready")) == "building":
+	if inst.is_empty():
 		return {"ok": false, "reason": "none"}
+	if String(inst.get("state", "ready")) == "building":
+		return _help_build(instance_id)
+	if not help_plots_available():
+		return {"ok": false, "reason": "off"}
 	var click: float = Balance.num("help.click_min", 4.0)
 	var n: int = 0
 	for p in _plots:
@@ -521,6 +525,27 @@ func help_instance(instance_id: int) -> Dictionary:
 		helped.emit(instance_id)
 		state_changed.emit()
 	return {"ok": true, "plots": n}
+
+
+## Clicar numa obra ajuda a martelar: adianta `help.build_click_min` de trabalho da obra.
+func _help_build(instance_id: int) -> Dictionary:
+	var budget: float = _help_budget()
+	if budget <= 0.0:
+		return {"ok": false, "reason": "cap"}
+	for j in _jobs:
+		if int(j["instance"]) == instance_id and String(j["kind"]) == "build":
+			var use: float = minf(Balance.num("help.build_click_min", 1.5), budget)
+			use = minf(use, float(j["total"]) - float(j["done"]))
+			_help_used += use
+			j["done"] = float(j["done"]) + use
+			if float(j["done"]) >= float(j["total"]) - JOB_EPS_MIN:
+				_jobs.erase(j)
+				_complete_job(j)
+			if not _muted:
+				helped.emit(instance_id)
+				state_changed.emit()
+			return {"ok": true, "plots": 0, "build": true}
+	return {"ok": false, "reason": "none"}
 
 
 func help_box() -> Dictionary:
@@ -694,11 +719,15 @@ func _clock_eta(work_min: float) -> float:
 
 func active_jobs() -> Array[Dictionary]:
 	var out: Array[Dictionary] = []
+	var queued := 0.0   # trabalho que falta nas obras à frente na fila (elas andam uma de cada vez)
+	var rate: float = maxf(0.05, Balance.num("economy.build_labor_share", 0.7) * maxf(0.05, _labor_f))
 	for j in _jobs:
-		if bool(j.get("hidden", false)):
-			continue
-		out.append({"instance": int(j["instance"]), "item": String(j["item"]),
-				"ratio": float(j["done"]) / maxf(0.001, float(j["total"]))})
+		var left: float = float(j["total"]) - float(j["done"])
+		if not bool(j.get("hidden", false)):
+			out.append({"instance": int(j["instance"]), "item": String(j["item"]),
+					"ratio": float(j["done"]) / maxf(0.001, float(j["total"])),
+					"eta_min": _clock_eta((queued + left) / rate)})
+		queued += left
 	return out
 
 

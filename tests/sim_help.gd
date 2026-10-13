@@ -46,6 +46,27 @@ func _initialize() -> void:
 	check(capped, "teto diário de ajuda")
 	s.debug_advance_minutes(1440.0)
 	check(bool(s.help_instance(vaso_id)["ok"]), "teto reinicia no dia seguinte")
+	# obra: clicar ajuda a martelar e a estimativa de tempo aparece
+	var b := Sim.new()
+	b.new_game()
+	var bv: Dictionary = b.buy("vaso", 1, 7)
+	check(bool(bv["ok"]), "compra um vaso (obra)")
+	var jobs: Array = b.active_jobs()
+	check(jobs.size() == 1 and float(jobs[0]["eta_min"]) > 1.0, "obra com tempo estimado (%s min)" % str(jobs[0].get("eta_min", -1)))
+	var done_clicks := 0
+	for k in 12:
+		var rb: Dictionary = b.help_instance(int(bv["instance_id"]))
+		if not bool(rb["ok"]):
+			break
+		done_clicks += 1
+		if b.active_jobs().is_empty():
+			break
+	check(b.active_jobs().is_empty() and done_clicks <= 6, "a obra do vaso termina só com cliques (%d)" % done_clicks)
+	var ready := false
+	for i in b.instances():
+		if int(i["id"]) == int(bv["instance_id"]):
+			ready = String(i["state"]) == "ready"
+	check(ready, "vaso pronto depois da obra")
 	# cada máquina tira um clique
 	var t := Sim.new()
 	t.new_game()

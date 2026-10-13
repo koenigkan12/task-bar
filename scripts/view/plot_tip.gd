@@ -11,6 +11,7 @@ const REFRESH_SEC: float = 0.2
 var view: BunkerView
 
 var _plots: Array = []
+var _jobs: Array = []   # obras (Game.active_jobs): instance, item, ratio, eta_min
 var _t: float = 0.0
 var _pops: Array = []   # {pos: Vector2, t: float}
 var _tip_lines: PackedStringArray = PackedStringArray()
@@ -30,6 +31,7 @@ func _process(delta: float) -> void:
 	if _t >= REFRESH_SEC:
 		_t = 0.0
 		_plots = view.link.plots()
+		_jobs = view.link.active_jobs()
 	for i in range(_pops.size() - 1, -1, -1):
 		_pops[i]["t"] = float(_pops[i]["t"]) + delta
 		if float(_pops[i]["t"]) >= POP_SEC:
@@ -46,6 +48,16 @@ func _update_tip() -> void:
 	var m: Vector2 = view.get_local_mouse_position()
 	var hit: Dictionary = view.get_object_at(m)
 	if String(hit.get("kind", "")) != "instance":
+		return
+	var job: Dictionary = _job_of(int(hit["id"]))
+	if not job.is_empty():
+		var item: String = ScreenUtil.tr_key("item.%s.name" % String(job["item"]))
+		_tip_lines.append(ScreenUtil.tr_key("plot.build", {"item": item, "pct": int(floorf(float(job["ratio"]) * 100.0))}))
+		_tip_lines.append(ScreenUtil.tr_key("plot.build_eta", {"t": _fmt(float(job.get("eta_min", 0.0)))}))
+		if view.link.game != null and view.link.game.has_method("help_available") and bool(view.link.game.call("help_available")):
+			_tip_lines.append(ScreenUtil.tr_key("plot.build_help"))
+		var o: BunkerObject = view.object_by_id(int(hit["id"]))
+		_tip_pos = Vector2(o.bounds().get_center().x, o.bounds().position.y + 6.0) if o != null else m
 		return
 	var best: Dictionary = {}
 	var best_d: float = 1e9
@@ -72,6 +84,13 @@ func _update_tip() -> void:
 	_tip_pos = view.plot_pos(best)
 
 
+func _job_of(instance_id: int) -> Dictionary:
+	for j: Dictionary in _jobs:
+		if int(j.get("instance", -1)) == instance_id:
+			return j
+	return {}
+
+
 func _fmt(minutes: float) -> String:
 	var m: int = maxi(1, int(ceilf(minutes)))
 	if m >= 60:
@@ -93,6 +112,16 @@ func _draw() -> void:
 		draw_rect(Rect2(x, y, floorf(BAR_W * prog), 2), col)
 	var font: Font = UiTheme.font()
 	var fs: int = UiTheme.SIZE_SMALL
+	for j: Dictionary in _jobs:
+		var o: BunkerObject = view.object_by_id(int(j.get("instance", -1)))
+		if o == null:
+			continue
+		var b: Rect2 = o.bounds()
+		var label: String = "%d%%" % int(floorf(float(j["ratio"]) * 100.0))
+		var tw: float = font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+		var at := Vector2(b.get_center().x - tw * 0.5, maxf(BunkerGeo.WALL_Y + 8.0, b.position.y - 9.0))
+		draw_string_outline(font, at.round(), label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, 3, ink)
+		draw_string(font, at.round(), label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, UiTheme.AMBER3)
 	for pp: Dictionary in _pops:
 		var k: float = float(pp["t"]) / POP_SEC
 		var c: Color = UiTheme.SIGNAL

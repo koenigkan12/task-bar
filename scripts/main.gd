@@ -157,7 +157,7 @@ func _show_intro() -> void:
 
 ## Com a gaveta fechada e a ajuda ligada (começo do jogo): clicar numa estrutura de plantio ajuda o ciclo.
 func _on_object_clicked(id: int) -> void:
-	if not _drawer.is_open() and bool(Game.help_plots_available()):
+	if not _drawer.is_open() and bool(Game.help_available()):
 		if bool(Game.help_instance(id)["ok"]):
 			return
 	_drawer.select_instance(id)

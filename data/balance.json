@@ -131,6 +131,7 @@
   "help": {
     "_comment": "Ajuda manual do começo (cliques). click_min = minutos de ciclo por clique em estrutura de plantio; day_cap_min = teto diário; a ajuda ao plantio some com o gotejador e a da caixa some com a calha (cada máquina tira um clique).",
     "click_min": 6.0,
+    "build_click_min": 1.5,
     "day_cap_min": 720.0,
     "box_cooldown_min": 30.0
   },

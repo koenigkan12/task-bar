@@ -19,7 +19,7 @@ intro.start,Começar,Start
 tut.1,1/4 Clique num vaso pra ajudar a planta a crescer.,1/4 Click a pot to help the plant grow.
 tut.2,2/4 Continue clicando até colher: a colheita vira cestos.,2/4 Keep clicking until it's ready: the harvest becomes baskets.
 tut.3,3/4 Clique na escotilha ou na caixa embaixo dela: cestos viram sucata.,3/4 Click the hatch or the box under it: baskets turn into scrap.
-tut.4,4/4 Toque na meta ali em cima e compre uma gambiarra.,4/4 Tap the goal up there and buy a contraption.
+tut.4,4/4 Toque na meta ali em cima e compre uma gambiarra. Depois clique na obra pra ajudar a martelar.,4/4 Tap the goal up there and buy a contraption. Then click the work site to help hammer.
 goal.next,Próxima meta: {item},Next goal: {item}
 plot.stage.0,Semente,Seed
 plot.stage.1,Brotando,Sprouting
@@ -32,3 +32,6 @@ plot.eta_h,"{h} h {m} min","{h} h {m} min"
 plot.eta_m,{m} min,{m} min
 plot.gain,+1 cesto,+1 basket
 plot.asleep,Ele está dormindo. A planta espera.,He is asleep. The plant waits.
+plot.build,{item} em obra · {pct}%,{item} under construction · {pct}%
+plot.build_eta,Fica pronto em ~{t},Ready in ~{t}
+plot.build_help,Clique para ajudar a martelar,Click to help hammer
