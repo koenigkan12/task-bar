@@ -39,7 +39,7 @@ Tudo é com o mouse.
 | Sempre por cima, resetar posição, sair | Menu do ícone na bandeja do Windows (perto do relógio) |
 | Janela sumiu da tela | Menu da bandeja → Resetar posição, ou rode `QuantosDias.exe --reset-window` |
 
-Esc fecha a gaveta ou cancela o posicionamento. Fechar o jogo e voltar depois: o tempo passado conta (até 72 h) e a gaveta mostra um resumo do que aconteceu.
+Esc fecha a gaveta ou cancela o posicionamento; com a gaveta fechada, abre as Opções. Fechar o jogo e voltar depois: o tempo passado conta (até 72 h) e a gaveta mostra um resumo do que aconteceu.
 
 O som começa desligado e só liga depois do primeiro clique. Nas opções há três modos de áudio: silencioso, ambiente e completo.
 

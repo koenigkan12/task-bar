@@ -198,6 +198,16 @@ func _toggle_drawer(open: bool) -> void:
 	_on_drawer_open_changed(open)
 
 
+## Esc em jogo: com a gaveta aberta ela mesma fecha (ou cancela o posicionamento); com ela fechada,
+## abre as opções (não há pausa: o jogo anda sozinho).
+func _unhandled_input(event: InputEvent) -> void:
+	if not _playing or _in_ending or _intro != null or _drawer == null:
+		return
+	if event.is_action_pressed("ui_cancel") and not event.is_echo() and not _drawer.is_open():
+		_drawer.open("options")
+		get_viewport().set_input_as_handled()
+
+
 func _on_first_interaction() -> void:
 	AudioManager.unlock()
 

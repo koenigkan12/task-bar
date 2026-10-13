@@ -26,6 +26,15 @@ func _click(pos: Vector2) -> void:
 		root.push_input(ev)
 		await _frames(2)
 
+func _esc() -> void:
+	for pressed in [true, false]:
+		var ev := InputEventKey.new()
+		ev.keycode = KEY_ESCAPE
+		ev.physical_keycode = KEY_ESCAPE
+		ev.pressed = pressed
+		root.push_input(ev)
+		await _frames(3)
+
 func _initialize() -> void:
 	_run.call_deferred()
 
@@ -80,5 +89,12 @@ func _run() -> void:
 	DirAccess.make_dir_recursive_absolute(out_dir)
 	img.save_png("%s/hud_recolhido.png" % out_dir)
 	st.set_value("tutorial_hidden", false)
+	# Esc: abre as opções com a gaveta fechada e fecha de novo
+	var drawer: Node = main.get("_drawer")
+	_check(not drawer.is_open(), "gaveta fechada antes do Esc")
+	await _esc()
+	_check(drawer.is_open(), "Esc abre a gaveta (opções)")
+	await _esc()
+	_check(not drawer.is_open(), "Esc de novo fecha")
 	print("RESULTADO: %d FALHAS" % fails)
 	quit(1 if fails > 0 else 0)
