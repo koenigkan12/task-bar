@@ -667,9 +667,11 @@ func instances() -> Array[Dictionary]:
 		var ratio := 1.0
 		if String(inst["state"]) == "building":
 			ratio = 0.0
-			for j in _jobs:
+			var shown := _jobs_shown()
+			for k in _jobs.size():
+				var j: Dictionary = _jobs[k]
 				if int(j["instance"]) == int(inst["id"]):
-					ratio = float(j["done"]) / maxf(0.001, float(j["total"]))
+					ratio = shown[k] / maxf(0.001, float(j["total"]))
 		out.append({"id": int(inst["id"]), "item": String(inst["item"]), "room": int(inst["room"]),
 				"col": int(inst["col"]), "cols": int(inst["cols"]), "state": String(inst["state"]),
 				"build_ratio": ratio})
@@ -721,13 +723,37 @@ func active_jobs() -> Array[Dictionary]:
 	var out: Array[Dictionary] = []
 	var queued := 0.0   # trabalho que falta nas obras à frente na fila (elas andam uma de cada vez)
 	var rate: float = maxf(0.05, Balance.num("economy.build_labor_share", 0.7) * maxf(0.05, _labor_f))
-	for j in _jobs:
-		var left: float = float(j["total"]) - float(j["done"])
+	var shown := _jobs_shown()
+	for k in _jobs.size():
+		var j: Dictionary = _jobs[k]
+		var left: float = float(j["total"]) - shown[k]
 		if not bool(j.get("hidden", false)):
 			out.append({"instance": int(j["instance"]), "item": String(j["item"]),
-					"ratio": float(j["done"]) / maxf(0.001, float(j["total"])),
+					"ratio": shown[k] / maxf(0.001, float(j["total"])),
 					"eta_min": _clock_eta((queued + left) / rate)})
 		queued += left
+	return out
+
+
+## Trabalho já feito em cada obra para mostrar na tela. A Sim só gasta trabalho a cada passo de
+## `time.step_min` (10 min), então a porcentagem ficava parada em 0% até o passo fechar; aqui soma-se a
+## parte do passo em andamento (só acordado), na ordem da fila, e o valor bate com o real no fim do passo.
+func _jobs_shown() -> PackedFloat64Array:
+	var out := PackedFloat64Array()
+	var rem := 0.0
+	for j in _jobs:
+		out.append(float(j["done"]))
+		rem += float(j["total"]) - float(j["done"])
+	if _jobs.is_empty() or not is_awake():
+		return out
+	var pend: float = minf(rem, _step * Balance.num("economy.build_labor_share", 0.7)) * _labor_f \
+			* clampf(_acc / _step, 0.0, 1.0)
+	for k in _jobs.size():
+		var use: float = minf(pend, float(_jobs[k]["total"]) - float(_jobs[k]["done"]))
+		out[k] += use
+		pend -= use
+		if pend <= 1e-9:
+			break
 	return out
 
 

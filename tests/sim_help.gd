@@ -67,6 +67,24 @@ func _initialize() -> void:
 		if int(i["id"]) == int(bv["instance_id"]):
 			ready = String(i["state"]) == "ready"
 	check(ready, "vaso pronto depois da obra")
+	# a porcentagem da obra anda entre os passos de 10 min (antes ficava em 0% até o passo fechar)
+	var q := Sim.new()
+	q.new_game(1, 9.0)
+	var qv: Dictionary = q.buy("vaso", 1, 7)
+	check(float(q.active_jobs()[0]["ratio"]) == 0.0, "obra nova começa em 0%")
+	q.debug_advance_minutes(4.0)
+	var r4: float = float(q.active_jobs()[0]["ratio"])
+	check(r4 > 0.05 and r4 < 0.95, "aos 4 min a obra já mostra andamento (%.2f)" % r4)
+	var bar: float = 0.0
+	for i in q.instances():
+		if int(i["id"]) == int(qv["instance_id"]):
+			bar = float(i["build_ratio"])
+	check(absf(bar - r4) < 0.01, "o andaime mostra o mesmo valor (%.2f)" % bar)
+	var eta4: float = float(q.active_jobs()[0]["eta_min"])
+	q.debug_advance_minutes(3.0)
+	check(float(q.active_jobs()[0]["ratio"]) > r4 and float(q.active_jobs()[0]["eta_min"]) < eta4, "andamento e tempo seguem entre os passos")
+	q.debug_advance_minutes(40.0)
+	check(q.active_jobs().is_empty(), "sem clicar, a obra do vaso fecha sozinha")
 	# cada máquina tira um clique
 	var t := Sim.new()
 	t.new_game()

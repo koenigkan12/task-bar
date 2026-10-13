@@ -46,5 +46,38 @@ func _run() -> void:
 	img.save_png("%s/obra_hover.png" % out_dir)
 	var tip: PlotTip = bunker.get("_tip")
 	_check(tip.get("_tip_lines").size() >= 2, "etiqueta da obra (%s)" % str(tip.get("_tip_lines")))
+	# clicar na obra ajuda a martelar (clique real, com a gaveta fechada)
+	var before: float = float(game.active_jobs()[0]["ratio"])
+	for pressed in [true, false]:
+		var ev := InputEventMouseButton.new()
+		ev.button_index = MOUSE_BUTTON_LEFT
+		ev.pressed = pressed
+		ev.position = bunker.to_global(c)
+		ev.global_position = ev.position
+		root.push_input(ev)
+		await _frames(3)
+	var after: float = float(game.active_jobs()[0]["ratio"])
+	_check(after > before, "clique na obra adianta (%.2f -> %.2f)" % [before, after])
+	# com a gaveta ABERTA (onde se compra) o clique na obra também ajuda e a barra da gaveta anda
+	var drawer: Node = main.get("_drawer")
+	drawer.call("open", "build")
+	await _frames(20)
+	var ov: DrawerPlacementOverlay = drawer.get("_overlay")
+	var idx := -1
+	for i in ov._rects().size():
+		if int(ov.targets[i]["id"]) == int(r["instance_id"]):
+			idx = i
+	if idx < 0:
+		drawer.call("select_instance", int(r["instance_id"]))
+		await _frames(5)
+		for i in ov._rects().size():
+			if int(ov.targets[i]["id"]) == int(r["instance_id"]):
+				idx = i
+	_check(idx >= 0, "obra aparece como alvo da gaveta")
+	var b4: float = float(game.active_jobs()[0]["ratio"]) if not game.active_jobs().is_empty() else 1.0
+	ov.pick(idx)
+	await _frames(5)
+	var a4: float = float(game.active_jobs()[0]["ratio"]) if not game.active_jobs().is_empty() else 1.0
+	_check(a4 > b4, "clique na obra com a gaveta aberta adianta (%.2f -> %.2f)" % [b4, a4])
 	print("RESULTADO: %d FALHAS" % fails)
 	quit(1 if fails > 0 else 0)

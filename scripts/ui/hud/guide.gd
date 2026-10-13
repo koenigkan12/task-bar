@@ -43,6 +43,8 @@ static func _resolve(game: Object, entry: String, have: int) -> Dictionary:
 		until = int(entry.get_slice(":", 1))
 	if until >= 0 and _owned(game, item) >= until:
 		return {}
+	if _building(game, item):
+		return {}   # já pago e em obra: a próxima meta é outra
 	var r: Dictionary = game.call("can_buy", item)
 	var cost: int = 0
 	for c in game.call("catalog", ""):
@@ -63,3 +65,10 @@ static func _owned(game: Object, item: String) -> int:
 		if String(i["item"]) == item:
 			n += 1
 	return n
+
+
+static func _building(game: Object, item: String) -> bool:
+	for i in game.call("instances"):
+		if String(i["item"]) == item and String(i.get("state", "ready")) == "building":
+			return true
+	return false

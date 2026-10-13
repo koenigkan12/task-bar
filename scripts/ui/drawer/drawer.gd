@@ -104,7 +104,7 @@ func _init() -> void:
 	_overlay.offset_top = DRAWER_H
 	_overlay.offset_bottom = DRAWER_H + STRIP_H
 	_overlay.spot_picked.connect(_on_spot_picked)
-	_overlay.instance_picked.connect(select_instance)
+	_overlay.instance_picked.connect(_on_instance_picked)
 	_overlay.cancelled.connect(cancel_placement)
 	add_child(_overlay)
 	_toasts = DrawerToastLayer.new()
@@ -217,6 +217,19 @@ func show_tab(tab_id: String) -> void:
 	_welcome.visible = false
 	_show_page()
 	refresh(true)
+
+
+## Clique numa estrutura com a gaveta aberta: seleciona como sempre e, se for uma obra, também ajuda a
+## martelar (o mesmo clique que ajuda com a gaveta fechada; senão a obra parecia não reagir).
+func _on_instance_picked(instance_id: int) -> void:
+	select_instance(instance_id)
+	if game == null or not game.has_method("help_instance") or not game.has_method("instances"):
+		return
+	for i: Dictionary in game.instances():
+		if int(i["id"]) == instance_id and String(i["state"]) == "building":
+			game.help_instance(instance_id)
+			refresh(true)
+			return
 
 
 ## Abre a aba Construir com o objeto escolhido (cultura, mover, desmontar).
