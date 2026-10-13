@@ -1,6 +1,8 @@
 {
   "files": [
     "strings_items.csv",
+    "strings_platform.csv",
+    "strings_screens.csv",
     "strings_story.csv",
     "strings_ui.csv"
   ]
