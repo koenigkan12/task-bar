@@ -354,19 +354,20 @@ func _sync_surface() -> void:
 
 
 func _sync_lamps() -> void:
-	while _lamps.size() < _rooms:
-		var r := _lamps.size() + 1
+	var pts := BunkerGeo.lamp_points(_rooms)
+	while _lamps.size() < pts.size():
 		var lamp := ArtSprite.new("lamp", 1)
-		lamp.position = Vector2(BunkerGeo.lamp_x(r), BunkerGeo.WALL_Y)
 		_overlay.add_child(lamp)
 		_lamps.append(lamp)
 		var g := BunkerLight.new(BunkerLight.Kind.GLOW)
-		g.position = Vector2(BunkerGeo.lamp_x(r), BunkerGeo.WALL_Y + 2)
 		_lights.add_child(g)
 		_glows.append(g)
-	while _lamps.size() > _rooms:
+	while _lamps.size() > pts.size():
 		_lamps.pop_back().queue_free()
 		_glows.pop_back().queue_free()
+	for k in pts.size():
+		_lamps[k].position = pts[k]
+		_glows[k].position = pts[k] + Vector2(0, 2)
 
 
 func _lamp_on() -> bool:
@@ -404,7 +405,8 @@ func _sync_light(tod: float) -> void:
 		var lamp_frame := 1 if on else 0
 		if attention.current != "power":
 			_lamps[i].frame = lamp_frame
-		var g := BunkerGeo.pal("amber2")
+		# a estufa (sala 2) tem luz de cultivo, mais esverdeada
+		var g := BunkerGeo.pal("leaf4") if (i == 1 and _rooms >= 2) else BunkerGeo.pal("amber2")
 		g.a = (0.85 if _lamps[i].frame == 1 else (0.35 if _lamps[i].frame == 2 else 0.0)) if on else 0.0
 		_glows[i].tint = g
 

@@ -1,6 +1,6 @@
 class_name TitleScreen
 extends Control
-## Tela de título no tamanho da gaveta aberta (344×208): corte do bunker ao fundo,
+## Tela de título no tamanho da gaveta aberta (344×256): corte do bunker ao fundo,
 ## Continuar / Novo jogo (confirma se há save) / Opções / Sair.
 ## Chama Game.load_game()/new_game() e avisa o fluxo por sinais; Opções só emite o pedido.
 
@@ -8,8 +8,8 @@ signal game_started(is_new: bool)
 signal options_requested()
 signal quit_requested()
 
-const SIZE := Vector2i(344, 208)
-const STRIP_H: int = 88
+const SIZE := Vector2i(344, BunkerGeo.H + 120)
+const STRIP_H: int = BunkerGeo.H
 ## Cena viva do bunker (se existir, é instanciada ao fundo); senão usa a arte estática.
 const BUNKER_SCENES: Array[String] = ["res://scenes/bunker/bunker.tscn", "res://scenes/bunker/bunker_view.tscn"]
 const STATIC_ART: String = "res://assets/art/env/_preview_bunker_lit.png"

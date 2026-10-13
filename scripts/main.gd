@@ -3,7 +3,7 @@ extends Control
 ## Fluxo principal: título -> jogo (faixa + gaveta) -> final. Integra as peças de cada módulo.
 ## A janela é controlada pelo WindowService; aqui só se decide o tamanho lógico pedido.
 
-const STRIP_H: int = 88
+const STRIP_H: int = BunkerGeo.H
 const DRAWER_H: int = 120
 const DRAWER_MIN_W: int = 344
 const DRAWER_SCENE: String = "res://scenes/ui/drawer.tscn"

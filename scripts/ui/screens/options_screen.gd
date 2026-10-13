@@ -3,7 +3,7 @@ extends Control
 ## Opções: idioma, áudio, volume, tamanho da janela, sempre por cima, economia de energia,
 ## tamanho do texto, reduzir piscadas, ícone na bandeja, resetar posição, apagar progresso.
 ## Grava em Settings e, quando o serviço existe, aplica na hora (WindowService/AudioManager/I18n).
-## Serve no título (tela cheia 344×208) e dentro da gaveta (aba Opções): ocupa o retângulo do pai.
+## Serve no título (tela cheia 344×256) e dentro da gaveta (aba Opções): ocupa o retângulo do pai.
 
 signal closed()
 signal progress_erased()

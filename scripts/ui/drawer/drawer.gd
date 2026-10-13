@@ -7,7 +7,7 @@ extends Control
 ##
 ## Uso na cena principal: instanciar scenes/ui/drawer.tscn num CanvasLayer acima do bunker,
 ## com âncora em tela cheia. Aberta, a gaveta ocupa y 0..DRAWER_H e a faixa fica embaixo,
-## em y DRAWER_H..DRAWER_H+88 (strip_offset). Fechada, só os avisos aparecem (sobre a faixa).
+## em y DRAWER_H..DRAWER_H+STRIP_H (strip_offset). Fechada, só os avisos aparecem (sobre a faixa).
 ## Abrir: drawer.open("build"), drawer.select_instance(id) (clique num objeto), drawer.toggle().
 
 signal open_changed(is_open: bool)
@@ -16,7 +16,7 @@ signal placement_changed(mode: String, item_id: String)
 
 const DRAWER_H: int = 120
 const MIN_W: int = 344
-const STRIP_H: int = 88
+const STRIP_H: int = BunkerGeo.H
 const MAX_TABS: int = 4
 const REFRESH_S: float = 0.25
 

@@ -63,15 +63,16 @@ Autoloads (ordem em `project.godot`): `Settings`, `I18n`, `Game`, `WindowService
 ## 3. Geometria e coordenadas (pixels lógicos)
 
 - Tile = 16 px. **Escala inteira** (×1..×4) aplicada pelo Godot (`stretch mode = viewport`, `scale_mode = integer`). Tudo é desenhado em coordenadas lógicas.
-- Altura da faixa: **88 px** = superfície 32 (céu y 0–24 + grama y 24–32) + sala 56 (y 32–88).
-- Sala: largura interna **192 px = 12 colunas de 16 px**. Teto y 32–40 (8 px); parede do fundo y 40–80; chão y 80–88 (8 px). **Linha dos pés = y 80.** Objetos de 1 tile têm topo em y 64; de 2 tiles, topo y 48. Personagem 32×32, pés em y 80 (topo y 48).
-- Salas: sala *i* (0, 1, 2) começa em `x = 8 + i*200`; divisória de 8 px em `x = 8 + i*200 + 192` (entre salas; com porta de passagem). Margem de terra de 8 px à esquerda e à direita.
+- Altura da faixa: **136 px** (`BunkerGeo.H`) = superfície 32 (céu y 0–24 + grama y 24–32) + andar de cima (A, y 32–85) + laje + andar de baixo (B, y 85–136). Direção de arte aprovada em 13/10/2026 (lateral com cômodos de verdade, 2 andares): `docs/direcao-de-arte-comodos.md`.
+- Sala (andar A): largura interna **192 px = 12 colunas de 16 px**. Teto y 32–40 (8 px); parede do fundo y 40–80; piso y 80–85 (5 px visíveis). O andar B repete a geometria deslocada de `FLOOR_DY = 51` (teto 85–91, parede 91–131, pés `FEET_Y_B = 131`, piso 131–136). Só o andar A recebe itens do jogador. **Linha dos pés = y 80.** Objetos de 1 tile têm topo em y 64; de 2 tiles, topo y 48. Personagem 32×32, pés em y 80 (topo y 48).
+- Salas: sala *i* (0, 1, 2) começa em `x = 8 + i*200`; divisória (parede grossa de concreto) de 8 px em `x = 8 + i*200 + 192`, com porta de aço aberta que dá passagem. Cada sala tem seu material: sala 1 concreto com luz quente (mapa, calendário, quadro de ferramentas, cantinho de dormir com lambri), sala 2 azulejo claro com luz de cultivo (esverdeada), sala 3 lambri de madeira e piso de tábua. Canos e fios correm no teto atravessando todas. Margem de terra de 8 px à esquerda e à direita.
 - Largura lógica da faixa (n salas): `W(n) = 8 + n*200` → 208 / 408 / 608. **O que não foi escavado é terra maciça** (mesmos tiles de terra), então a janela pode ser mais larga que as salas (mínimo da gaveta, abaixo).
-- Gaveta: ao abrir, a janela cresce **para cima**: altura lógica total = 88 + `DRAWER_H` (120) = **208**; largura = `max(W(n), 344)`. Ao fechar, volta a 88.
-- Tela de título: usa o tamanho da gaveta aberta (344×208 mínimo).
+- Gaveta: ao abrir, a janela cresce **para cima**: altura lógica total = 136 + `DRAWER_H` (120) = **256**; largura = `max(W(n), 344)`. Ao fechar, volta a 136.
+- Tela de título: usa o tamanho da gaveta aberta (344×256 mínimo).
 - Escotilha/escada: coluna 0 da sala 1 (x 8–24). A escada sobe do chão até a superfície; a tampa da escotilha (`hatch`) fica sobre a grama em `x = 8..40`. A caixa da escotilha (`hatch_box`) fica na coluna 1 da sala 1. Mesa do rádio na coluna 2. Cama (`bed`, 2 colunas) nas colunas 10–11.
 - Antena (`antenna_N`, 24×24) fica na superfície com a base em y = 24 (topo da grama), x ≈ 56; painel solar (`painel`) na superfície à direita do mastro. O céu muda de cor com a hora (tint por código).
 - Luz do relógio: um cone de luz (degradê aditivo por código) desce pelo poço da escada: dia = claro, noite = quase nada.
+- Andar B (cenário, sem itens do jogador): despensa sob a sala 1 (prateleiras com latas, caixas etiquetadas, cisterna, porta de aço) e, quando a sala 2 existe, uma escavação com escoras de madeira sob ela; sob o resto, terra com pedra, raiz e cano enterrado. A escavação real de salas continua para o lado. A escada do poço desce até o andar B. Lâmpadas: `BunkerGeo.lamp_points(n)`.
 - Colunas livres da sala 1: 3–9 (7 colunas). Salas 2 e 3: colunas 0–11 livres.
 
 ---

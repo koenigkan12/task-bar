@@ -3,12 +3,20 @@ extends RefCounted
 ## Geometria da faixa do bunker (CONTRATOS seção 3) e paleta para desenhos feitos por código.
 ## Salas são numeradas 1..3 como na API do Game; sala 1 começa em x = 8.
 
-const H := 88
+const H := 136              ## altura da faixa: superfície + andar de cima (A) + andar de baixo (B)
 const SKY_H := 24
 const GRASS_Y := 24
 const ROOM_Y := 32          # topo do teto
 const WALL_Y := 40          # topo da parede do fundo
 const FEET_Y := 80          # linha dos pés / topo do chão
+## Andar de baixo (B): mesma geometria do A deslocada. Entre os dois fica a laje (chão do A com 5 px +
+## teto do B com 6 px).
+const FLOOR_DY := 51
+const ROOM_Y_B := ROOM_Y + FLOOR_DY     # topo do teto do B (o teto do B é cortado em 6 px)
+const WALL_Y_B := WALL_Y + FLOOR_DY
+const FEET_Y_B := FEET_Y + FLOOR_DY
+const FLOOR_H := 5          ## altura visível do piso (tile de 8, cortado)
+const SLAB_B := 6           ## altura visível do teto do B
 const COL := 16
 const COLS := 12
 const ROOM_W := 192
@@ -84,6 +92,18 @@ static func room_col_at(p: Vector2, n_rooms: int) -> Vector2i:
 ## Centro (x) da lâmpada do teto da sala.
 static func lamp_x(room: int) -> int:
 	return col_x(room, 5 if room == 1 else 6) + 8
+
+
+## Lâmpadas da faixa: uma por sala do andar de cima e as do andar de baixo (despensa; escavação
+## quando existe a sala 2). Devolve a posição do topo (x central, y).
+static func lamp_points(n_rooms: int) -> Array[Vector2]:
+	var out: Array[Vector2] = []
+	for r in range(1, n_rooms + 1):
+		out.append(Vector2(lamp_x(r), WALL_Y))
+	out.append(Vector2(col_x(1, 7) + 8, WALL_Y_B))
+	if n_rooms >= 2:
+		out.append(Vector2(col_x(2, 6) + 8, WALL_Y_B + 6))
+	return out
 
 
 ## x esquerdo da divisória à direita da sala.

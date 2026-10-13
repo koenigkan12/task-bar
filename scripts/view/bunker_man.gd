@@ -381,10 +381,17 @@ func _plan_work() -> bool:
 			act("man_water", 3.0, "water", 1)
 		"pedal":
 			walk_to(bike.position.x)
+			# a bicicleta pode ser trocada (moinho) no meio do passo: procura de novo em vez de capturar
 			act("man_pedal", 6.0, "pedal", 1, {
-				"on_start": func() -> void: bike.sprite.playing = true,
-				"on_end": func() -> void: bike.sprite.playing = false})
+				"on_start": func() -> void: _set_bike_spin(true),
+				"on_end": func() -> void: _set_bike_spin(false)})
 	return true
+
+
+func _set_bike_spin(on: bool) -> void:
+	var b: BunkerObject = view.find_item("bicicleta")
+	if b != null:
+		b.sprite.playing = on
 
 
 func _plan_free() -> void:
