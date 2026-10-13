@@ -1,5 +1,5 @@
 extends SceneTree
-## O texto do tutorial não pode tapar a escotilha: o clique atravessa o HUD, e o "-" recolhe o texto.
+## A barra de cima não pode tapar a escotilha (o clique atravessa), a escotilha abre o cartão da caixa e vender vira ordem.
 ## Uso: OUT_DIR=<pasta> xvfb-run -a godot --path . --rendering-driver opengl3 --audio-driver Dummy --script res://tests/hud_click.gd
 
 var out_dir: String = OS.get_environment("OUT_DIR") if OS.get_environment("OUT_DIR") != "" else "user://shots"
@@ -73,7 +73,13 @@ func _run() -> void:
 	print("drawer open ", main.get("_drawer").is_open(), " was ", drawer_open_before)
 	await _frames(5)
 	var bv: BunkerView = bunker
-	_check(bv.orders.size() == 1 and String(bv.orders[0]["kind"]) == "box", "clique na escotilha vira ordem de levar os cestos")
+	var card: InfoCard = main.get("_card")
+	_check(card.is_open() and card.kind == "box", "clique na escotilha abre o cartão da caixa")
+	_check(bv.orders.is_empty(), "abrir o cartão não manda ele fazer nada")
+	card.action.emit("sell")
+	await _frames(5)
+	_check(not card.is_open(), "vender fecha o cartão")
+	_check(bv.orders.size() == 1 and String(bv.orders[0]["kind"]) == "box", "vender vira ordem de levar os cestos")
 	Engine.time_scale = 8.0
 	var waited := 0
 	while not bv.orders.is_empty() and waited < 3000:
@@ -84,21 +90,16 @@ func _run() -> void:
 	var img0: Image = root.get_texture().get_image()
 	DirAccess.make_dir_recursive_absolute(out_dir)
 	img0.save_png("%s/hud_texto.png" % out_dir)
-	# recolher o texto
 	var tut: Label = hud.get("_tut")
-	_check(tut.visible, "texto do tutorial visível")
-	var row_w: float = hud.get("_row_w")
-	await _click(hud.global_position + Vector2(row_w - 3.0, 6.0))
-	await _frames(10)
-	_check(not tut.visible, "botão recolhe o texto")
-	_check(bool(st.get_value("tutorial_hidden", false)), "escolha fica salva")
-	await _frames(5)
-	var img: Image = root.get_texture().get_image()
-	DirAccess.make_dir_recursive_absolute(out_dir)
-	img.save_png("%s/hud_recolhido.png" % out_dir)
-	st.set_value("tutorial_hidden", false)
-	# Esc: abre as opções com a gaveta fechada e fecha de novo
+	_check(tut.visible and not tut.text.contains("\n"), "tutorial de uma linha: '%s'" % tut.text)
+	# clicar na barra de cima abre a gaveta em Construir
 	var drawer: Node = main.get("_drawer")
+	await _click(hud.global_position + Vector2(10.0, 5.0))
+	await _frames(5)
+	_check(drawer.is_open() and drawer.current_tab() == "build", "clique na barra abre Construir")
+	drawer.close()
+	await _frames(10)
+	# Esc: abre as opções com a gaveta fechada e fecha de novo
 	_check(not drawer.is_open(), "gaveta fechada antes do Esc")
 	await _esc()
 	_check(drawer.is_open(), "Esc abre a gaveta (opções)")

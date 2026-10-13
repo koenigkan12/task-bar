@@ -133,9 +133,9 @@ func _run() -> void:
 	_check(d.radio_tab._unread.text == "3 falas novas", "contador de novas: " + d.radio_tab._unread.text)
 	_check(d.radio_tab._list.get_child_count() == 4, "4 entradas no diário")
 	_check(_called("read").is_empty(), "não marca lido só de abrir")
-	d.show_tab("state")
+	d.show_tab("build")
 	_check(_called("read").size() == 1, "marca lido ao sair da aba")
-	_check(DrawerStateTab.doing_key(g) == "status.building", "estado: em obra (há obras ativas)")
+	_check(InfoCard.doing_key(g) == "status.building", "estado: em obra (há obras ativas)")
 
 	# bem-vindo de volta
 	d.close()
@@ -147,6 +147,8 @@ func _run() -> void:
 
 	# 4ª aba e limite
 	d.add_tab("options", "tab.options", "gear", Control.new())
+	_check(d._tab_ids.size() == 3, "3ª aba aceita")
+	d.add_tab("more", "tab.options", "gear", Control.new())
 	_check(d._tab_ids.size() == 4, "4ª aba aceita")
 	var extra := Control.new()
 	d.add_tab("extra", "tab.options", "gear", extra)

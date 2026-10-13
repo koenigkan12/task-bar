@@ -1,7 +1,7 @@
 class_name Drawer
 extends Control
 ## Gaveta de gestão: cresce a janela para cima (WindowService.set_drawer) e mostra até 4 abas
-## (Construir, Rádio, Estado + uma livre, p.ex. Opções, via add_tab). Também cuida dos avisos
+## (Construir, Rádio + uma livre, p.ex. Opções, via add_tab). Também cuida dos avisos
 ## curtos (toasts), do resumo de "bem-vindo de volta" e da camada de posicionar/escolher
 ## objetos sobre a faixa do bunker.
 ##
@@ -51,7 +51,6 @@ var _toasts: DrawerToastLayer
 var _welcome: DrawerWelcomeCard
 var build_tab: DrawerBuildTab
 var radio_tab: DrawerRadioTab
-var state_tab: DrawerStateTab
 
 
 func _init() -> void:
@@ -92,11 +91,8 @@ func _init() -> void:
 	build_tab.drawer = self
 	radio_tab = DrawerRadioTab.new()
 	radio_tab.drawer = self
-	state_tab = DrawerStateTab.new()
-	state_tab.drawer = self
 	add_tab("build", "tab.build", "hammer", build_tab)
 	add_tab("radio", "tab.radio", "radio", radio_tab)
-	add_tab("state", "tab.state", "home", state_tab)
 	_welcome = DrawerWelcomeCard.new()
 	_welcome.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_welcome.dismissed.connect(_on_welcome_dismissed)
@@ -224,6 +220,8 @@ func show_tab(tab_id: String) -> void:
 
 func set_strip_height(h: int) -> void:
 	strip_h = h
+	if _toasts != null:
+		_place_toasts()
 	if _overlay != null:
 		_overlay.offset_bottom = DRAWER_H + strip_h
 
@@ -372,7 +370,7 @@ func refresh(force: bool = false) -> void:
 	_refresh_t = 0.0
 	if not has_game():
 		return
-	(_scrap.get_child(1) as Label).text = str(int(game.sucata()))
+	(_scrap.get_child(1) as Label).text = I18nRef.t("hud.scrap", {"n": int(game.sucata())})
 	var unread: int = int(game.unread_count())
 	_badge.text = "" if unread == 0 else str(unread)
 	_badge.tooltip_text = I18nRef.t("ui.unread", {"n": unread})
@@ -424,8 +422,8 @@ func _retitle_tabs() -> void:
 
 
 func _place_toasts() -> void:
-	# fechada: no céu da faixa; aberta: no céu da faixa, logo abaixo da gaveta
-	var top: int = (DRAWER_H if _open else 0) + 2
+	# no pé da faixa (o alto fica com a barra de status e as alças da janela); aberta, abaixo da gaveta
+	var top: int = (DRAWER_H if _open else 0) + maxi(2, strip_h - 24)
 	_toasts.offset_top = top
 	_toasts.offset_bottom = top + 20
 

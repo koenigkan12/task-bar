@@ -5,13 +5,14 @@ extends Node2D
 ## esquerdo da faixa (quem instancia posiciona em y = altura_da_janela - 88).
 ##
 ## Para a UI:
-##   get_object_at(pos) -> Dictionary  {kind: "hatch"|"radio"|"box"|"instance"|"antenna"|"fixed"|"room",
+##   get_object_at(pos) -> Dictionary  {kind: "hatch"|"radio"|"box"|"instance"|"man"|"antenna"|"fixed"|"room",
 ##                                      id, item, room, col}  ({} = nada)
 ##   room_col_at(pos) -> Vector2i      sala (1..3) e coluna sob o ponto, ou (-1, -1)
 ##   column_rect(room, col, cols) -> Rect2   retângulo de um bloco (para o fantasma de posicionamento)
 ##   strip_width() -> int              largura lógica usada (≥ W(n))
 ##   set_view_width(w)                 largura da janela (terra maciça preenche o resto)
-##   sinais object_clicked(instance_id), radio_clicked, box_clicked, hatch_clicked,
+##   sinais object_clicked(instance_id), radio_clicked, box_clicked, hatch_clicked, man_clicked,
+##          antenna_clicked, generator_clicked(instance_id),
 ##          arrival_cut (a tela está preta e o Game já recebeu finish_arrival), arrival_scene_finished
 
 signal object_clicked(instance_id: int)
@@ -20,6 +21,10 @@ signal order_done(kind: String, result: Dictionary)
 signal radio_clicked()
 signal box_clicked()
 signal hatch_clicked()
+signal man_clicked()
+signal antenna_clicked()
+## Clicou num gerador pronto (bicicleta, moinho...): a Main abre o cartão de energia.
+signal generator_clicked(instance_id: int)
 signal arrival_cut()
 signal arrival_scene_finished()
 
@@ -38,6 +43,10 @@ var view_width: int = 0
 var cinematic_speed: float = 1.0
 
 var man: BunkerMan
+## Passo do tutorial em curso ("tut.1".."tut.4" ou ""): o PlotTip põe seta e contorno no objeto certo.
+var tutorial_key: String = ""
+## Falso enquanto um cartão está aberto: o hover (contorno e etiqueta) fica de fora para não repetir o cartão.
+var hover_enabled: bool = true
 ## Ordens dadas por clique (o homem vai até o alvo e faz): {kind: "hammer"|"tend"|"box", id, taken}.
 var orders: Array[Dictionary] = []
 const MAX_ORDERS := 4
@@ -685,6 +694,11 @@ func order_anchor(o: Dictionary) -> Variant:
 	return Vector2(r.end.x - 3.0, r.position.y + 3.0)
 
 
+## Onde fica o relógio da escavação (em cima da sala que está abrindo).
+func dig_anchor() -> Vector2:
+	return Vector2(dig_spot_x() - 6.0, dig_spot_y() - 30.0)
+
+
 func dig_fx() -> void:
 	spawn_fx("fx_dust", Vector2(dig_spot_x() + 8, dig_spot_y()), 4)
 
@@ -808,6 +822,8 @@ func get_object_at(pos: Vector2) -> Dictionary:
 				best = o
 	if best != null:
 		return {"kind": "instance", "id": best.instance_id, "item": best.item, "room": best.room, "col": best.col}
+	if man.body_rect().has_point(pos) and not _arrival_running:
+		return {"kind": "man"}
 	if _antenna.bounds().has_point(pos):
 		return {"kind": "antenna"}
 	for id: String in _fixed:
@@ -818,6 +834,31 @@ func get_object_at(pos: Vector2) -> Dictionary:
 	if rc.x > 0:
 		return {"kind": "room", "room": rc.x, "col": rc.y}
 	return {}
+
+
+## Gerador = estrutura da linha de energia (bicicleta, moinho, bateria, painel).
+func is_generator(item: String) -> bool:
+	Balance.ensure_loaded()
+	return String(Balance.item(item).get("line", "")) == "energia"
+
+
+## Retângulo (na faixa) do que está sob o mouse e é clicável, ou Rect2() se não for clicável.
+func rect_of(hit: Dictionary) -> Rect2:
+	match String(hit.get("kind", "")):
+		"hatch", "box":
+			var b: BunkerObject = _fixed.get("hatch_box")
+			return b.bounds() if b != null else Rect2()
+		"radio":
+			var r: BunkerObject = _fixed.get("radio_table")
+			return r.bounds() if r != null else Rect2()
+		"man":
+			return man.body_rect()
+		"antenna":
+			return _antenna.bounds()
+		"instance":
+			var o: BunkerObject = _inst.get(int(hit.get("id", -1)))
+			return o.bounds() if o != null else Rect2()
+	return Rect2()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -835,7 +876,14 @@ func _unhandled_input(event: InputEvent) -> void:
 			attention.hover("box")
 			box_clicked.emit()
 		"instance":
-			object_clicked.emit(int(hit["id"]))
+			if is_generator(String(hit.get("item", ""))) and not object_by_id(int(hit["id"])).building:
+				generator_clicked.emit(int(hit["id"]))
+			else:
+				object_clicked.emit(int(hit["id"]))
+		"man":
+			man_clicked.emit()
+		"antenna":
+			antenna_clicked.emit()
 		_:
 			return
 	get_viewport().set_input_as_handled()

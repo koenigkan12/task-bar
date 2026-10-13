@@ -5,7 +5,7 @@ extends RefCounted
 ## Usa só a API pública de Game (por nó), para funcionar com stubs.
 
 
-## Devolve {} se não há meta. Campos: id, antenna(bool), name_key, cost, have, ready.
+## Devolve {} se não há meta. Campos: id, antenna(bool), name_key (+ name_args), cost, have, ready.
 static func next_goal(game: Object) -> Dictionary:
 	if game == null or not game.has_method("sucata") or not game.has_method("can_buy") or not game.has_method("catalog"):
 		return {}
@@ -23,6 +23,18 @@ static func next_goal(game: Object) -> Dictionary:
 	return {}
 
 
+## Nome da meta já traduzido ("Gotejador", "Antena 2").
+static func goal_name(g: Dictionary) -> String:
+	return ScreenUtil.tr_key(String(g.get("name_key", "")), g.get("name_args", {}))
+
+
+## Frase de "o que a meta faz" (item.<id>.desc), ou "" (antena).
+static func goal_desc(g: Dictionary) -> String:
+	if bool(g.get("antenna", false)):
+		return ""
+	return ScreenUtil.tr_key("item.%s.desc" % String(g.get("id", "")))
+
+
 ## verdict: 0 pular, 1 pode comprar já, 2 só falta sucata.
 static func _resolve(game: Object, entry: String, have: int) -> Dictionary:
 	if entry == "antena" or entry == "antenna" or entry.begins_with("antena@"):
@@ -34,7 +46,7 @@ static func _resolve(game: Object, entry: String, have: int) -> Dictionary:
 			return {}
 		var miss: Array = info.get("missing", [])
 		var v: int = 1 if bool(info.get("can", false)) else (2 if miss.size() == 1 and miss[0] == "missing.cost" else 0)
-		return {"id": "antenna", "antenna": true, "name_key": "antenna.%d.name" % lvl, "cost": int(info.get("next_cost", 0)),
+		return {"id": "antenna", "antenna": true, "name_key": "ui.antenna", "name_args": {"n": lvl}, "cost": int(info.get("next_cost", 0)),
 				"have": have, "ready": v == 1, "verdict": v}
 	var item: String = entry
 	var until: int = -1

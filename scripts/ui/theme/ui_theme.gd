@@ -1,18 +1,18 @@
 class_name UiTheme
 extends RefCounted
-## Tema único da interface (pixel art 9-slice + fonte Jersey 15) e acesso aos ícones.
+## Tema único da interface (pixel art 9-slice + fonte Pixelify Sans) e acesso aos ícones.
 ## Uso: `control.theme = UiTheme.build()`; `UiTheme.icon("hide")` (ou "icon_hide").
-## Variações de tipo: Label "LabelSmall" (12), "LabelTitle" (15), "LabelAmber", "LabelMuted";
+## Variações de tipo: Label "LabelSmall" (11), "LabelTitle" (12), "LabelAmber", "LabelMuted";
 ## Button "IconButton" (só ícone, sem moldura), "FlatButton" (texto sem moldura).
 
-const FONT_PATH: String = "res://assets/fonts/Jersey15-Regular.ttf"
+const FONT_PATH: String = "res://assets/fonts/PixelifySans.ttf"
 const ART_DIR: String = "res://assets/art/"
 const MANIFEST_PATH: String = "res://assets/art/manifest_ui.json"
 
 ## Tamanhos base (px lógicos); o multiplicador text_size arredonda para inteiro.
-const SIZE_SMALL: int = 12
-const SIZE_NORMAL: int = 13
-const SIZE_TITLE: int = 15
+const SIZE_SMALL: int = 11
+const SIZE_NORMAL: int = 11
+const SIZE_TITLE: int = 12
 
 ## Paleta (mesma de tools/art/palette.py). SIGNAL só em sinais de atenção.
 const INK := Color("14110f")
@@ -56,8 +56,18 @@ static func font_size(base: int, text_scale: float = -1.0) -> int:
 	return maxi(base, roundi(base * s))
 
 
+## A Pixelify Sans tem entrelinha alta (15 px a 11 px de corpo); aqui se tira 3 px de ar em cima e embaixo
+## para as linhas caberem na gaveta e na faixa (os glifos ficam intactos).
+static var _font: Font = null
+
 static func font() -> Font:
-	return load(FONT_PATH) as Font
+	if _font == null:
+		var fv := FontVariation.new()
+		fv.base_font = load(FONT_PATH) as Font
+		fv.spacing_top = -2
+		fv.spacing_bottom = -1
+		_font = fv
+	return _font
 
 
 ## Ícone 8×8 do manifest_ui ("hide" ou "icon_hide"). Ausente -> null (avisa).

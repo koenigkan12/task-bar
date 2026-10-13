@@ -12,6 +12,7 @@ var _options: OptionsScreen
 var _bunker: Node2D
 var _handle: WindowHandle
 var _hud: StatusHud
+var _card: InfoCard
 var _drawer: Drawer
 var _drawer_layer: CanvasLayer
 var _hints: HintLayer
@@ -145,11 +146,23 @@ func _on_game_started(is_new: bool) -> void:
 	_bunker.connect("box_clicked", _on_box_clicked)
 	_bunker.connect("object_clicked", _on_object_clicked)
 	_bunker.connect("order_done", _on_order_done)
+	_bunker.connect("man_clicked", func() -> void: _open_card("man", {"kind": "man"}))
+	_bunker.connect("antenna_clicked", func() -> void: _open_card("antenna", {"kind": "antenna"}))
+	_bunker.connect("generator_clicked", func(id: int) -> void: _open_card("gen", {"kind": "instance", "id": id}, id))
 	_hud = StatusHud.new()
 	_hud.clicked.connect(func() -> void: _drawer.open("build"))
 	add_child(_hud)
+	_card = InfoCard.new()
+	_card.action.connect(_on_card_action)
+	_card.visibility_changed.connect(func() -> void: _bunker.hover_enabled = not _card.visible)
+	add_child(_card)
+	_drawer.open_changed.connect(func(open: bool) -> void:
+		if open:
+			_card.close())
+	_hud.steps.changed.connect(func() -> void: _bunker.tutorial_key = _hud.steps.current_key())
 	if is_new:
 		_hud.steps.start()
+	_bunker.tutorial_key = _hud.steps.current_key()
 	_hints.enabled = not is_new
 	move_child(_hints, get_child_count() - 1)
 	_relayout()
@@ -187,13 +200,37 @@ func _on_object_clicked(id: int) -> void:
 	_drawer.select_instance(id)
 
 
-## Clicar na caixa/escotilha manda ele levar os cestos (começo); depois só abre o estado.
+## Clicar na caixa/escotilha abre o cartão dela (estoque, quanto rende e o botão Vender).
 func _on_box_clicked() -> void:
-	if not _drawer.is_open() and bool(Game.help_box_available()):
-		var why: String = _bunker.give_order("box")
-		if why == "" or _order_refused(why):
-			return
-	_drawer.open("state")
+	_open_card("box", {"kind": "box"})
+
+
+## Abre o cartão de `kind` em cima do objeto (retângulo vindo da cena, passado para coordenadas da tela).
+func _open_card(kind: String, hit: Dictionary, id: int = -1) -> void:
+	if _bunker == null or _card == null:
+		return
+	var r: Rect2 = _bunker.rect_of(hit)
+	if r.size == Vector2.ZERO:
+		return
+	r.position += _bunker.position
+	_card.open_for(kind, r, Vector2(_window_size()), id)
+
+
+func _on_card_action(act: String) -> void:
+	match act:
+		"sell":
+			_card.close()
+			var why: String = _bunker.give_order("box")
+			if why != "":
+				_order_refused(why)
+		"gens":
+			_card.close()
+			_drawer.open("build")
+			_drawer.build_tab.set_filter("energia")
+		"antenna":
+			_card.close()
+			_drawer.open("build")
+			_drawer.build_tab.select_item(DrawerBuildTab.ANTENNA)
 
 
 ## Avisa por que o pedido não foi aceito. Devolve false quando o clique deve seguir o caminho normal.
@@ -206,7 +243,7 @@ func _order_refused(why: String) -> bool:
 		"empty":
 			_drawer.toast("hud.box_empty")
 		"cooldown":
-			_drawer.toast("hud.box_wait")
+			pass   # o motivo já aparece na caixa (relógio cinza e cartão)
 		_:
 			return false
 	return true
@@ -229,7 +266,7 @@ func _on_order_done(kind: String, res: Dictionary) -> void:
 			"empty":
 				_drawer.toast("hud.box_empty")
 			"cooldown":
-				_drawer.toast("hud.box_wait")
+				pass
 
 
 func _on_drawer_open_changed(open: bool) -> void:
@@ -255,9 +292,22 @@ func _toggle_drawer(open: bool) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if not _playing or _in_ending or _intro != null or _drawer == null:
 		return
+	if event.is_action_pressed("ui_cancel") and not event.is_echo() and _card != null and _card.is_open():
+		_card.close()
+		get_viewport().set_input_as_handled()
+		return
 	if event.is_action_pressed("ui_cancel") and not event.is_echo() and not _drawer.is_open():
 		_drawer.open("options")
 		get_viewport().set_input_as_handled()
+
+
+## Um clique fora do cartão fecha o cartão (o clique segue o caminho normal).
+func _input(event: InputEvent) -> void:
+	var mb := event as InputEventMouseButton
+	if _card == null or not _card.is_open() or mb == null or not mb.pressed:
+		return
+	if not _card.get_global_rect().has_point(mb.position):
+		_card.close()
 
 
 func _on_first_interaction() -> void:

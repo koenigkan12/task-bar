@@ -8,17 +8,17 @@ item.prateleira.desc,"Cinco plantas em dois andares, quase sem ocupar chão.","F
 item.estufa.name,Estufa de garrafas,Bottle greenhouse
 item.estufa.desc,Garrafa PET e luz: só aqui o tomate pega. Gasta energia.,PET bottles and light: tomatoes only grow here. Needs power.
 item.lata.name,Lata d'água,Watering can
-item.lata.desc,"Regar na mão. Funciona, mas toma o tempo dele.","Watering by hand. It works, but eats his time."
+item.lata.desc,"Regar na mão. Funciona, mas toma o tempo de Joaquim.","Watering by hand. It works, but eats Joaquim's time."
 item.gotejador.name,Gotejador,Drip line
-item.gotejador.desc,A água cai sozinha. Ele economiza as idas com a lata.,The water falls on its own. No more trips with the can.
+item.gotejador.desc,A água cai sozinha. Chega de ir com a lata.,The water falls on its own. No more trips with the can.
 item.cisterna.name,Cisterna,Cistern
 item.cisterna.desc,"Guarda água pra dez plantas. Menos regar, mais colher.","Stores water for ten plants. Less watering, more picking."
 item.bomba.name,Bomba d'água,Water pump
-item.bomba.desc,Leva água a qualquer canto. Ele não carrega mais nada.,Water reaches every corner. He carries nothing.
+item.bomba.desc,Leva água a qualquer canto. Joaquim não carrega nada.,Water reaches every corner. Joaquim carries nothing.
 item.bicicleta.name,Bicicleta geradora,Pedal generator
 item.bicicleta.desc,"Pedalando, a luz acende. Cansa, mas é de graça.","Pedal and the light comes on. Tiring, but free."
 item.moinho.name,Moinho de duto,Duct windmill
-item.moinho.desc,O vento do duto gira a hélice. Ele para de pedalar.,The duct breeze spins it. He can stop pedaling.
+item.moinho.desc,O vento do duto gira a hélice. Joaquim para de pedalar.,The duct breeze spins it. Joaquim can stop pedaling.
 item.bateria.name,Bateria de carro,Car battery
 item.bateria.desc,Guarda energia pra máquina grande. Abre caminho.,Stores power for the big machines. Opens the way.
 item.painel.name,Painel solar,Solar panel
@@ -30,15 +30,15 @@ item.calha.desc,Os cestos escorregam sozinhos até a caixa.,Baskets slide down t
 item.roldana.name,Roldana,Pulley
 item.roldana.desc,Sobe os cestos pela corda. A caixa enche bem mais.,Hauls baskets up by rope. The box fills much faster.
 item.esteira.name,Esteira,Conveyor
-item.esteira.desc,Os cestos chegam sem ele levantar um dedo.,Baskets arrive without him lifting a finger.
+item.esteira.desc,Os cestos chegam sem Joaquim levantar um dedo.,Baskets arrive without Joaquim lifting a finger.
 item.estante.name,Estante,Bookshelf
-item.estante.desc,Livros velhos. Agora ele tem o que ler nas folgas.,Old books. Now he has something to read on breaks.
+item.estante.desc,Livros velhos. Joaquim tem o que ler nas folgas.,Old books. Joaquim has something to read on breaks.
 item.poltrona.name,Poltrona,Armchair
 item.poltrona.desc,"Um canto pra sentar, cochilar e ouvir o rádio.","A spot to sit, doze off and hear the radio."
 item.mesinha.name,Mesinha,Little table
-item.mesinha.desc,"Papel e lápis. Ele escreve, mesmo sem ter pra quem enviar.","Paper and pencil. He writes, even with no one to send to."
+item.mesinha.desc,"Papel e lápis. Joaquim escreve, sem ter pra quem enviar.","Paper and pencil. Joaquim writes, with no one to send to."
 item.foto.name,Foto antiga,Old photo
-item.foto.desc,Uma paisagem desbotada. Ele para pra olhar.,A faded landscape. He stops to look.
+item.foto.desc,Uma paisagem desbotada. Joaquim para pra olhar.,A faded landscape. Joaquim stops to look.
 item.cama_dela.name,Cama dela,Her bed
 item.cama_dela.desc,Arrumada ao lado da dele. Ela é esperada.,Made up next to his. She is expected.
 item.cantinho.name,Cantinho,Cozy corner
@@ -50,7 +50,7 @@ item.cabide.desc,Lugar pro casaco dela. Falta só ela.,A hook for her coat. Only
 item.segunda_caneca.name,Segunda caneca,Second mug
 item.segunda_caneca.desc,Duas na mesa. A casa passa a ter cara de dois.,Two on the table. The place starts to feel like two.
 item.foto_dela.name,Quadro dela,Her picture
-item.foto_dela.desc,Do jeito que ela gosta. Ele pendura e confere o prumo.,Hung the way she likes. He checks it's straight.
+item.foto_dela.desc,Do jeito que ela gosta. Joaquim confere o prumo.,Hung the way she likes. Joaquim checks it is straight.
 item.comodo2.name,Escavar sala 2,Dig room 2
 item.comodo2.desc,Mais uma sala: espaço pra plantar e morar.,Another room: space to plant and live.
 item.comodo3.name,Escavar sala 3,Dig room 3
@@ -71,20 +71,20 @@ line.transporte,Transporte,Hauling
 line.decor,Decoração,Decor
 line.casa,Casa dela,Her place
 line.escavacao,Escavação,Digging
-pra_que.renda,Renda,Income
+pra_que.renda,Rende sucata,Earns scrap
 pra_que.renda.help,Rende mais sucata por dia.,Brings in more scrap each day.
-pra_que.tempo,Tempo,Time
-pra_que.tempo.help,Poupa o tempo dele. Sobra pra descansar.,Saves his time. He gets to rest.
-pra_que.espaco,Espaço,Space
+pra_que.tempo,Poupa tempo,Saves time
+pra_que.tempo.help,Poupa o tempo de Joaquim. Sobra pra descansar.,Saves Joaquim's time. He gets to rest.
+pra_que.espaco,Mais espaço,More room
 pra_que.espaco.help,Abre lugar pra mais coisas.,Makes room for more things.
-pra_que.porta,Porta,Gate
+pra_que.porta,Libera mais,Unlocks more
 pra_que.porta.help,Libera a próxima melhoria.,Unlocks the next upgrade.
-pra_que.historia,História,Story
+pra_que.historia,Dá vida,Adds life
 pra_que.historia.help,Mais vida e mais voz pro bunker.,More life and more voices in the bunker.
 missing.antenna,Antena nível {n},Antenna level {n}
 missing.rooms,{n} salas,{n} rooms
 missing.supply,Energia {n},Power {n}
-missing.cost,Faltam {n} de sucata,{n} more scrap
+missing.cost,Faltam {n} sucata,{n} more scrap
 missing.free_cols,Sem espaço livre,No free space
 missing.item,Precisa de {item},Needs {item}
 missing.max,Já tem,Already owned
@@ -103,8 +103,22 @@ fixed.ladder.desc,Sobe até a superfície.,Climbs up to the surface.
 fixed.hatch_box,Caixa da escotilha,Hatch box
 fixed.hatch_box.desc,Aqui os cestos viram sucata.,Where baskets turn into scrap.
 fixed.radio_table,Mesa do rádio,Radio table
-fixed.radio_table.desc,"O rádio fica aqui. Tudo que ele ouve, fica no diário.",The radio sits here. Everything he hears goes in the diary.
+fixed.radio_table.desc,O rádio fica aqui. O que Joaquim ouve vai pro diário.,The radio sits here. What Joaquim hears goes in the diary.
 fixed.bed,Cama,Bed
-fixed.bed.desc,"Ele dorme à noite. De dia, a vida é dele.","He sleeps at night. By day, his time is his own."
+fixed.bed.desc,"Joaquim dorme à noite. De dia, a vida é dele.","Joaquim sleeps at night. By day, his time is his own."
 fixed.hatch,Escotilha,Hatch
 fixed.hatch.desc,A porta pro mundo lá fora.,The door to the world outside.
+line.plantio.head,Plantio · rende sucata,Planting · earns scrap
+line.agua.head,Água · poupa tempo,Water · saves time
+line.energia.head,Energia · liga as máquinas,Power · runs machines
+line.transporte.head,Transporte · leva mais cestos,Hauling · carries more
+line.decor.head,Decoração · dá vida,Decor · adds life
+line.casa.head,Casa dela · prepara a chegada,Her place · gets ready
+line.escavacao.head,Escavação · mais espaço,Digging · more room
+missing.short.antenna,antena {n},antenna {n}
+missing.short.rooms,{n} salas,{n} rooms
+missing.short.supply,energia {n},power {n}
+missing.short.cost,faltam {n},{n} short
+missing.short.free_cols,sem espaço,no room
+missing.short.item,{item},{item}
+missing.short.max,já tem,owned

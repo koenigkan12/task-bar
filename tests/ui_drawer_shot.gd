@@ -74,8 +74,8 @@ func _run() -> void:
 	d.show_tab("radio")
 	await _shot("drawer_radio")
 	g.contact = true
-	d.show_tab("state")
-	await _shot("drawer_state")
+	d.show_tab("build")
+	await _shot("drawer_build2")
 	g.welcome_back.emit({"hours": 9, "visits": 3, "scrap": 42, "harvested": 6, "nights": 1, "lines": ["l2_arrival", "l2_p1"], "capped": false})
 	await _shot("drawer_welcome")
 	i18n.set_locale("en")

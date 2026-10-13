@@ -18,11 +18,11 @@ Idle cozy numa faixa baixa da tela. Um homem sozinho num bunker depois do fim do
 Ao começar um jogo novo há uma introdução de 4 telas (por que o jogo anda sozinho, o que é a sucata, o que fazer). Depois, enquanto o homem ainda não tem máquinas, **seus cliques são pedidos para ele**: ele para o que faz, anda até o alvo e só então a ajuda vale. Os pedidos entram numa fila de até 4 (uma plaquinha numerada marca cada alvo) e ele dorme à noite, então à noite o clique só avisa que ele está dormindo.
 
 1. Clique num vaso: ele vem regar (cada pedido cumprido adianta o ciclo; cinco fecham a primeira colheita).
-2. Clique na escotilha ou na caixa: ele leva os cestos e eles viram sucata (com um tempo de espera entre uma troca e outra).
+2. Clique na escotilha ou na caixa: abre o cartão da caixa. O botão **Vender** manda ele levar os cestos, que viram sucata (com uma espera curta entre uma troca e outra, mostrada num relógio cinza).
 3. Clique numa obra: ele vem martelar e a obra adianta.
 4. Junte sucata e compre o **Vaso** extra (o próximo objetivo aparece sempre na faixa de cima).
 
-Cada máquina tira um clique do seu trabalho: o **gotejador** rega sozinho (os vasos deixam de aceitar pedido) e a **calha** leva os cestos sozinha (a caixa deixa de aceitar pedido). A partir daí o homem toca tudo e você só decide o que construir. A faixa de cima mostra sucata, cestos na caixa e o próximo objetivo; clicar nela abre a aba Construir, onde o item sugerido vem marcado com uma estrela. Os cestos colhidos vão para a **despensa** (o andar de baixo): quanto mais estoque, mais cestos nas prateleiras. Cavar uma sala nova abre um andar embaixo e a janela cresce para cima; ele usa a escada de verdade para ir de um andar a outro, então um pedido pode demorar se ele estiver longe. Passe o mouse numa planta para ver cultura, fase, % e quanto falta para a colheita. A aba **Estado** tem a "Mochila" (colhido, vendido, sementes e ferramentas).
+Cada máquina tira um clique do seu trabalho: o **gotejador** rega sozinho (os vasos deixam de aceitar pedido) e a **calha** leva os cestos sozinha (a caixa deixa de aceitar pedido). A partir daí o homem toca tudo e você só decide o que construir. A faixa de cima tem uma linha só: **sucata | ★ meta** (e, juntando, uma barra com "faltam N"); clicar nela abre a aba Construir, onde o item sugerido vem marcado com uma estrela. O resto aparece no próprio objeto: passe o mouse para ver contorno e uma etiqueta curta, clique em Joaquim, na caixa, num gerador ou na antena para abrir um cartãozinho com o estado e a ação. Os cestos colhidos vão para a **despensa** (o andar de baixo): quanto mais estoque, mais cestos nas prateleiras. Cavar uma sala nova abre um andar embaixo e a janela cresce para cima; ele usa a escada de verdade para ir de um andar a outro, então um pedido pode demorar se ele estiver longe. Tudo que leva tempo usa o mesmo relógio: obra e escavação mostram o círculo com a contagem ("1h48", "45min") o tempo todo; planta só no hover (e um check verde quando está pronta); a espera da caixa também. O selo de cestos aparece em cima da caixa só quando ela está cheia.
 
 ## Controles
 
@@ -32,7 +32,7 @@ Tudo é com o mouse.
 |---|---|
 | Construir, plantar, melhorar a antena | Botão da seta na alça (ou clique na escotilha/caixa): abre a gaveta, aba **Construir**. Escolha o item, depois o lugar na faixa |
 | Ouvir o rádio / ler o Diário | Clique na mesa do rádio ou aba **Rádio** da gaveta (a luz verde pulsa quando há fala nova) |
-| Ver o estado (sucata, caixa, energia, jornada da casa) | Aba **Estado** |
+| Ver o estado (o que Joaquim faz, caixa, energia, antena e jornada da casa) | Clique no próprio objeto: **Joaquim**, **caixa/escotilha**, **gerador**, **antena** (abre um cartão; Esc ou clique fora fecha) |
 | Trocar a cultura de um vaso, mover ou desmontar | Clique no objeto na faixa |
 | Opções (idioma, áudio, escala, sempre por cima, apagar progresso) | Aba **Opções** ou tela de título |
 | Mover a janela | Arraste pela alça (ícone da mão); ela fica dentro da área útil do monitor |
@@ -102,7 +102,7 @@ data/radio.json, journey.json   falas do rádio e pós-contato
 data/i18n/strings_*.csv  textos em PT-BR e EN
 assets/art/              pixel art gerada por código + manifest_*.json
 assets/audio/            áudio sintetizado por código (OGG) + barramentos
-assets/fonts/            fonte Jersey 15 e licença
+assets/fonts/            fonte Pixelify Sans e licença
 tools/art, tools/audio   geradores Python da arte e do áudio
 tools/content            conferência de textos e conteúdo
 tools/sim_oracle         simulação da economia em Python (referência do ritmo)
@@ -114,7 +114,7 @@ docs/                    design, contratos, roteiro, teste no Windows
 ## Licenças e créditos
 
 - **Jogo, código, design e roteiro:** Vinícius.
-- **Fonte:** Jersey 15, de The Soft Type Project (Sarah Cadigan-Fried), sob a SIL Open Font License 1.1. Texto da licença em [`assets/fonts/OFL.txt`](assets/fonts/OFL.txt); detalhes em [`assets/fonts/README_fonte.md`](assets/fonts/README_fonte.md).
+- **Fonte:** Pixelify Sans, de Stefie Justprince, sob a SIL Open Font License 1.1. Texto da licença em [`assets/fonts/PixelifySans-OFL.txt`](assets/fonts/PixelifySans-OFL.txt); detalhes em [`assets/fonts/README_fonte.md`](assets/fonts/README_fonte.md).
 - **Arte:** pixel art gerada por código pelos scripts de `tools/art/` com paleta fixa; não usa imagens de terceiros. Faz parte do projeto e segue a mesma licença do jogo.
 - **Áudio:** efeitos, loops e músicas sintetizados por código pelos scripts de `tools/audio/` (numpy, convertidos para OGG com ffmpeg); não usa gravações de terceiros. A voz dela é um placeholder sintético até a gravação real.
 - **Motor:** [Godot Engine](https://godotengine.org), licença MIT. O exe exportado inclui o Godot e as bibliotecas de terceiros dele; os avisos de licença estão em `Engine.get_license_text()` e em https://godotengine.org/license.

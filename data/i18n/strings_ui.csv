@@ -17,16 +17,14 @@ ui.btn.mark_read,Marcar lidas,Mark as read
 ui.btn.more,Ver mais,See more
 ui.btn.next,Próximo,Next
 ui.scrap,Sucata,Scrap
-ui.scrap.value,{n} de sucata,{n} scrap
+ui.scrap.value,{n} sucata,{n} scrap
 ui.day,Dia {n},Day {n}
 ui.clock,{h}h{m},{h}:{m}
-ui.power,Energia {have}/{need},Power {have}/{need}
 ui.box,Caixa,Box
-ui.box.fill,Caixa {pct}%,Box {pct}%
 ui.antenna,Antena {n},Antenna {n}
 ui.antenna.next,Próxima antena,Next antenna
 ui.antenna.max,Antena no máximo,Antenna maxed out
-ui.antenna.cost,Melhorar por {n},Upgrade for {n}
+ui.antenna.cost,Melhorar {n},Upgrade {n}
 ui.cost,Custo {n},Cost {n}
 ui.building,Em obra,Under construction
 ui.locked,Bloqueado,Locked
@@ -42,9 +40,6 @@ ui.demolish.confirm,Desmontar e recuperar a sucata?,Dismantle and get the scrap 
 ui.radio.empty,Só chiado por enquanto.,Just static for now.
 ui.diary.empty,O diário está vazio.,The diary is empty.
 ui.diary.while_away,Enquanto você estava fora,While you were away
-ui.state.title,Como ele está,How he's doing
-ui.stats.days,Dias no bunker,Days in the bunker
-ui.stats.harvested,Cestos colhidos,Baskets picked
 title.name,Quantos Dias?,Quantos Dias?
 title.subtitle,"Um rádio, um bunker, uma promessa.","A radio, a bunker, a promise."
 title.btn.continue,Continuar,Continue
@@ -99,59 +94,53 @@ opt.erase.help,Volta ao primeiro dia. Sem volta.,Back to day one. No undo.
 opt.on,Ligado,On
 opt.off,Desligado,Off
 hint.drag,Arraste a alça para mover a janela.,Drag the handle to move the window.
-hint.hide,Esconder deixa só uma aba. Ele segue trabalhando.,Hiding leaves a small tab. He keeps working.
-hint.radio,O rádio guarda tudo que ele ouviu.,The radio keeps everything he's heard.
+hint.hide,Esconder: Joaquim segue trabalhando.,Hide: Joaquim keeps working.
+hint.radio,O rádio guarda tudo que Joaquim ouviu.,The radio keeps everything Joaquim heard.
 hint.box,A caixa da escotilha troca cestos por sucata.,The hatch box trades baskets for scrap.
 hint.build,"Escolha a máquina, depois o lugar.","Pick a machine, then a spot."
 hint.demolish,Desmontar devolve toda a sucata.,Dismantling gives all the scrap back.
 hint.move,Mover não custa nada.,Moving costs nothing.
 hint.pra_que,As etiquetas mostram pra que serve cada coisa.,The tags show what each thing is for.
-hint.power,Luz piscando? Falta energia. Troque o gerador.,Flickering light? Not enough power. Upgrade the generator.
+hint.power,Luz piscando? Falta energia.,Flickering light? Not enough power.
 hint.offline,"Com o jogo fechado, a vida segue por um tempo.","With the game closed, life goes on for a while."
-hint.first_run,Ele planta e leva a colheita pra caixa. Vira sucata.,He plants and hauls the harvest to the box. It becomes scrap.
+hint.first_run,Joaquim planta e leva a colheita pra caixa.,Joaquim plants and hauls the harvest to the box.
 hint.goal,Fixe um objetivo e a gente avisa quando der.,Pin a goal and we'll tell you when it's ready.
 hint.planting,A cultura escolhida vale pra sempre naquele vaso.,The crop you pick stays in that pot for good.
 hint.dig,Escavar abre sala nova. Dá pra ter até três.,Digging opens a new room. Up to three.
 tab.build,Construir,Build
 tab.radio,Rádio,Radio
-tab.state,Estado,Status
 tab.options,Opções,Options
 tab.filter.all,Tudo,All
 toast.item_done,{item} ficou pronto,{item} is ready
 toast.item_started,{item} em obra,{item} under construction
 toast.item_removed,{item} desmontado,{item} dismantled
 toast.item_moved,{item} mudou de lugar,{item} moved
-toast.dug,Ele terminou a escavação,He finished digging
-toast.box_full,A caixa encheu,The box is full
-toast.no_power,Sem energia,Out of power
+toast.dug,Joaquim terminou de escavar,Joaquim finished digging
+toast.box_full,Caixa cheia: clique nela,Box full: click it
+toast.no_power,Sem energia: veja os geradores,Out of power: check generators
 toast.antenna,Antena nível {n},Antenna level {n}
 toast.radio_new,Fala nova no rádio,New voice on the radio
-toast.not_enough,Faltam {n} de sucata,{n} more scrap needed
-toast.goal_ready,Já dá pra comprar: {item},You can buy it now: {item}
+toast.not_enough,Faltam {n} sucata,{n} more scrap needed
+toast.goal_ready,Dá pra comprar: {item},You can buy: {item}
 toast.house_item,A casa ganhou: {item},The place got: {item}
-toast.hungry,Ele está com fome,He's hungry
+toast.hungry,Joaquim está com fome,Joaquim is hungry
 toast.saved,Jogo salvo,Game saved
 toast.save_failed,Não deu pra salvar,Couldn't save
 toast.window_reset,Janela no lugar de novo,Window back in place
 welcome.title,Bem-vindo de volta,Welcome back
 welcome.hours,Passaram {hours} h.,{hours} h went by.
 welcome.visits,{visits} trocas na caixa,{visits} trades at the box
-welcome.scrap,+{scrap} de sucata,+{scrap} scrap
+welcome.scrap,+{scrap} sucata,+{scrap} scrap
 welcome.harvested,{harvested} cestos colhidos,{harvested} baskets picked
-welcome.nights,Ele dormiu {nights} noites.,He slept {nights} nights.
+welcome.nights,Joaquim dormiu {nights} noites.,Joaquim slept {nights} nights.
 welcome.lines,{n} falas novas no rádio,{n} new voices on the radio
 welcome.capped,A vida só andou até {hours} h.,Life only moved on for up to {hours} h.
 welcome.quiet,Tudo calmo por aqui.,All quiet here.
 welcome.btn,Seguir,Go on
-goal.title,Objetivo,Goal
-goal.none,Nenhum objetivo fixado,No goal pinned
-goal.pinned,Objetivo: {item},Goal: {item}
-goal.btn.pin,Fixar objetivo,Pin as goal
-goal.btn.clear,Limpar,Clear
-goal.ready,Já dá pra comprar,Ready to buy
-goal.progress,{have} de {need} de sucata,{have} of {need} scrap
+goal.btn.pin,Meta,Goal
+goal.ready,Dá pra comprar,Ready to buy
 crop.pick,Escolher cultura,Pick a crop
-crop.pick.help,Vale pra todas as plantas desta estrutura.,Applies to every plant in this structure.
+crop.pick.help,Vale pra toda a estrutura.,Applies to the whole structure.
 crop.locked,Antena {n} libera,Unlocked by antenna {n}
 crop.greenhouse_only,Só na estufa,Greenhouse only
 crop.current,Plantando: {crop},Growing: {crop}
@@ -163,13 +152,13 @@ buy.cols.one,Ocupa 1 coluna,Takes 1 column
 buy.cols.none,Não ocupa espaço,Takes no room
 buy.power,Usa {n} de energia,Uses {n} power
 buy.build_time,Obra: {min} min,Build: {min} min
-buy.replaces,"Troca a atual, sem reembolso","Replaces the old one, no refund"
+buy.replaces,Troca a atual,Replaces the old one
 buy.pick_spot,Escolha o lugar,Pick a spot
 buy.confirm,Comprar {item} por {cost}?,Buy {item} for {cost}?
 buy.post_contact,Só depois do contato,Only after contact
 buy.tier,Nível {n},Tier {n}
 buy.owned,Você tem {n},You have {n}
-buy.refund,Devolve {n} de sucata,Refunds {n} scrap
+buy.refund,Devolve {n} sucata,Refunds {n} scrap
 buy.surface,Fica lá em cima,Goes up top
 status.sleeping,Dormindo,Sleeping
 status.working,Trabalhando,Working
@@ -191,4 +180,5 @@ tray.collapse,Recolher,Collapse
 tray.reset,Resetar posição,Reset position
 tray.on_top,Sempre por cima,Always on top
 tray.quit,Sair,Quit
-ending.credits,Obrigado por esperar com ele.,Thanks for waiting with him.
+ending.credits,Obrigado por esperar com Joaquim.,Thanks for waiting with Joaquim.
+buy.have,{cost} · tem {have},{cost} · have {have}

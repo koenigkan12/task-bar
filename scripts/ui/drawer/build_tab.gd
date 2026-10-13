@@ -236,8 +236,8 @@ func _refresh_list(force: bool) -> void:
 		if l == "casa" and not contact:
 			continue
 		if line == "" and l != last_line:
-			var h: Label = DrawerUi.label(I18nRef.t("line." + l), "LabelMuted")
-			h.add_theme_font_size_override("font_size", UiTheme.font_size(UiTheme.SIZE_SMALL))
+			var hk: String = "line.%s.head" % l
+			var h: Label = DrawerUi.label(I18nRef.t(hk) if I18nRef.has_key(hk) else I18nRef.t("line." + l), "LabelMuted")
 			_list.add_child(h)
 			last_line = l
 		_add_item_row(e)
@@ -278,8 +278,7 @@ func _add_antenna_row(ant: Dictionary) -> void:
 	if _suggested == "antenna":
 		h.add_child(DrawerUi.icon("estrela"))
 	if not bool(ant.get("max", false)):
-		var c: Label = DrawerUi.label(str(int(ant.get("next_cost", 0))), "LabelAmber" if bool(ant.get("can", false)) else "LabelMuted")
-		h.add_child(c)
+		h.add_child(DrawerUi.icon_text("sucata", str(int(ant.get("next_cost", 0))), "LabelAmber" if bool(ant.get("can", false)) else "LabelMuted"))
 	b.pressed.connect(select_item.bind(ANTENNA))
 
 
@@ -305,9 +304,13 @@ func _add_item_row(e: Dictionary) -> void:
 		h.add_child(sp)
 	var name_l: Label = DrawerUi.fill_label(I18nRef.t(str(e.get("name_key", "item.%s.name" % id))), "LabelMuted" if status == "locked" else "")
 	h.add_child(name_l)
-	if status != "owned" and status != "maxed":
-		var c: Label = DrawerUi.label(str(int(e.get("cost", 0))), "LabelAmber" if status == "available" else "LabelMuted")
-		h.add_child(c)
+	if status == "locked":
+		var why: Array = e.get("missing", [])
+		var args: Array = e.get("missing_args", [])
+		if not why.is_empty():
+			h.add_child(DrawerUi.label(missing_short(str(why[0]), args[0] if not args.is_empty() else {}), "LabelMuted"))
+	elif status != "owned" and status != "maxed":
+		h.add_child(DrawerUi.icon_text("sucata", str(int(e.get("cost", 0))), "LabelAmber" if status == "available" else "LabelMuted"))
 	b.pressed.connect(select_item.bind(id))
 
 
@@ -349,7 +352,6 @@ func _refresh_detail(force: bool) -> void:
 
 func _detail_empty() -> void:
 	_detail.add_child(DrawerUi.label(I18nRef.t("hint.build"), "LabelSmall", true))
-	_detail.add_child(DrawerUi.label(I18nRef.t("drawer.build.select_hint"), "LabelSmall", true))
 	_goal_line()
 
 
@@ -357,13 +359,10 @@ func _goal_line() -> void:
 	var g: Dictionary = Guide.next_goal(drawer.game)
 	if g.is_empty():
 		return
-	var pinned: bool = str(drawer.game.pinned_goal()) != "" and str(drawer.game.pinned_goal()) == String(g["id"])
-	var key: String = "goal.pinned" if pinned else "goal.next"
-	var h: HBoxContainer = DrawerUi.icon_text("estrela", I18nRef.t(key, {"item": I18nRef.t(String(g["name_key"]))}))
-	_detail.add_child(h)
+	_detail.add_child(DrawerUi.icon_text("estrela", Guide.goal_name(g)))
 	var have: int = int(g["have"])
 	var need: int = int(g["cost"])
-	var txt: String = I18nRef.t("goal.ready") if bool(g["ready"]) else I18nRef.t("goal.progress", {"have": mini(have, need), "need": need})
+	var txt: String = I18nRef.t("goal.ready") if bool(g["ready"]) else I18nRef.t("hud.missing", {"n": maxi(0, need - have)})
 	_detail.add_child(DrawerUi.label(txt, "LabelAmber"))
 
 
@@ -382,16 +381,12 @@ func _title(text: String, right_text: String = "", right_icon: String = "") -> v
 func _tags(tags: Array) -> void:
 	if tags.is_empty():
 		return
-	var h := HFlowContainer.new()
-	h.add_theme_constant_override("h_separation", 5)
-	h.add_theme_constant_override("v_separation", 0)
-	h.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	for tag in tags:
-		var it: HBoxContainer = DrawerUi.icon_text(DrawerUi.pra_que_icon(str(tag)), I18nRef.t("pra_que." + str(tag)))
-		it.tooltip_text = I18nRef.t("pra_que.%s.help" % str(tag))
-		it.mouse_filter = Control.MOUSE_FILTER_PASS
-		h.add_child(it)
-	_detail.add_child(h)
+	var tag: String = str(tags[0])   # uma etiqueta só: a principal
+	var it: HBoxContainer = DrawerUi.icon_text(DrawerUi.pra_que_icon(tag), I18nRef.t("pra_que." + tag))
+	(it.get_child(1) as Label).add_theme_color_override("font_color", UiTheme.LEAF2)
+	it.tooltip_text = I18nRef.t("pra_que.%s.help" % tag)
+	it.mouse_filter = Control.MOUSE_FILTER_PASS
+	_detail.add_child(it)
 
 
 ## Requisitos que faltam: `missing` são chaves i18n e `missing_args` os argumentos (seção 4.3).
@@ -405,6 +400,15 @@ func _missing(src: Dictionary) -> void:
 
 
 ## Traduz uma chave de requisito; `{item}` chega como id e vira o nome do item.
+## Motivo curto para a lista ("antena 3", "energia 2").
+static func missing_short(key: String, args: Variant) -> String:
+	var a: Dictionary = (args as Dictionary).duplicate() if args is Dictionary else {}
+	if a.has("item"):
+		a["item"] = I18nRef.t("item.%s.name" % str(a["item"]))
+	var sk: String = "missing.short." + key.trim_prefix("missing.")
+	return I18nRef.t(sk, a) if I18nRef.has_key(sk) else missing_text(key, args)
+
+
 static func missing_text(key: String, args: Variant) -> String:
 	var a: Dictionary = (args as Dictionary).duplicate() if args is Dictionary else {}
 	if a.has("item"):
@@ -416,38 +420,53 @@ func _detail_item() -> void:
 	var e: Dictionary = _entry(_sel_item)
 	var status: String = str(e.get("status", "available"))
 	var cost: int = int(e.get("cost", 0))
-	_title(I18nRef.t(str(e.get("name_key", ""))), str(cost) if status != "owned" and status != "maxed" else "", "sucata" if status != "owned" and status != "maxed" else "check")
+	var open: bool = status != "owned" and status != "maxed"
+	_title(I18nRef.t(str(e.get("name_key", ""))), "", "" if open else "check")
 	_detail.add_child(DrawerUi.label(I18nRef.t(str(e.get("desc_key", ""))), "LabelSmall", true))
-	_missing(e)
 	_tags(e.get("pra_que", []))
-	var meta: PackedStringArray = PackedStringArray()
-	var cols: int = int(e.get("cols", 0))
 	var line: String = str(e.get("line", ""))
-	if line != "escavacao":
-		if cols <= 0:
-			meta.append(I18nRef.t("buy.cols.none"))
-		elif cols == 1:
-			meta.append(I18nRef.t("buy.cols.one"))
-		else:
-			meta.append(I18nRef.t("buy.cols", {"n": cols}))
+	var have: int = int(drawer.game.sucata())
+	if open and cost > 0:
+		var cr := HBoxContainer.new()
+		cr.add_theme_constant_override("separation", 3)
+		cr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		cr.add_child(DrawerUi.icon_text("sucata", I18nRef.t("buy.have", {"cost": cost, "have": have}), "LabelSmall"))
+		var bar := ProgressBar.new()
+		bar.show_percentage = false
+		bar.max_value = 1.0
+		bar.step = 0.0
+		bar.value = clampf(float(have) / float(cost), 0.0, 1.0)
+		bar.custom_minimum_size = Vector2(0, 4)
+		bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		cr.add_child(bar)
+		_detail.add_child(cr)
+	var only_cost: bool = status != "available" and str((e.get("missing", []) as Array)[0] if not (e.get("missing", []) as Array).is_empty() else "") == "missing.cost"
+	if not only_cost:
+		_missing(e)
 	if bool(e.get("post_contact", false)) and not bool(drawer.game.contact_made()):
-		meta.append(I18nRef.t("buy.post_contact"))
-	if meta.size() > 0:
-		_detail.add_child(DrawerUi.label(" · ".join(meta), "LabelMuted"))
+		_detail.add_child(DrawerUi.label(I18nRef.t("buy.post_contact"), "LabelMuted"))
 	if line in ["agua", "energia", "transporte"] and int(e.get("tier", 0)) > 0:
 		_detail.add_child(DrawerUi.label(I18nRef.t("buy.replaces"), "LabelMuted"))
-	# botões
+	# botões: comprar (ou o que falta) e "Meta"
 	var can: bool = status == "available"
-	if status != "owned" and status != "maxed":
+	if open:
 		var verb: String = I18nRef.t("ui.btn.dig") if line == "escavacao" else I18nRef.t("drawer.btn.buy_for", {"n": cost})
-		var b: Button = DrawerUi.button(verb, "hammer" if line != "escavacao" else "")
+		if not can:
+			var miss: Array = e.get("missing", [])
+			verb = I18nRef.t("hud.short", {"n": maxi(0, cost - have)}) if only_cost or miss.is_empty() \
+					else missing_short(str(miss[0]), (e.get("missing_args", []) as Array)[0] if not (e.get("missing_args", []) as Array).is_empty() else {})
+		var b: Button = DrawerUi.button(verb, "sucata" if not can else ("hammer" if line != "escavacao" else ""))
 		b.disabled = not can
 		b.pressed.connect(press_buy)
 		b.name = "BuyButton"
 		_actions.add_child(b)
 	var pinned: bool = str(drawer.game.pinned_goal()) == _sel_item
-	if status != "owned" and status != "maxed" and (pinned or not can):
-		var p: Button = DrawerUi.button(I18nRef.t("goal.btn.clear") if pinned else I18nRef.t("goal.btn.pin"), "estrela")
+	if open and (pinned or not can):
+		var p: Button = DrawerUi.button(I18nRef.t("goal.btn.pin"), "estrela")
+		p.toggle_mode = true
+		p.set_pressed_no_signal(pinned)
 		p.tooltip_text = I18nRef.t("hint.goal")
 		p.pressed.connect(press_pin)
 		p.name = "PinButton"
@@ -544,6 +563,12 @@ func _detail_placing() -> void:
 	var item: String = drawer.placing_item()
 	_title(I18nRef.t("item.%s.name" % item))
 	_detail.add_child(DrawerUi.icon_text("arrow_down", I18nRef.t("ui.place.pick"), ""))
+	var pe: Dictionary = _entry_any(item)
+	var cols: int = int(pe.get("cols", 0))
+	if cols == 1:
+		_detail.add_child(DrawerUi.label(I18nRef.t("buy.cols.one"), "LabelMuted"))
+	elif cols > 1:
+		_detail.add_child(DrawerUi.label(I18nRef.t("buy.cols", {"n": cols}), "LabelMuted"))
 	_detail.add_child(DrawerUi.label(I18nRef.t("drawer.place.help"), "LabelSmall", true))
 	var c: Button = DrawerUi.button(I18nRef.t("ui.btn.cancel"), "close")
 	c.pressed.connect(drawer.cancel_placement)

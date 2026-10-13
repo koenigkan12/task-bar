@@ -556,9 +556,22 @@ func help_box_check() -> String:
 		return "off"
 	if stock <= 0:
 		return "empty"
-	if abs_min() - _last_visit_abs < Balance.num("help.box_cooldown_min", 30.0):
+	if abs_min() - _last_visit_abs < Balance.num("help.box_cooldown_min", 10.0):
 		return "cooldown"
 	return "ok"
+
+
+## O que a próxima troca rende: {units, scrap} (a cena mostra "[cesto]4 -> [sucata]4" no botão Vender).
+func box_sale() -> Dictionary:
+	var units: int = mini(stock, box_capacity())
+	var avg: float = stock_value / float(stock) if stock > 0 else 0.0
+	return {"units": units, "scrap": int(roundf(float(units) * avg))}
+
+
+## Espera até o comprador poder trocar de novo: {left, total} em minutos de jogo (left 0 = já pode).
+func help_box_wait() -> Dictionary:
+	var total: float = Balance.num("help.box_cooldown_min", 10.0)
+	return {"left": clampf(total - (abs_min() - _last_visit_abs), 0.0, total), "total": total}
 
 
 func help_box() -> Dictionary:

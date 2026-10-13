@@ -1,44 +1,80 @@
 key,pt_BR,en
-hud.goal,{name} {have}/{cost},{name} {have}/{cost}
-hud.ready,Comprar {name}!,Buy {name}!
-hint.intro_build,Gaste sucata em gambiarras: toque na meta ali em cima.,Spend scrap on contraptions: tap the goal up there.
-hint.intro_click,"Clique nos vasos e na caixa: ele vai até lá e faz.","Click the pots and the box: he walks over and does it."
-hud.box_sold,+{n} de sucata,+{n} scrap
-hud.box_empty,A caixa está vazia.,The box is empty.
-hud.box_wait,Ele acabou de trocar. Espere um pouco.,He just traded. Give it a moment.
-bag.title,Mochila,Backpack
-bag.counts,Colhido {h} · trocado {s},Harvested {h} · traded {s}
-bag.seeds,Sementes (nunca acabam): {list},Seeds (never run out): {list}
-bag.tools,Ferramentas: {list},Tools: {list}
-intro.1,"Depois do fim do mundo, ele ficou sozinho num bunker. Ela ficou lá fora. O rádio é o único fio.","After the end of the world he was left alone in a bunker. She stayed outside. The radio is the only thread."
-intro.2,"Ele cuida de tudo sozinho: planta, rega e leva a colheita à caixa da escotilha. A caixa vira sucata. Pode deixar a janela no canto.","He runs everything alone: plants, waters, hauls the harvest to the hatch box. The box turns into scrap. Leave the window in a corner."
-intro.3,"Seu papel: gastar a sucata em gambiarras que automatizam a vida dele e melhorar a antena. Cada nível traz uma voz nova.","Your part: spend scrap on contraptions that automate his life, and upgrade the antenna. Each level brings a new voice."
-intro.4,"No começo ele precisa de você: clique num vaso ou na caixa e ele vai até lá. Seus cliques viram pedidos que ele cumpre um por vez. A meta aparece no canto de cima.","At first he needs you: click a pot or the box and he walks over. Your clicks become orders he does one at a time. Your goal shows in the top corner."
+hud.ready,Comprar {name},Buy {name}
+hint.intro_build,Clique na meta lá em cima.,Click the goal up there.
+hint.intro_click,Clique nos vasos e na caixa.,Click the pots and the box.
+hud.box_sold,+{n} sucata,+{n} scrap
+hud.box_empty,Caixa vazia,Box is empty
+intro.1,Joaquim ficou sozinho num bunker. Ela ficou lá fora. O rádio é o único fio.,Joaquim was left alone in a bunker. She stayed outside. The radio is the only thread.
+intro.2,"Joaquim planta, rega e leva a colheita à caixa. A caixa vira sucata.","Joaquim plants, waters and hauls the harvest to the box. The box turns into scrap."
+intro.3,Você gasta a sucata em gambiarras e na antena. Cada nível traz uma voz.,You spend scrap on contraptions and the antenna. Each level brings a voice.
+intro.4,Joaquim precisa de você no começo: clique num vaso ou na caixa.,Joaquim needs you at first: click a pot or the box.
 intro.next,Próximo,Next
 intro.start,Começar,Start
-tut.1,1/4 Clique num vaso: ele vem regar e a planta cresce mais rápido.,1/4 Click a pot: he comes to water it and the plant grows faster.
-tut.2,2/4 Continue mandando ele até colher: a colheita vira cestos.,2/4 Keep sending him until it's ready: the harvest becomes baskets.
-tut.3,3/4 Clique na escotilha ou na caixa: ele leva os cestos e eles viram sucata.,3/4 Click the hatch or the box: he carries the baskets over and they turn into scrap.
-tut.4,4/4 Toque na meta ali em cima e compre uma gambiarra. Clique na obra pra ele vir martelar.,4/4 Tap the goal up there and buy a contraption. Click the work site and he comes to hammer.
-goal.next,Próxima meta: {item},Next goal: {item}
+tut.1,1/4 Clique num vaso,1/4 Click a pot
+tut.2,2/4 Clique até ficar pronta,2/4 Click until it is ready
+tut.3,3/4 Clique na caixa,3/4 Click the box
+tut.4,4/4 Clique na meta,4/4 Click the goal
 plot.stage.0,Semente,Seed
 plot.stage.1,Brotando,Sprouting
 plot.stage.2,Crescendo,Growing
 plot.stage.3,Quase pronta,Almost ready
-plot.ready,Pronta! Ele já vai colher.,Ready! He'll pick it soon.
-plot.line,"{crop} · {stage} {pct}%","{crop} · {stage} {pct}%"
+plot.ready,Pronta,Ready
+plot.line,{crop} · {stage},{crop} · {stage}
 plot.eta,Colhe em ~{t},Harvest in ~{t}
-plot.eta_h,"{h} h {m} min","{h} h {m} min"
-plot.eta_m,{m} min,{m} min
 plot.gain,+1 cesto,+1 basket
-plot.asleep,Ele está dormindo. A planta espera.,He is asleep. The plant waits.
-plot.build,{item} em obra · {pct}%,{item} under construction · {pct}%
-plot.build_eta,Fica pronto em ~{t},Ready in ~{t}
-plot.build_help,Clique: ele vem martelar,Click: he comes to hammer
-plot.tend_help,Clique: ele vem cuidar,Click: he comes to tend it
-hud.order_asleep,Ele está dormindo. De manhã ele atende.,He is asleep. He will help in the morning.
-hud.order_full,Ele já tem pedidos demais. Espere um pouco.,He already has plenty of orders. Wait a moment.
+plot.asleep,Joaquim dorme,Joaquim is asleep
+plot.build,{item} · obra,{item} · building
+plot.build_eta,Pronto em {t},Ready in {t}
+plot.build_help,Clique: martelar,Click: hammer
+plot.tend_help,Clique: cuidar,Click: tend
+hud.order_asleep,Joaquim dorme. Ajuda de manhã.,Joaquim is asleep. Help in the morning.
+hud.order_full,Fila cheia. Espere um pouco.,Queue full. Wait a moment.
 plot.helped,+{n}%,+{n}%
-plot.auto,Automático: ele cuida sozinho,Automatic: he tends it himself
-hud.order_cap,Por hoje já deu de ajuda. Ele toca sozinho.,That is enough help for today. He carries on alone.
-hud.order_auto,Isso já é automático. Ele cuida sozinho.,That is automatic now. He handles it himself.
+plot.auto,Automático,Automatic
+hud.order_cap,Chega de ajuda por hoje.,Enough help for today.
+hud.order_auto,Já é automático.,Already automatic.
+man.name,Joaquim,Joaquim
+hud.scrap,{n} sucata,{n} scrap
+hud.missing,faltam {n},{n} to go
+hud.short,Faltam {n},{n} short
+hud.tip.ready,Clique: ver na gaveta,Click: open the drawer
+hud.tip.saving,Faltam {n} sucata,{n} more scrap
+card.wakes,Acorda {h}h,Wakes at {h}
+card.box.cap,Cabem {n},Holds {n}
+card.box.sell,Vender,Sell
+card.box.wait,Volta em {t},Back in {t}
+card.box.empty,Caixa vazia,Box empty
+card.box.off,Aguarde,Wait
+card.box.auto,Troca sozinho,Trades itself
+card.gen.ok,Sobra {n},{n} spare
+card.gen.lack,Falta {n}!,{n} short!
+card.gen.btn,Geradores,Generators
+card.antenna.max,Antena máxima,Top antenna
+card.antenna.btn,Melhorar,Upgrade
+hover.man,Joaquim · {act},Joaquim · {act}
+hover.radio_new,{n} novas,{n} new
+hover.box_sell,Vender {n} cestos,Sell {n} baskets
+hover.box_sell1,Vender 1 cesto,Sell 1 basket
+hover.box_empty,Sem cestos,No baskets
+hover.box_asleep,Joaquim dorme,Joaquim sleeps
+act.idle,à toa,idling
+act.sleep,dormindo,sleeping
+act.dig,escavando,digging
+act.hammer,martelando,hammering
+act.harvest,colhendo,harvesting
+act.pick,pegando cestos,picking baskets
+act.drop,levando cestos,hauling baskets
+act.water,regando,watering
+act.pedal,pedalando,pedaling
+act.eat,comendo,eating
+act.ler,lendo,reading
+act.cochilar,cochilando,napping
+act.ouvir_radio,ouvindo o rádio,listening
+act.escrever,escrevendo,writing
+act.olhar_foto,olhando a foto,looking at the photo
+act.sentar_junto,sentado,sitting
+act.despensa,na despensa,in the pantry
+time.now,agora,now
+time.h,{h}h,{h}h
+time.hm,{h}h{m},{h}h{m}
+time.min,{m}min,{m}min

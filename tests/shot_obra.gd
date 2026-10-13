@@ -45,7 +45,8 @@ func _run() -> void:
 	DirAccess.make_dir_recursive_absolute(out_dir)
 	img.save_png("%s/obra_hover.png" % out_dir)
 	var tip: PlotTip = bunker.get("_tip")
-	_check(tip.get("_tip_lines").size() >= 2, "etiqueta da obra (%s)" % str(tip.get("_tip_lines")))
+	_check(tip.hover_lines().size() >= 2, "etiqueta da obra (%s)" % str(tip.hover_lines()))
+	_check(not tip._jobs.is_empty(), "o relógio da obra aparece sem passar o mouse")
 	# clicar na obra ajuda a martelar (clique real, com a gaveta fechada)
 	var before: float = float(game.active_jobs()[0]["ratio"])
 	for pressed in [true, false]:

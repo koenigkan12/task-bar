@@ -1,22 +1,20 @@
 key,pt_BR,en
 drawer.btn.buy_for,Comprar {n},Buy {n}
-drawer.build.select_hint,Clique num objeto lá embaixo para mover ou desmontar.,Click something down below to move or dismantle it.
+drawer.build.select_hint,Clique num objeto lá embaixo.,Click something below.
 drawer.antenna.next,Próxima: {name},Next: {name}
-drawer.place.help,"Clique num lugar verde na sala. Botão direito cancela.","Click a green spot in the room. Right click cancels."
+drawer.place.help,Clique num lugar verde na sala. Botão direito cancela.,Click a green spot in the room. Right click cancels.
 drawer.toast.cant,Agora não dá,Can't do that now
 drawer.station,Estação,Station
 drawer.station.help,Música baixinha no rádio do bunker.,Soft music on the bunker radio.
 drawer.station.next,Trocar estação,Change station
 drawer.diary.away_tag,fora,away
-drawer.box.stock,{have} de {cap} cestos,{have} of {cap} baskets
-drawer.box.visits,{n} trocas por dia,{n} trades a day
-drawer.journey.days,Chega em uns {n} dias,About {n} days away
+drawer.journey.days,Chega em {n} dias,{n} days away
 drawer.journey.soon,Ela está quase chegando,She's almost here
 drawer.journey.home,Ela está em casa.,She's home.
 drawer.welcome.radio,Ler o rádio,Read the radio
-drawer.welcome.night_one,Ele dormiu 1 noite.,He slept 1 night.
+drawer.welcome.night_one,Joaquim dormiu 1 noite.,Joaquim slept 1 night.
 drawer.crop.auto,Automático,Automatic
-drawer.crop.auto.help,Ele planta a melhor cultura que já tem.,He plants the best crop he has.
+drawer.crop.auto.help,Joaquim planta a melhor cultura.,Joaquim plants the best crop.
 drawer.cant.line_item,Esse só se troca por um melhor.,This one only gets swapped for a better one.
 drawer.cant.locked,Esse veio com o bunker. Fica.,This came with the bunker. It stays.
 drawer.cant.house,É da casa dela. Fica.,It's part of her place. It stays.

@@ -36,6 +36,14 @@ func _initialize() -> void:
 	var r := s.help_box()
 	check(bool(r["ok"]) and s.sucata() > scrap0, "clicar na caixa troca por sucata agora")
 	check(String(s.help_box()["reason"]) == "empty" or String(s.help_box()["reason"]) == "cooldown", "segunda troca seguida é recusada")
+	var wait: Dictionary = s.help_box_wait()
+	check(float(wait["total"]) == 10.0 and float(wait["left"]) > 9.0, "espera da caixa depois da troca (%s)" % str(wait))
+	s.debug_advance_minutes(11.0)
+	check(float(s.help_box_wait()["left"]) == 0.0, "a espera acaba em %d min" % int(wait["total"]))
+	s.stock = 4
+	s.stock_value = 8.0
+	var sale: Dictionary = s.box_sale()
+	check(int(sale["units"]) == mini(4, s.box_capacity()) and int(sale["scrap"]) == int(roundf(float(sale["units"]) * 2.0)), "box_sale: %s" % str(sale))
 	# teto diário
 	var capped := false
 	for k in 400:

@@ -86,7 +86,7 @@ func _options(host: Control) -> void:
 	ts.item_selected.emit(2)
 	await process_frame
 	await process_frame
-	_ok(o.theme != null and o.theme.default_font_size == 20, "texto enorme refaz o tema (20)")
+	_ok(o.theme != null and o.theme.default_font_size == 17, "texto enorme refaz o tema (17)")
 	st.set_value("text_size", 1.0)
 	var lang: OptionButton = o.find_child("Language", true, false)
 	lang.item_selected.emit(2)

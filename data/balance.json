@@ -135,11 +135,11 @@
     "olhar_foto": { "needs": "foto" }
   },
   "help": {
-    "_comment": "Ajuda manual do começo (cliques). click_min = minutos de ciclo por clique em estrutura de plantio; day_cap_min = teto diário; a ajuda ao plantio some com o gotejador e a da caixa some com a calha (cada máquina tira um clique).",
+    "_comment": "Ajuda manual do começo (cliques). click_min = minutos de ciclo por clique em estrutura de plantio; day_cap_min = teto diário; a ajuda ao plantio some com o gotejador e a da caixa some com a calha (cada máquina tira um clique). box_cooldown_min = minutos de jogo (1 min de jogo = 1 min real) até o comprador trocar de novo.",
     "click_min": 6.0,
     "build_click_min": 1.5,
     "day_cap_min": 720.0,
-    "box_cooldown_min": 30.0
+    "box_cooldown_min": 10.0
   },
   "guide": {
     "_comment": "Ordem das metas sugeridas na faixa (HUD). 'item:N' = até ter N; 'antena@N' = só quando o próximo nível é N.",

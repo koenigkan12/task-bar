@@ -105,9 +105,9 @@ func _run() -> void:
 	await _frames(1)
 	_check(d.radio_tab._list.get_child_count() > 0, "diário real com entradas")
 	_check(_raw_texts().is_empty(), "diário traduzido: %s" % str(_raw_texts()))
-	d.show_tab("state")
+	d.show_tab("build")
 	await _frames(1)
-	_check(_raw_texts().is_empty(), "estado traduzido: %s" % str(_raw_texts()))
+	_check(_raw_texts().is_empty(), "construir traduzido: %s" % str(_raw_texts()))
 
 	# resumo de volta no formato da Sim
 	var summary: Dictionary = g.sim.catch_up(10 * 60.0)

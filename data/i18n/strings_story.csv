@@ -38,7 +38,7 @@ speaker.numeros,Números,Numbers
 speaker.velho,O Velho,The Old Man
 speaker.norte,Norte,North
 speaker.ela,Ela,Her
-speaker.ele,Ele,Him
+speaker.ele,Joaquim,Joaquim
 journey.on_cama_dela,"Uma cama só pra mim? Eu durmo em qualquer chão, você sabe. Mas vou aceitar.","A bed just for me? I'll sleep on any floor, you know that. But I'll take it."
 journey.on_cantinho,Um canto com luz baixa. Vou me enroscar lá e ninguém me acha a tarde inteira.,A corner with a low light. I'll curl up there and nobody will find me all afternoon.
 journey.on_planta_dela,"A planta. Não rega demais, ela é mais teimosa que carente. Parece com alguém.","The plant. Don't overwater it, it's more stubborn than needy. Reminds me of someone."
@@ -120,4 +120,4 @@ diary.away.summary.v1n1,"{hours} h fora. 1 visita à caixa, +{scrap} de sucata, 
 diary.away.summary.v1n0,"{hours} h fora. 1 visita à caixa, +{scrap} de sucata, nenhuma noite.","{hours} h away. 1 visit to the box, +{scrap} scrap, no nights."
 diary.away.line,Às {hour}h o rádio pegou: {speaker}.,At {hour}:00 the radio picked up: {speaker}.
 diary.away.line.night,"De madrugada, às {hour}h, o rádio pegou: {speaker}.","In the small hours, at {hour}:00, the radio picked up: {speaker}."
-diary.away.slept,Ele dormiu em paz.,He slept soundly.
+diary.away.slept,Joaquim dormiu em paz.,Joaquim slept soundly.

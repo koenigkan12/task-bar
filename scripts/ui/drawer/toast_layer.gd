@@ -1,6 +1,6 @@
 class_name DrawerToastLayer
 extends VBoxContainer
-## Avisos curtos (texto + ícone), um por vez, sem som. Aparecem no céu da faixa,
+## Avisos curtos (texto + ícone), um por vez, sem som. Aparecem no pé da faixa,
 ## no canto direito, e somem sozinhos. Repetidos em sequência viram um só.
 
 const SHOW_S: float = 3.0
