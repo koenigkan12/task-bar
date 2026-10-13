@@ -178,6 +178,8 @@ func _connect_game() -> void:
 	link.connect_signal("arrival_finished", func() -> void: _sync())
 	link.connect_signal("new_game_started", full_refresh)
 	link.connect_signal("game_loaded", full_refresh)
+	# volta de ausência (offline / suspensão): o catch-up não emite sinais finos, então relê tudo
+	link.connect_signal("welcome_back", func(_s: Dictionary) -> void: full_refresh())
 
 
 ## Refaz tudo (novo jogo / carregado).
