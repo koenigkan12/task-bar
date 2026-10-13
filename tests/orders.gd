@@ -156,9 +156,12 @@ func _run() -> void:
 	_check(bool(dig["ok"]), "escavar a sala 2")
 	main.call("_relayout")
 	await _frames(10)
-	_check(main.call("_strip_h") == BunkerGeo.height(2), "a faixa já tem o andar da sala nova (%d)" % int(main.call("_strip_h")))
+	_check(main.call("_strip_h") == BunkerGeo.H, "a janela continua com 2 andares (%d)" % int(main.call("_strip_h")))
+	_check(bunker.world_height() == BunkerGeo.height(2), "o mundo ganhou o andar da sala nova (%d)" % bunker.world_height())
 	var ok6: bool = await _until(func() -> bool: return absf(man.feet_y() - float(BunkerGeo.feet_y(2))) < 0.5, 4000)
 	_check(ok6, "ele desce até o andar da escavação")
+	var ok7: bool = await _until(func() -> bool: return absf(bunker.scroll_y - bunker.follow_target()) < 1.0, 4000)
+	_check(ok7 and bunker.scroll_y > 40.0, "a câmera desce com ele (rolagem %.0f)" % bunker.scroll_y)
 
 	# 4) dormindo ele não atende
 	var g2 := 0

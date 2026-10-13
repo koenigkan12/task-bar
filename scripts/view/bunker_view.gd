@@ -1,8 +1,10 @@
 class_name BunkerView
 extends Node2D
-## Corte do bunker (faixa de 88 px). Só lê o estado do Game e reage aos sinais dele; nada aqui
-## mexe na economia. Coordenadas lógicas da CONTRATOS seção 3; a origem do nó é o canto superior
-## esquerdo da faixa (quem instancia posiciona em y = altura_da_janela - 88).
+## Corte do bunker. Só lê o estado do Game e reage aos sinais dele; nada aqui mexe na economia.
+## Coordenadas lógicas da CONTRATOS seção 3; a origem do nó é o canto superior esquerdo do MUNDO
+## (todos os andares empilhados). A janela é uma faixa de `view_h` px (2 andares): com `view_h` > 0 a
+## cena rola na vertical sozinha (position.y = -scroll_y; o pai recorta). A câmera segue o homem; roda do
+## mouse e arrastar movem a vista à mão e, uns segundos depois, ela volta a seguir. view_h = 0: sem rolagem.
 ##
 ## Para a UI:
 ##   get_object_at(pos) -> Dictionary  {kind: "hatch"|"radio"|"box"|"instance"|"man"|"antenna"|"fixed"|"room",
@@ -11,6 +13,10 @@ extends Node2D
 ##   column_rect(room, col, cols) -> Rect2   retângulo de um bloco (para o fantasma de posicionamento)
 ##   strip_width() -> int              largura lógica usada (≥ W(n))
 ##   set_view_width(w)                 largura da janela (terra maciça preenche o resto)
+##   set_view_height(h)                altura visível (a faixa); liga a rolagem vertical
+##   pan_by(dy) / reveal(rect)         move a vista à mão / mostra um retângulo do mundo
+##   world_height() -> int             altura do mundo (cresce um andar por sala, já com a escavação)
+##   max_scroll() -> float             quanto dá para rolar
 ##   sinais object_clicked(instance_id), radio_clicked, box_clicked, hatch_clicked, man_clicked,
 ##          antenna_clicked, generator_clicked(instance_id),
 ##          arrival_cut (a tela está preta e o Game já recebeu finish_arrival), arrival_scene_finished
@@ -27,7 +33,14 @@ signal antenna_clicked()
 signal generator_clicked(instance_id: int)
 signal arrival_cut()
 signal arrival_scene_finished()
+## A vista rolou (position.y mudou).
+signal scrolled()
 
+const WHEEL_STEP := 24.0
+## Segundos que a câmera espera, depois de um movimento à mão, antes de voltar a seguir o homem.
+const FOLLOW_PAUSE := 4.0
+const FOLLOW_FEET_MARGIN := 8.0   # folga abaixo dos pés dele
+const DRAG_MIN := 3.0
 const SYNC_SEC := 0.25
 const VISIT_OPEN_SEC := 1.6
 const GOAL_ICONS := {
@@ -39,6 +52,10 @@ const GOAL_ICONS := {
 var game: Object
 var link: GameLink
 var view_width: int = 0
+## Altura da janela sobre o mundo (0 = sem rolagem, mostra tudo).
+var view_h: int = 0
+## Linha do mundo que está no topo da janela.
+var scroll_y: float = 0.0
 ## Velocidade da cena do final (testes podem acelerar).
 var cinematic_speed: float = 1.0
 
@@ -65,6 +82,11 @@ var _cone: BunkerLight
 var _overlay: Node2D
 var _fade: Node2D
 var _fade_alpha: float = 0.0
+var _pan_pause: float = 0.0
+var _drag_armed: bool = false
+var _dragging: bool = false
+var _drag_y0: float = 0.0
+var _drag_scroll0: float = 0.0
 
 var _antenna: ArtSprite
 var _hatch: ArtSprite
@@ -121,9 +143,97 @@ func strip_width() -> int:
 	return maxi(view_width, BunkerGeo.strip_width(_rooms))
 
 
-## Altura da faixa: cresce um andar quando uma sala começa a ser cavada (para baixo).
+## Altura do mundo: cresce um andar quando uma sala começa a ser cavada (para baixo).
 func strip_height() -> int:
 	return BunkerGeo.height(_rooms + (1 if not _dig_job().is_empty() else 0))
+
+
+func world_height() -> int:
+	return strip_height()
+
+
+func set_view_height(h: int) -> void:
+	view_h = h
+	snap_scroll()
+
+
+func max_scroll() -> float:
+	return maxf(0.0, float(world_height() - view_h)) if view_h > 0 else 0.0
+
+
+## Para onde a câmera quer ir: os pés dele perto da base da janela (ele e o andar de cima ficam à vista).
+func follow_target() -> float:
+	return clampf(man.position.y + FOLLOW_FEET_MARGIN - float(view_h), 0.0, max_scroll())
+
+
+func snap_scroll() -> void:
+	if view_h <= 0:
+		scroll_y = 0.0
+		position.y = 0.0
+		return
+	scroll_y = follow_target() if man != null else 0.0
+	_apply_scroll()
+
+
+## Move a vista à mão (dy > 0 desce) e segura a câmera um tempo.
+func pan_by(dy: float) -> void:
+	if view_h <= 0:
+		return
+	scroll_y = clampf(scroll_y + dy, 0.0, max_scroll())
+	_pan_pause = FOLLOW_PAUSE
+	_apply_scroll()
+
+
+## Mostra o retângulo `r` (coordenadas do mundo): se não cabe na janela agora, centraliza nele.
+func reveal(r: Rect2) -> void:
+	if view_h <= 0:
+		return
+	if r.position.y >= scroll_y and r.end.y <= scroll_y + float(view_h):
+		return
+	scroll_y = clampf(r.get_center().y - float(view_h) * 0.5, 0.0, max_scroll())
+	_pan_pause = FOLLOW_PAUSE
+	_apply_scroll()
+
+
+## Leva a vista até a linha `wy` do mundo no meio da janela (clique no indicador de andares).
+func reveal_center(wy: float) -> void:
+	if view_h <= 0:
+		return
+	scroll_y = clampf(wy - float(view_h) * 0.5, 0.0, max_scroll())
+	_pan_pause = FOLLOW_PAUSE
+	_apply_scroll()
+
+
+## Há um movimento à mão em curso ou recente (a câmera está parada de propósito).
+func is_panning() -> bool:
+	return _dragging or _pan_pause > 0.0
+
+
+func _apply_scroll() -> void:
+	var y := -roundf(scroll_y)
+	if position.y != y:
+		position.y = y
+		scrolled.emit()
+
+
+func _update_scroll(delta: float) -> void:
+	if view_h <= 0:
+		return
+	if _dragging:
+		_pan_pause = FOLLOW_PAUSE
+	elif _pan_pause > 0.0:
+		_pan_pause -= delta
+	else:
+		var t := follow_target()
+		scroll_y = t if absf(t - scroll_y) < 0.5 else lerpf(scroll_y, t, 1.0 - exp(-4.0 * delta))
+	scroll_y = clampf(scroll_y, 0.0, max_scroll())
+	_apply_scroll()
+
+
+## Retângulo da janela em coordenadas da tela (o pai recortado), para saber se o mouse está sobre a faixa.
+func _view_rect() -> Rect2:
+	var c := get_parent() as Control
+	return c.get_global_rect() if c != null else Rect2()
 
 
 func _on_viewport_resized() -> void:
@@ -228,11 +338,13 @@ func full_refresh() -> void:
 		man.position.x = BunkerGeo.col_x(1, 7)
 	elif bed != null:
 		man.position.x = bed.x
+	snap_scroll()
 
 
 # ---------------- sincronia com o estado ----------------
 
 func _process(delta: float) -> void:
+	_update_scroll(delta)
 	_sync_t -= delta
 	if _sync_t <= 0.0:
 		_sync_t = SYNC_SEC
@@ -861,6 +973,35 @@ func rect_of(hit: Dictionary) -> Rect2:
 	return Rect2()
 
 
+## Roda do mouse e arrastar movem a vista (antes da interface, para valer também com a camada de posicionar).
+func _input(event: InputEvent) -> void:
+	if view_h <= 0:
+		return
+	var mb := event as InputEventMouseButton
+	if mb != null:
+		if mb.pressed and (mb.button_index == MOUSE_BUTTON_WHEEL_UP or mb.button_index == MOUSE_BUTTON_WHEEL_DOWN):
+			if max_scroll() > 0.0 and _view_rect().has_point(mb.position):
+				pan_by(-WHEEL_STEP if mb.button_index == MOUSE_BUTTON_WHEEL_UP else WHEEL_STEP)
+				get_viewport().set_input_as_handled()
+		elif not mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT:
+			var was := _dragging
+			_drag_armed = false
+			_dragging = false
+			if was:
+				get_viewport().set_input_as_handled()
+		return
+	var mm := event as InputEventMouseMotion
+	if mm != null and _drag_armed:
+		var dy := mm.position.y - _drag_y0
+		if not _dragging and absf(dy) >= DRAG_MIN:
+			_dragging = true
+		if _dragging:
+			scroll_y = clampf(_drag_scroll0 - dy, 0.0, max_scroll())
+			_pan_pause = FOLLOW_PAUSE
+			_apply_scroll()
+			get_viewport().set_input_as_handled()
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	var mb := event as InputEventMouseButton
 	if mb == null or not mb.pressed or mb.button_index != MOUSE_BUTTON_LEFT or _arrival_running:
@@ -885,6 +1026,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		"antenna":
 			antenna_clicked.emit()
 		_:
+			if view_h > 0 and max_scroll() > 0.0:   # chão vazio: começa a arrastar a vista
+				_drag_armed = true
+				_dragging = false
+				_drag_y0 = mb.position.y
+				_drag_scroll0 = scroll_y
 			return
 	get_viewport().set_input_as_handled()
 

@@ -15,7 +15,8 @@ Anote para cada item: ✅ ok, ❌ falhou (com print e o que fez antes) ou ➖ n�
 - [ ] Na primeira abertura a janela aparece no canto inferior esquerdo do monitor principal, **logo acima da barra de tarefas**, sem cobri-la e sem borda.
 - [ ] Barra de tarefas em outra posição (direita/esquerda/topo, ou com "ocultar automaticamente"): a janela continua na área útil, encostada embaixo.
 - [ ] A janela abre a gaveta (check-in) **para cima**, e a borda de baixo não sai do lugar. Ao fechar a gaveta, volta ao tamanho de antes.
-- [ ] Quando ele escava um cômodo, a janela cresce **para a direita** mantendo a borda inferior e a esquerda.
+- [ ] Quando ele escava um cômodo, a janela **não muda de tamanho** (continua 2 andares); a cena rola para baixo junto com ele.
+- [ ] Roda do mouse sobre a faixa rola a cena; arrastar o chão vazio também; uns segundos depois ela volta a seguir o Joaquim. O indicador de andares (abaixo da alça) aparece só depois da 1ª sala nova.
 - [ ] Arrastar pela alça move a janela; soltar perto da borda de baixo não deixa parte dela debaixo da barra de tarefas nem fora da tela.
 
 ## 2. Vários monitores

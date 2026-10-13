@@ -9,7 +9,9 @@ const DRAWER_SCENE: String = "res://scenes/ui/drawer.tscn"
 
 var _title: TitleScreen
 var _options: OptionsScreen
-var _bunker: Node2D
+var _view: Control   # recorta a cena: a faixa mostra só 2 andares, o resto se alcança rolando
+var _bunker: BunkerView
+var _floors: FloorIndicator
 var _handle: WindowHandle
 var _hud: StatusHud
 var _card: InfoCard
@@ -22,7 +24,6 @@ var _playing: bool = false
 var _in_ending: bool = false
 var _ending_layer: CanvasLayer
 var _intro: IntroScreen
-var _strip_h_now: int = BunkerGeo.H
 
 
 func _ready() -> void:
@@ -30,9 +31,6 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	theme = UiTheme.build()
 	Game.room_dug.connect(func(_r: int) -> void: _relayout())
-	Game.state_changed.connect(func() -> void:
-		if _playing and _strip_h() != _strip_h_now:
-			_relayout())   # a escavação começou: a janela cresce para cima
 	Game.game_loaded.connect(_relayout)
 	Game.new_game_started.connect(_relayout)
 	Game.arrival_started.connect(_on_arrival_started)
@@ -44,14 +42,9 @@ func _strip_width() -> int:
 	return BunkerGeo.strip_width(Game.rooms())
 
 
-## Altura da faixa: um andar a mais por sala cavada (já na hora em que a escavação começa).
+## Altura da faixa: fixa em 2 andares (é uma barra de tarefas). Os andares de baixo se alcançam rolando a cena.
 func _strip_h() -> int:
-	var n: int = Game.rooms()
-	for j: Dictionary in Game.active_jobs():
-		if String(j.get("item", "")).begins_with("comodo"):
-			n += 1
-			break
-	return BunkerGeo.height(n)
+	return BunkerGeo.H
 
 
 ## Tamanho lógico da janela inteira (faixa + gaveta se aberta).
@@ -66,15 +59,18 @@ func _relayout() -> void:
 	if not _playing:
 		return
 	var strip_h: int = _strip_h()
-	_strip_h_now = strip_h
 	WindowService.set_logical_size(Vector2i(_strip_width(), strip_h))
 	WindowService.set_drawer(_drawer_open, DRAWER_H, DRAWER_MIN_W)
 	var size_l: Vector2i = _window_size()
 	if _drawer != null:
 		_drawer.set_strip_height(strip_h)
+	if _view != null:
+		_view.position = Vector2(0, size_l.y - strip_h)
+		_view.size = Vector2(size_l.x, strip_h)
 	if _bunker != null:
-		_bunker.position = Vector2(0, size_l.y - strip_h)
-		_bunker.call("set_view_width", size_l.x)
+		_bunker.set_view_width(size_l.x)
+	if _floors != null:
+		_floors.position = Vector2(size_l.x - FloorIndicator.W - 2, size_l.y - strip_h + 18)   # logo abaixo da alça
 	if _handle != null:
 		_handle.position = Vector2(size_l.x - 48, size_l.y - strip_h)
 	if _hud != null:
@@ -118,17 +114,27 @@ func _on_game_started(is_new: bool) -> void:
 	_playing = true
 	_drawer_open = false
 	var packed: PackedScene = load("res://scenes/bunker/bunker.tscn")
-	_bunker = packed.instantiate()
-	add_child(_bunker)
+	_view = Control.new()
+	_view.clip_contents = true
+	_view.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_view)
+	_bunker = packed.instantiate() as BunkerView
+	_bunker.view_h = _strip_h()
+	_view.add_child(_bunker)
 	_bunker.connect("arrival_cut", _on_arrival_cut)
 	_handle = WindowHandle.new()
 	add_child(_handle)
+	_floors = FloorIndicator.new()
+	_floors.view = _bunker
+	add_child(_floors)
 	_drawer_layer = CanvasLayer.new()
 	_drawer_layer.layer = 5
 	add_child(_drawer_layer)
 	_drawer = (load(DRAWER_SCENE) as PackedScene).instantiate() as Drawer
 	_drawer_layer.add_child(_drawer)
 	_drawer.open_changed.connect(_on_drawer_open_changed)
+	_drawer.reveal_requested.connect(func(r: Rect2) -> void: _bunker.reveal(r))
+	_bunker.scrolled.connect(func() -> void: _drawer.set_scroll(_bunker.scroll_y))
 	_drawer.order_requested.connect(func(id: int) -> void:
 		var why: String = _bunker.give_order("instance", id)
 		if why != "" and why != "off" and why != "none":   # com a gaveta aberta o clique também seleciona
@@ -214,7 +220,7 @@ func _open_card(kind: String, hit: Dictionary, id: int = -1) -> void:
 	var r: Rect2 = _bunker.rect_of(hit)
 	if r.size == Vector2.ZERO:
 		return
-	r.position += _bunker.position
+	r.position += _bunker.global_position
 	_card.open_for(kind, r, Vector2(_window_size()), id)
 
 

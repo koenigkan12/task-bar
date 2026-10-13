@@ -13,6 +13,8 @@ extends Control
 signal open_changed(is_open: bool)
 signal tab_changed(tab_id: String)
 signal placement_changed(mode: String, item_id: String)
+## Ao começar a posicionar: o retângulo (no mundo) das posições, para a câmera mostrar onde dá para pôr.
+signal reveal_requested(world_rect: Rect2)
 ## Clicou numa obra com a gaveta aberta: a cena manda ele vir martelar.
 signal order_requested(instance_id: int)
 
@@ -309,6 +311,23 @@ func start_placement(mode: String, item_id: String, instance_id: int, hints: Arr
 	_place_inst = instance_id
 	_overlay.show_hints(hints, cols)
 	placement_changed.emit(mode, item_id)
+	var rs: Array[Rect2] = _overlay.world_rects()
+	if not rs.is_empty() and not _hints_visible(rs):
+		reveal_requested.emit(rs[0])
+
+
+## Alguma posição já está dentro da janela (faixa de strip_h px a partir da rolagem atual)?
+func _hints_visible(rs: Array[Rect2]) -> bool:
+	for r: Rect2 in rs:
+		if r.position.y >= _overlay.scroll_y and r.end.y <= _overlay.scroll_y + float(strip_h):
+			return true
+	return false
+
+
+## A vista rolou: a camada de posicionar acompanha.
+func set_scroll(y: float) -> void:
+	if _overlay != null:
+		_overlay.set_scroll(y)
 
 
 func cancel_placement() -> void:
