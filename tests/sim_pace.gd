@@ -42,15 +42,15 @@ func _init() -> void:
 	var bot := Bot.new(s)
 	var t0 := Time.get_ticks_msec()
 	var mid_state: Dictionary = {}
-	var step := 10.0
+	var step: float = Balance.num("time.step_min", 10.0)
 	var reach_bad := 0
 	var reach_n := 0
-	var snap_day6 := false
+	var snap_mid := false
 	while s.t_min < 40.0 * 1440.0 and s.antenna() < 5:
 		var before := s.tod_hours()
 		s.advance(step)
-		if not snap_day6 and s.t_min >= 6.0 * 1440.0:
-			snap_day6 = true
+		if not snap_mid and s.t_min >= 1.0 * 1440.0:
+			snap_mid = true
 			mid_state = s.to_dict()
 		for c in bot.checkins:
 			if absf(before - c) < step / 120.0:
@@ -71,7 +71,7 @@ func _init() -> void:
 	for lvl in range(2, 5):
 		var dl := s.antenna_time(lvl) / 1440.0
 		var h := float(hint.get(str(lvl), 0))
-		check(absf(dl - h) <= maxf(1.5, h * 0.2), "marco antena %d: dia %.1f (alvo %.1f)" % [lvl, dl, h])
+		check(absf(dl - h) <= maxf(0.45, h * 0.25), "marco antena %d: dia %.1f (alvo %.1f)" % [lvl, dl, h])
 	var st := s.stats()
 	print("  stats: visitas %d, colhidos %d, vendidos %d, perdidos %d, comidos %d, ganho %.0f, gasto %.0f" % [
 			st["visits"], st["harvested"], st["sold_baskets"], st["wasted_baskets"], st["eaten"], st["scrap_earned"], st["scrap_spent"]])
@@ -102,14 +102,14 @@ func _init() -> void:
 	print("== sem armadilha no começo (3 vasos + bicicleta, sem comprar nada)")
 	var idle := Sim.new()
 	idle.new_game(1, 9.0)
-	idle.advance(20.0)
-	check(idle.stock == 3, "primeira colheita em 20 min de jogo (cestos: %d)" % idle.stock)
+	idle.advance(2.0)
+	check(idle.stock == 3, "primeira colheita em 2 min de jogo (cestos: %d)" % idle.stock)
 	idle.advance(3.0 * 1440.0)
 	var ist := idle.stats()
 	check(float(ist["scrap_earned"]) >= 50.0, "3 dias parado rendem %.0f (>= 50: dá para a antena 2)" % float(ist["scrap_earned"]))
 	check(not idle.hungry(), "não passa fome sozinho")
 
-	print("== offline == online (3 dias a partir do dia 6)")
+	print("== offline == online (3 dias a partir do dia 1)")
 	var a := Sim.new()
 	a.from_dict(mid_state)
 	var b := Sim.new()

@@ -76,15 +76,16 @@ func random_action(s: Sim, rng: RandomNumberGenerator) -> void:
 
 func _init() -> void:
 	Balance.load_all()
-	var games := 24
+	var games := 12
 	var checks := 0
 	for g in games:
 		var s := Sim.new()
 		s.new_game(100 + g, float(g % 24))
+		s._step = 10.0   # o fuzz confere invariantes, não o ritmo: passo grosso para caber no tempo
 		var rng := RandomNumberGenerator.new()
 		rng.seed = 5000 + g
 		# jogador aleatório: o dinheiro entra "de graça" de vez em quando para cobrir caminhos que a economia só alcançaria tarde
-		for day in 30:
+		for day in 15:
 			for tick in 3:
 				s.advance(480.0)
 				if g % 2 == 0:

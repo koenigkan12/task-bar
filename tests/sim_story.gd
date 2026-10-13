@@ -37,7 +37,6 @@ func _init() -> void:
 	s.new_game(11, 6.0)
 	var plan: Array[String] = Bot.PLAN.duplicate()
 	plan.append("mesinha")  # a segunda caneca pede a mesinha
-	plan.append_array(Balance.house_items())
 	var bot := Bot.new(s, plan)
 	print("== até o contato")
 	bot.run(40.0)
@@ -55,6 +54,7 @@ func _init() -> void:
 	check(s.diary().size() >= 10, "diário com %d entradas" % s.diary().size())
 
 	print("== casa")
+	bot.plan.append_array(Balance.house_items())   # só depois do contato (a economia rápida compraria tudo no mesmo check-in)
 	var day0 := s.t_min
 	var guard := 0
 	while not s.arrival_pending() and guard < 20 * 1440 / 10:

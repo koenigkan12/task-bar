@@ -452,8 +452,10 @@ func _work_step() -> void:
 	for i in n:
 		var p: Dictionary = order[i]
 		p["progress"] = float(p["progress"]) + rates[i] * f
-		if float(p["progress"]) >= 1.0 - 1e-9:
+		var guard := 0
+		while float(p["progress"]) >= 1.0 - 1e-9 and guard < 400:   # ciclo curto: mais de uma colheita por passo
 			_harvest(p)
+			guard += 1
 	_cap_box()
 
 

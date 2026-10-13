@@ -5,7 +5,7 @@
     "awake_to_min": 1320,
     "time_scale": 1.0,
     "offline_cap_hours": 72,
-    "step_min": 10,
+    "step_min": 1,
     "away_summary_min_min": 30,
     "price_scale": 1.0
   },
@@ -14,8 +14,8 @@
     "meal_hours": [7.5, 12.5, 19.0],
     "hunger_speed_floor": 0.6,
     "box_overflow_factor": 2.0,
-    "plant_harvest_min": 3.0,
-    "water_min": 5.0,
+    "plant_harvest_min": 0.1,
+    "water_min": 0.17,
     "pedal_fraction": 0.25,
     "carry_room_factor": [1.0, 1.35, 1.7],
     "build_base_min": 6.0,
@@ -24,13 +24,13 @@
     "demolish_refund": 1.0
   },
   "crops": {
-    "batata": { "cycle_min": 120, "price": 1.0, "requires_antenna": 1, "greenhouse_only": false },
-    "feijao": { "cycle_min": 150, "price": 2.0, "requires_antenna": 2, "greenhouse_only": false },
-    "tomate": { "cycle_min": 180, "price": 3.5, "requires_antenna": 4, "greenhouse_only": true }
+    "batata": { "cycle_min": 3, "price": 0.6, "requires_antenna": 1, "greenhouse_only": false },
+    "feijao": { "cycle_min": 8, "price": 2.6, "requires_antenna": 2, "greenhouse_only": false },
+    "tomate": { "cycle_min": 15, "price": 7.0, "requires_antenna": 4, "greenhouse_only": true }
   },
   "visits_per_day": { "1": 3, "2": 3, "3": 5, "4": 5, "5": 6 },
-  "box_capacity": { "balde": 14, "calha": 22, "roldana": 34, "esteira": 50 },
-  "carry_min": { "balde": 6.0, "calha": 3.0, "roldana": 1.2, "esteira": 0.2 },
+  "box_capacity": { "balde": 560, "calha": 880, "roldana": 1360, "esteira": 2000 },
+  "carry_min": { "balde": 0.2, "calha": 0.1, "roldana": 0.04, "esteira": 0.007 },
   "auto_water_plots": { "lata": 0, "gotejador": 4, "cisterna": 10, "bomba": 99 },
   "power_supply": { "bicicleta": 3, "moinho": 5, "bateria": 8, "painel": 12 },
   "radio_power_demand": { "1": 1, "2": 1, "3": 2, "4": 2, "5": 3 },
@@ -102,7 +102,7 @@
       { "item": "bicicleta", "room": 1, "col": 16 }
     ],
     "default_crop": "batata",
-    "first_cycle_min": 20,
+    "first_cycle_min": 2,
     "fallback_tod_hours": 9.0
   },
   "lines": {
@@ -159,9 +159,9 @@
   },
   "help": {
     "_comment": "Ajuda manual do começo (cliques). click_min = minutos de ciclo por clique em estrutura de plantio; day_cap_min = teto diário; a ajuda ao plantio some com o gotejador e a da caixa some com a calha (cada máquina tira um clique). box_cooldown_min = minutos de jogo (1 min de jogo = 1 min real) até o comprador trocar de novo.",
-    "click_min": 6.0,
+    "click_min": 0.4,
     "build_click_min": 1.5,
-    "day_cap_min": 720.0,
+    "day_cap_min": 20.0,
     "box_cooldown_min": 10.0
   },
   "guide": {
@@ -169,8 +169,8 @@
     "order": ["vaso:4", "gotejador", "calha", "antena@2", "moinho", "comodo2", "canteiro:1", "canteiro:2", "gotejador", "antena@3", "prateleira", "bateria", "antena@4", "cisterna", "estufa", "roldana", "comodo3", "painel", "antena@5", "bomba", "esteira"]
   },
   "test_targets": {
-    "antenna5_day_min": 12.0,
-    "antenna5_day_max": 17.5,
-    "antenna_day_hint": { "2": 2.4, "3": 6.4, "4": 8.5, "5": 14.5 }
+    "antenna5_day_min": 1.3,
+    "antenna5_day_max": 2.6,
+    "antenna_day_hint": { "2": 0.5, "3": 0.8, "4": 1.4, "5": 1.8 }
   }
 }

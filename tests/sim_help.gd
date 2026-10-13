@@ -23,7 +23,7 @@ func _initialize() -> void:
 			vaso_id = int(i["id"])
 			break
 	check(vaso_id >= 0, "há um vaso inicial")
-	# primeira colheita só com cliques (ciclo de 20 min; cada clique = 4 min)
+	# primeira colheita só com cliques (primeiro ciclo de 2 min; cada clique = 0,4 min)
 	var hv := {"n": 0}
 	s.plot_harvested.connect(func(_p: int) -> void: hv["n"] += 1)
 	for k in 6:
@@ -34,7 +34,7 @@ func _initialize() -> void:
 	check(s.box_stock() >= 1.0, "a colheita foi para a caixa")
 	var scrap0 := s.sucata()
 	var r := s.help_box()
-	check(bool(r["ok"]) and s.sucata() > scrap0, "clicar na caixa troca por sucata agora")
+	check(bool(r["ok"]) and s.scrap > float(scrap0), "clicar na caixa troca por sucata agora")
 	check(String(s.help_box()["reason"]) == "empty" or String(s.help_box()["reason"]) == "cooldown", "segunda troca seguida é recusada")
 	var wait: Dictionary = s.help_box_wait()
 	check(float(wait["total"]) == 10.0 and float(wait["left"]) > 9.0, "espera da caixa depois da troca (%s)" % str(wait))
