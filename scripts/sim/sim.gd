@@ -548,13 +548,21 @@ func _help_build(instance_id: int) -> Dictionary:
 	return {"ok": false, "reason": "none"}
 
 
-func help_box() -> Dictionary:
+## Dá para trocar a caixa agora? "ok" | "off" | "empty" | "cooldown" (a cena confere antes de mandar ele).
+func help_box_check() -> String:
 	if not help_box_available():
-		return {"ok": false, "reason": "off"}
+		return "off"
 	if stock <= 0:
-		return {"ok": false, "reason": "empty"}
+		return "empty"
 	if abs_min() - _last_visit_abs < Balance.num("help.box_cooldown_min", 30.0):
-		return {"ok": false, "reason": "cooldown"}
+		return "cooldown"
+	return "ok"
+
+
+func help_box() -> Dictionary:
+	var why: String = help_box_check()
+	if why != "ok":
+		return {"ok": false, "reason": why}
 	var before: float = scrap
 	_do_visit()
 	return {"ok": true, "scrap": int(roundf(scrap - before))}

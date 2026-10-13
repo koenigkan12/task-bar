@@ -54,7 +54,7 @@ func _update_tip() -> void:
 		var item: String = ScreenUtil.tr_key("item.%s.name" % String(job["item"]))
 		_tip_lines.append(ScreenUtil.tr_key("plot.build", {"item": item, "pct": int(floorf(float(job["ratio"]) * 100.0))}))
 		_tip_lines.append(ScreenUtil.tr_key("plot.build_eta", {"t": _fmt(float(job.get("eta_min", 0.0)))}))
-		if view.link.game != null and view.link.game.has_method("help_available") and bool(view.link.game.call("help_available")):
+		if bool(view.link.q("help_available", false)):
 			_tip_lines.append(ScreenUtil.tr_key("plot.build_help"))
 		var o: BunkerObject = view.object_by_id(int(hit["id"]))
 		_tip_pos = Vector2(o.bounds().get_center().x, o.bounds().position.y + 6.0) if o != null else m
@@ -81,6 +81,8 @@ func _update_tip() -> void:
 		_tip_lines.append(ScreenUtil.tr_key("plot.eta", {"t": _fmt(float(best.get("eta_min", 0.0)))}))
 	if not view.link.is_awake():
 		_tip_lines.append(ScreenUtil.tr_key("plot.asleep"))
+	elif bool(view.link.q("help_plots_available", false)):
+		_tip_lines.append(ScreenUtil.tr_key("plot.tend_help"))
 	_tip_pos = view.plot_pos(best)
 
 
@@ -122,6 +124,7 @@ func _draw() -> void:
 		var at := Vector2(b.get_center().x - tw * 0.5, maxf(BunkerGeo.WALL_Y + 8.0, b.position.y - 9.0))
 		draw_string_outline(font, at.round(), label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, 3, ink)
 		draw_string(font, at.round(), label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, UiTheme.AMBER3)
+	_draw_orders(font, fs, ink)
 	for pp: Dictionary in _pops:
 		var k: float = float(pp["t"]) / POP_SEC
 		var c: Color = UiTheme.SIGNAL
@@ -147,3 +150,24 @@ func _draw() -> void:
 		var col2: Color = UiTheme.PAPER if i == 0 else UiTheme.AMBER3
 		draw_string(font, box.position + Vector2(4, 2 + font.get_ascent(fs) + lh * i), _tip_lines[i],
 				HORIZONTAL_ALIGNMENT_LEFT, -1, fs, col2)
+
+
+## Marca das ordens na fila: uma plaquinha por alvo, com o número da primeira vez que ele passa ali
+## (a plaquinha da ordem em andamento pulsa).
+func _draw_orders(font: Font, fs: int, ink: Color) -> void:
+	var seen: Dictionary = {}
+	var n: int = 0
+	for o: Dictionary in view.orders:
+		n += 1
+		var at: Variant = view.order_anchor(o)
+		if at == null or seen.has(at):
+			continue
+		seen[at] = true
+		var c: Vector2 = (at as Vector2).round()
+		var lit: bool = n > 1 or fmod(Time.get_ticks_msec() / 1000.0, 0.8) < 0.5
+		var box := Rect2(c.x - 4, c.y - 4, 9, 10)
+		draw_rect(box.grow(1), ink)
+		draw_rect(box, UiTheme.AMBER3 if lit else UiTheme.AMBER2)
+		var label: String = str(n)
+		var tw: float = font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+		draw_string(font, Vector2(c.x + 0.5 - tw * 0.5, c.y + 4.0).round(), label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, ink)

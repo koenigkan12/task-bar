@@ -111,6 +111,10 @@ func _on_game_started(is_new: bool) -> void:
 	_drawer = (load(DRAWER_SCENE) as PackedScene).instantiate() as Drawer
 	_drawer_layer.add_child(_drawer)
 	_drawer.open_changed.connect(_on_drawer_open_changed)
+	_drawer.order_requested.connect(func(id: int) -> void:
+		var why: String = _bunker.give_order("instance", id)
+		if why != "":
+			_order_refused(why))
 	var opts := OptionsScreen.new()
 	opts.show_header = false
 	_drawer.add_tab("options", "tab.options", "gear", opts)
@@ -123,6 +127,7 @@ func _on_game_started(is_new: bool) -> void:
 	_bunker.connect("radio_clicked", func() -> void: _drawer.open("radio"))
 	_bunker.connect("box_clicked", _on_box_clicked)
 	_bunker.connect("object_clicked", _on_object_clicked)
+	_bunker.connect("order_done", _on_order_done)
 	_hud = StatusHud.new()
 	_hud.clicked.connect(func() -> void: _drawer.open("build"))
 	add_child(_hud)
@@ -155,29 +160,53 @@ func _show_intro() -> void:
 	layer.add_child(_intro)
 
 
-## Com a gaveta fechada e a ajuda ligada (começo do jogo): clicar numa estrutura de plantio ajuda o ciclo.
+## Com a gaveta fechada e a ajuda ligada (começo do jogo): clicar numa estrutura é um pedido para ele:
+## vem martelar a obra ou cuidar das plantas. O efeito vale quando ele chega e faz (ver BunkerView.give_order).
 func _on_object_clicked(id: int) -> void:
 	if not _drawer.is_open() and bool(Game.help_available()):
-		if bool(Game.help_instance(id)["ok"]):
+		var why: String = _bunker.give_order("instance", id)
+		if why == "" or _order_refused(why):
 			return
 	_drawer.select_instance(id)
 
 
-## Clicar na caixa troca a colheita por sucata agora (começo); depois só abre o estado.
+## Clicar na caixa/escotilha manda ele levar os cestos (começo); depois só abre o estado.
 func _on_box_clicked() -> void:
 	if not _drawer.is_open() and bool(Game.help_box_available()):
-		var r: Dictionary = Game.help_box()
-		if bool(r["ok"]):
-			_drawer.toast("hud.box_sold", {"n": int(r["scrap"])})
+		var why: String = _bunker.give_order("box")
+		if why == "" or _order_refused(why):
 			return
-		match String(r["reason"]):
+	_drawer.open("state")
+
+
+## Avisa por que o pedido não foi aceito. Devolve false quando o clique deve seguir o caminho normal.
+func _order_refused(why: String) -> bool:
+	match why:
+		"asleep":
+			_drawer.toast("hud.order_asleep")
+		"full":
+			_drawer.toast("hud.order_full")
+		"empty":
+			_drawer.toast("hud.box_empty")
+		"cooldown":
+			_drawer.toast("hud.box_wait")
+		_:
+			return false
+	return true
+
+
+## O homem fez o pedido: o resultado da caixa vira aviso na tela.
+func _on_order_done(kind: String, res: Dictionary) -> void:
+	if kind != "box":
+		return
+	if bool(res.get("ok", false)):
+		_drawer.toast("hud.box_sold", {"n": int(res.get("scrap", 0))})
+	else:
+		match String(res.get("reason", "")):
 			"empty":
 				_drawer.toast("hud.box_empty")
-				return
 			"cooldown":
 				_drawer.toast("hud.box_wait")
-				return
-	_drawer.open("state")
 
 
 func _on_drawer_open_changed(open: bool) -> void:

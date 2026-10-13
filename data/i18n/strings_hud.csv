@@ -2,7 +2,7 @@ key,pt_BR,en
 hud.goal,{name} {have}/{cost},{name} {have}/{cost}
 hud.ready,Comprar {name}!,Buy {name}!
 hint.intro_build,Gaste sucata em gambiarras: toque na meta ali em cima.,Spend scrap on contraptions: tap the goal up there.
-hint.intro_click,Clique nos vasos pra ajudar e na caixa pra trocar.,"Click the pots to help, the box to trade."
+hint.intro_click,"Clique nos vasos e na caixa: ele vai até lá e faz.","Click the pots and the box: he walks over and does it."
 hud.box_sold,+{n} de sucata,+{n} scrap
 hud.box_empty,A caixa está vazia.,The box is empty.
 hud.box_wait,Ele acabou de trocar. Espere um pouco.,He just traded. Give it a moment.
@@ -13,13 +13,13 @@ bag.tools,Ferramentas: {list},Tools: {list}
 intro.1,"Depois do fim do mundo, ele ficou sozinho num bunker. Ela ficou lá fora. O rádio é o único fio.","After the end of the world he was left alone in a bunker. She stayed outside. The radio is the only thread."
 intro.2,"Ele cuida de tudo sozinho: planta, rega e leva a colheita à caixa da escotilha. A caixa vira sucata. Pode deixar a janela no canto.","He runs everything alone: plants, waters, hauls the harvest to the hatch box. The box turns into scrap. Leave the window in a corner."
 intro.3,"Seu papel: gastar a sucata em gambiarras que automatizam a vida dele e melhorar a antena. Cada nível traz uma voz nova.","Your part: spend scrap on contraptions that automate his life, and upgrade the antenna. Each level brings a new voice."
-intro.4,"No começo ele precisa de você: clique nos vasos e na caixa. A meta aparece no canto de cima.","At first he needs you: click the pots and the box. Your goal shows in the top corner."
+intro.4,"No começo ele precisa de você: clique num vaso ou na caixa e ele vai até lá. Seus cliques viram pedidos que ele cumpre um por vez. A meta aparece no canto de cima.","At first he needs you: click a pot or the box and he walks over. Your clicks become orders he does one at a time. Your goal shows in the top corner."
 intro.next,Próximo,Next
 intro.start,Começar,Start
-tut.1,1/4 Clique num vaso pra ajudar a planta a crescer.,1/4 Click a pot to help the plant grow.
-tut.2,2/4 Continue clicando até colher: a colheita vira cestos.,2/4 Keep clicking until it's ready: the harvest becomes baskets.
-tut.3,3/4 Clique na escotilha ou na caixa embaixo dela: cestos viram sucata.,3/4 Click the hatch or the box under it: baskets turn into scrap.
-tut.4,4/4 Toque na meta ali em cima e compre uma gambiarra. Depois clique na obra pra ajudar a martelar.,4/4 Tap the goal up there and buy a contraption. Then click the work site to help hammer.
+tut.1,1/4 Clique num vaso: ele vem regar e a planta cresce mais rápido.,1/4 Click a pot: he comes to water it and the plant grows faster.
+tut.2,2/4 Continue mandando ele até colher: a colheita vira cestos.,2/4 Keep sending him until it's ready: the harvest becomes baskets.
+tut.3,3/4 Clique na escotilha ou na caixa: ele leva os cestos e eles viram sucata.,3/4 Click the hatch or the box: he carries the baskets over and they turn into scrap.
+tut.4,4/4 Toque na meta ali em cima e compre uma gambiarra. Clique na obra pra ele vir martelar.,4/4 Tap the goal up there and buy a contraption. Click the work site and he comes to hammer.
 goal.next,Próxima meta: {item},Next goal: {item}
 plot.stage.0,Semente,Seed
 plot.stage.1,Brotando,Sprouting
@@ -34,4 +34,7 @@ plot.gain,+1 cesto,+1 basket
 plot.asleep,Ele está dormindo. A planta espera.,He is asleep. The plant waits.
 plot.build,{item} em obra · {pct}%,{item} under construction · {pct}%
 plot.build_eta,Fica pronto em ~{t},Ready in ~{t}
-plot.build_help,Clique para ajudar a martelar,Click to help hammer
+plot.build_help,Clique: ele vem martelar,Click: he comes to hammer
+plot.tend_help,Clique: ele vem cuidar,Click: he comes to tend it
+hud.order_asleep,Ele está dormindo. De manhã ele atende.,He is asleep. He will help in the morning.
+hud.order_full,Ele já tem pedidos demais. Espere um pouco.,He already has plenty of orders. Wait a moment.

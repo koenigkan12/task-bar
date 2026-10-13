@@ -56,8 +56,17 @@ func _run() -> void:
 		ev.global_position = ev.position
 		root.push_input(ev)
 		await _frames(3)
+	var bv: BunkerView = bunker
+	_check(bv.orders.size() == 1, "o clique vira ordem para o homem")
+	_check(float(game.active_jobs()[0]["ratio"]) <= before + 0.02, "o efeito não é imediato")
+	Engine.time_scale = 6.0
+	var n := 0
+	while not bv.orders.is_empty() and n < 2000:
+		await process_frame
+		n += 1
+	Engine.time_scale = 1.0
 	var after: float = float(game.active_jobs()[0]["ratio"])
-	_check(after > before, "clique na obra adianta (%.2f -> %.2f)" % [before, after])
+	_check(after > before, "quando ele chega, a obra adianta (%.2f -> %.2f)" % [before, after])
 	# com a gaveta ABERTA (onde se compra) o clique na obra também ajuda e a barra da gaveta anda
 	var drawer: Node = main.get("_drawer")
 	drawer.call("open", "build")
@@ -77,7 +86,14 @@ func _run() -> void:
 	var b4: float = float(game.active_jobs()[0]["ratio"]) if not game.active_jobs().is_empty() else 1.0
 	ov.pick(idx)
 	await _frames(5)
+	_check(bv.orders.size() == 1, "com a gaveta aberta o clique também vira ordem")
+	Engine.time_scale = 6.0
+	n = 0
+	while not bv.orders.is_empty() and n < 2000:
+		await process_frame
+		n += 1
+	Engine.time_scale = 1.0
 	var a4: float = float(game.active_jobs()[0]["ratio"]) if not game.active_jobs().is_empty() else 1.0
-	_check(a4 > b4, "clique na obra com a gaveta aberta adianta (%.2f -> %.2f)" % [b4, a4])
+	_check(a4 > b4, "com a gaveta aberta a obra adianta (%.2f -> %.2f)" % [b4, a4])
 	print("RESULTADO: %d FALHAS" % fails)
 	quit(1 if fails > 0 else 0)

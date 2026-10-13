@@ -15,13 +15,14 @@ Idle cozy numa faixa baixa da tela. Um homem sozinho num bunker depois do fim do
 
 ## Primeiros minutos
 
-Ao começar um jogo novo há uma introdução de 4 telas (por que o jogo anda sozinho, o que é a sucata, o que fazer). Depois, enquanto o homem ainda não tem máquinas, **você ajuda com cliques**:
+Ao começar um jogo novo há uma introdução de 4 telas (por que o jogo anda sozinho, o que é a sucata, o que fazer). Depois, enquanto o homem ainda não tem máquinas, **seus cliques são pedidos para ele**: ele para o que faz, anda até o alvo e só então a ajuda vale. Os pedidos entram numa fila de até 4 (uma plaquinha numerada marca cada alvo) e ele dorme à noite, então à noite o clique só avisa que ele está dormindo.
 
-1. Clique num vaso: ajuda a planta a crescer (cada clique adianta o ciclo; cinco cliques fecham a primeira colheita).
-2. Clique na caixa da escotilha: troca os cestos por sucata na hora (com um tempo de espera).
-3. Junte sucata e compre o **Vaso** extra (o próximo objetivo aparece sempre na faixa de cima).
+1. Clique num vaso: ele vem regar (cada pedido cumprido adianta o ciclo; cinco fecham a primeira colheita).
+2. Clique na escotilha ou na caixa: ele leva os cestos e eles viram sucata (com um tempo de espera entre uma troca e outra).
+3. Clique numa obra: ele vem martelar e a obra adianta.
+4. Junte sucata e compre o **Vaso** extra (o próximo objetivo aparece sempre na faixa de cima).
 
-Cada máquina tira um clique do seu trabalho: o **gotejador** rega sozinho (os vasos deixam de aceitar clique) e a **calha** leva os cestos sozinha (a caixa deixa de aceitar clique). A partir daí o homem toca tudo e você só decide o que construir. A faixa de cima mostra sucata, cestos na caixa e o próximo objetivo; clicar nela abre a aba Construir, onde o item sugerido vem marcado com uma estrela. Passe o mouse numa planta para ver cultura, fase, % e quanto falta para a colheita. A aba **Estado** tem a "Mochila" (colhido, vendido, sementes e ferramentas).
+Cada máquina tira um clique do seu trabalho: o **gotejador** rega sozinho (os vasos deixam de aceitar pedido) e a **calha** leva os cestos sozinha (a caixa deixa de aceitar pedido). A partir daí o homem toca tudo e você só decide o que construir. A faixa de cima mostra sucata, cestos na caixa e o próximo objetivo; clicar nela abre a aba Construir, onde o item sugerido vem marcado com uma estrela. Passe o mouse numa planta para ver cultura, fase, % e quanto falta para a colheita. A aba **Estado** tem a "Mochila" (colhido, vendido, sementes e ferramentas).
 
 ## Controles
 

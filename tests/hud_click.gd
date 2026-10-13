@@ -72,7 +72,15 @@ func _run() -> void:
 	print("hatch_clicked emitido ", cnt["n"], " r=", game.help_box_available())
 	print("drawer open ", main.get("_drawer").is_open(), " was ", drawer_open_before)
 	await _frames(5)
-	_check(int(game.sucata()) > s0, "clique na escotilha troca cestos por sucata (%d -> %d)" % [s0, int(game.sucata())])
+	var bv: BunkerView = bunker
+	_check(bv.orders.size() == 1 and String(bv.orders[0]["kind"]) == "box", "clique na escotilha vira ordem de levar os cestos")
+	Engine.time_scale = 8.0
+	var waited := 0
+	while not bv.orders.is_empty() and waited < 3000:
+		await process_frame
+		waited += 1
+	Engine.time_scale = 1.0
+	_check(int(game.sucata()) > s0, "quando ele chega, cestos viram sucata (%d -> %d)" % [s0, int(game.sucata())])
 	var img0: Image = root.get_texture().get_image()
 	DirAccess.make_dir_recursive_absolute(out_dir)
 	img0.save_png("%s/hud_texto.png" % out_dir)

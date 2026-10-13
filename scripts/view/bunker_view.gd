@@ -15,6 +15,8 @@ extends Node2D
 ##          arrival_cut (a tela está preta e o Game já recebeu finish_arrival), arrival_scene_finished
 
 signal object_clicked(instance_id: int)
+## Uma ordem do jogador foi cumprida pelo homem: kind "hammer"|"tend"|"box", result = resposta do Game.
+signal order_done(kind: String, result: Dictionary)
 signal radio_clicked()
 signal box_clicked()
 signal hatch_clicked()
@@ -36,6 +38,9 @@ var view_width: int = 0
 var cinematic_speed: float = 1.0
 
 var man: BunkerMan
+## Ordens dadas por clique (o homem vai até o alvo e faz): {kind: "hammer"|"tend"|"box", id, taken}.
+var orders: Array[Dictionary] = []
+const MAX_ORDERS := 4
 var attention := BunkerAttention.new()
 
 var _sky: BunkerSky
@@ -557,6 +562,100 @@ func spawn_fx(art: String, pos: Vector2, loops: int = 1) -> ArtSprite:
 func build_fx(o: BunkerObject) -> void:
 	if o != null and is_instance_valid(o):
 		spawn_fx("fx_dust", Vector2(o.bounds().position.x + _rng.randf_range(0, o.bounds().size.x), BunkerGeo.FEET_Y), 3)
+
+
+## Clique do jogador = ordem para o homem. kind "instance" (obra -> martelar, estrutura -> cuidar) ou "box".
+## Devolve "" se aceitou; senão o motivo: asleep | full | off | none | empty | cooldown.
+func give_order(kind: String, id: int = 0) -> String:
+	if not link.is_awake() or link.is_night():
+		return "asleep"
+	if orders.size() >= MAX_ORDERS:
+		return "full"
+	var order: Dictionary = {"kind": kind, "id": id, "taken": false}
+	if kind == "box":
+		var why: String = String(link.q("help_box_check", "off"))
+		if why != "ok":
+			return why
+		for o: Dictionary in orders:
+			if String(o["kind"]) == "box":
+				return "full"
+	else:
+		var obj: BunkerObject = _inst.get(id)
+		if obj == null:
+			return "none"
+		if obj.building:
+			if not bool(link.q("help_available", false)):
+				return "off"
+			order["kind"] = "hammer"
+		else:
+			if not bool(link.q("help_plots_available", false)):
+				return "off"
+			var has_plot := false
+			for p: Dictionary in link.plots():
+				if int(p.get("instance", -1)) == id:
+					has_plot = true
+			if not has_plot:
+				return "none"
+			order["kind"] = "tend"
+	orders.append(order)
+	man.order_added()
+	return ""
+
+
+func has_orders() -> bool:
+	return not orders.is_empty()
+
+
+## Próxima ordem ainda não assumida (marca como assumida), ou {}.
+func next_order() -> Dictionary:
+	for o: Dictionary in orders:
+		if not bool(o["taken"]):
+			o["taken"] = true
+			return o
+	return {}
+
+
+## O homem desistiu no meio (ex.: mudou o modo): as ordens assumidas voltam para a fila.
+func release_orders() -> void:
+	for o: Dictionary in orders:
+		o["taken"] = false
+
+
+func clear_orders() -> void:
+	orders.clear()
+
+
+func drop_order(o: Dictionary) -> void:
+	orders.erase(o)
+
+
+## O homem chegou e fez: tira da fila e aplica a ajuda na Sim.
+func finish_order(o: Dictionary) -> void:
+	if not orders.has(o):
+		return
+	orders.erase(o)
+	var res: Dictionary = {}
+	if String(o["kind"]) == "box":
+		res = link.q("help_box", {"ok": false, "reason": "off"}) as Dictionary
+	else:
+		res = link.q("help_instance", {"ok": false, "reason": "off"}, [int(o["id"])]) as Dictionary
+	order_done.emit(String(o["kind"]), res)
+
+
+## Onde pôr a marca da ordem (canto de cima do alvo), ou null.
+func order_anchor(o: Dictionary) -> Variant:
+	var r := Rect2()
+	if String(o["kind"]) == "box":
+		var box: BunkerObject = _fixed.get("hatch_box")
+		if box == null:
+			return null
+		r = box.bounds()
+	else:
+		var obj: BunkerObject = _inst.get(int(o["id"]))
+		if obj == null:
+			return null
+		r = obj.bounds()
+	return Vector2(r.end.x - 3.0, r.position.y + 3.0)
 
 
 func dig_fx() -> void:

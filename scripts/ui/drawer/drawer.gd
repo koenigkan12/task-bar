@@ -13,6 +13,8 @@ extends Control
 signal open_changed(is_open: bool)
 signal tab_changed(tab_id: String)
 signal placement_changed(mode: String, item_id: String)
+## Clicou numa obra com a gaveta aberta: a cena manda ele vir martelar.
+signal order_requested(instance_id: int)
 
 const DRAWER_H: int = 120
 const MIN_W: int = 344
@@ -219,16 +221,15 @@ func show_tab(tab_id: String) -> void:
 	refresh(true)
 
 
-## Clique numa estrutura com a gaveta aberta: seleciona como sempre e, se for uma obra, também ajuda a
-## martelar (o mesmo clique que ajuda com a gaveta fechada; senão a obra parecia não reagir).
+## Clique numa estrutura com a gaveta aberta: seleciona como sempre e, se for uma obra, também é um
+## pedido para ele vir martelar (o mesmo que o clique com a gaveta fechada; quem trata é a cena).
 func _on_instance_picked(instance_id: int) -> void:
 	select_instance(instance_id)
-	if game == null or not game.has_method("help_instance") or not game.has_method("instances"):
+	if game == null or not game.has_method("instances"):
 		return
 	for i: Dictionary in game.instances():
 		if int(i["id"]) == instance_id and String(i["state"]) == "building":
-			game.help_instance(instance_id)
-			refresh(true)
+			order_requested.emit(instance_id)
 			return
 
 

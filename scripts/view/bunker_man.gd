@@ -257,6 +257,9 @@ func _finish() -> void:
 	var cb: Callable = s.get("on_end", Callable())
 	if cb.is_valid():
 		cb.call()
+	var done: Callable = s.get("on_finish", Callable())   # só quando o passo termina de verdade (não ao interromper)
+	if done.is_valid():
+		done.call()
 	step_done.emit(String(s.get("type", "")))
 
 
@@ -270,6 +273,8 @@ func interrupt() -> void:
 	_queue.clear()
 	position.y = BunkerGeo.FEET_Y
 	carrying = false
+	if view != null and view.has_method("release_orders"):
+		view.release_orders()
 
 
 func walk_to(x: float, carry: bool = false) -> void:
@@ -297,6 +302,8 @@ func _desired_mode() -> String:
 		return "day"
 	if link.is_night() or not link.is_awake():
 		return "night"
+	if view != null and view.has_orders():
+		return "order"
 	if not link.active_jobs().is_empty():
 		return "build"
 	return "day"
@@ -306,8 +313,15 @@ func _check_mode() -> void:
 	var m := _desired_mode()
 	if m != mode:
 		mode = m
+		if (m == "night" or m == "arrival") and view != null:
+			view.clear_orders()   # dormindo ou na cena do final ele não atende pedidos
 		if m != "arrival":
 			interrupt()
+
+
+## Chegou uma ordem nova: o homem reavalia já (largar o que faz, ir até lá).
+func order_added() -> void:
+	_check_t = 0.0
 
 
 func decide() -> void:
@@ -320,6 +334,8 @@ func decide() -> void:
 			_plan_sleep()
 		"build":
 			_plan_build()
+		"order":
+			_plan_order()
 		_:
 			if _rng.randf() < maxf(link.busy(), 0.15) and _plan_work():
 				return
@@ -346,6 +362,43 @@ func _plan_build() -> void:
 		tx = view.fixed_foot("ladder").x + 4.0   # obra na superfície: martela ao pé da escada
 	walk_to(tx)
 	act("man_hammer", 6.0, "hammer", 1, {"on_start": func() -> void: view.build_fx(o)})
+
+
+## Ordem do jogador: ele vai até o alvo, faz (martelar, regar/colher, levar à caixa) e só então a ajuda vale.
+func _plan_order() -> void:
+	var o: Dictionary = view.next_order()
+	if o.is_empty():
+		_plan_free()
+		return
+	var finish := func() -> void: view.finish_order(o)
+	match String(o["kind"]):
+		"hammer":
+			var obj: BunkerObject = view.object_by_id(int(o["id"]))
+			if obj == null:
+				view.drop_order(o)
+				return
+			var tx: float = obj.position.x - 12.0
+			if obj.position.y < BunkerGeo.ROOM_Y:
+				tx = view.fixed_foot("ladder").x + 4.0
+			walk_to(tx)
+			act("man_hammer", 2.5, "hammer", 1, {"on_start": func() -> void: view.build_fx(obj), "on_finish": finish})
+		"tend":
+			var target: Dictionary = {}
+			for p: Dictionary in link.plots():
+				if int(p.get("instance", -1)) == int(o["id"]) and (target.is_empty() or float(p.get("progress", 0)) > float(target.get("progress", 0))):
+					target = p
+			if target.is_empty():
+				view.drop_order(o)
+				return
+			walk_to(view.plot_pos(target).x - 9.0)
+			if float(target.get("progress", 0)) >= READY_PROGRESS:
+				act("man_crouch", 2.0, "harvest", 1, {"on_finish": finish})
+			else:
+				act("man_water", 2.5, "water", 1, {"on_finish": finish})
+		_:
+			var box: Variant = view.fixed_foot("hatch_box")
+			walk_to((box.x if box != null else 32.0) + 10.0, true)
+			act("man_idle", 1.2, "drop", -1, {"on_start": view.drop_fx, "on_finish": finish})
 
 
 func _plan_work() -> bool:
