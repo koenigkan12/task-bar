@@ -296,7 +296,8 @@ Manifest (um por grupo; o carregador junta todos os `assets/art/manifest_*.json`
 - `plots` (só estruturas de plantio): posições (x,y) **relativas ao canto superior esquerdo do sprite** onde fica a base-centro de cada planta (sprite de planta 12×12).
 - Variantes: `earth_0`, `earth_1`, …
 
-### 7.1 Ambiente + objetos + UI [ARTE-AMBIENTE] → `assets/art/env/`, `manifest_env.json`
+### 7.1 Ambiente + objetos + UI → três geradores, três pastas, três manifestos
+Para não haver conflito de arquivos, a tabela abaixo foi dividida: **[ARTE-AMBIENTE]** faz `assets/art/env/` + `manifest_env.json` (terra, grama, parede, chão, teto, divisória, escada, escotilha, hatch_box, scrap_pile, antenas, radio_table, radio_glow, bed, lamp, fx_*, bubble_thought); **[ARTE-OBJETOS]** faz `assets/art/obj/` + `manifest_obj.json` (vaso…esteira, crop_*, estante…foto_dela, caneca); **[ARTE-UI]** faz `assets/art/ui/` + `manifest_ui.json` (panel_9s, button_9s_*, icon_*). O campo `file` do manifesto inclui a subpasta (`env/vaso.png` → `obj/vaso.png`). O carregador junta todos os `manifest_*.json`.
 | Nome | Quadro | Fr. | Notas |
 |---|---|---|---|
 | earth_0..3 | 16×16 | 1 | terra maciça (variações leves, sem repetição óbvia) |
