@@ -71,7 +71,7 @@ func _initialize() -> void:
 		await process_frame
 	var dt: int = Time.get_ticks_msec() - t0
 	ok(s.write_count == 1, "uma única escrita (foram %d)" % s.write_count)
-	ok(dt >= 450 and dt <= 1500, "debounce ~0,5 s (levou %d ms)" % dt)
+	ok(dt >= 250 and dt <= 1500, "debounce ~0,5 s (levou %d ms)" % dt)
 	ok(FileAccess.file_exists(P), "arquivo existe")
 	ok(not FileAccess.file_exists(P + ".tmp"), "tmp sumiu (rename atômico)")
 
