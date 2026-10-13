@@ -88,4 +88,20 @@ func _run() -> void:
 	d.toast("toast.item_done", {"item": "Gotejador"}, "check")
 	await create_timer(0.8).timeout
 	await _shot("drawer_closed_toast")
+	# Sim de verdade (autoload Game), depois de meio dia de jogo
+	strip.position = Vector2(0, Drawer.DRAWER_H)
+	var real: Node = root.get_node("/root/Game")
+	real.save_path = "user://ui_drawer_shot.json"
+	real.sim.new_game(7, 9.0)
+	real.debug_advance_minutes(8 * 60)
+	d.bind_game(real)
+	d.toasts().clear_all()
+	d.open("build")
+	d.build_tab.select_item("prateleira")
+	await _shot("drawer_real_build")
+	d.select_instance(int(real.instances()[0]["id"]))
+	await _shot("drawer_real_instance")
+	d.show_tab("radio")
+	await _shot("drawer_real_radio")
+	d.free()
 	quit()

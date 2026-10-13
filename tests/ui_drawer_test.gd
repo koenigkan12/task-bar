@@ -118,6 +118,14 @@ func _run() -> void:
 	_check(_called("demolish") == [["demolish", 1]], "desmonta")
 	_check(d.toasts().current_text().contains("desmontado"), "aviso de desmontado: " + d.toasts().current_text())
 	_check(d.build_tab.selected_instance() == -1, "seleção some depois de desmontar")
+	d.select_instance(4)
+	d.toasts().clear_all()
+	d.build_tab.press_demolish(true)
+	_check(d.toasts().current_text() == "Esse só se troca por um melhor.", "recusa traduzida: " + d.toasts().current_text())
+	d.select_instance(2)
+	d.build_tab.press_crop("")
+	_check(g.crop_order(2) == "" and _called("crop").back() == ["crop", 2, ""], "cultura automática")
+	_check(DrawerBuildTab.missing_text("missing.item", {"item": "mesinha"}) == "Precisa de Mesinha", "requisito com item: " + DrawerBuildTab.missing_text("missing.item", {"item": "mesinha"}))
 
 	# rádio
 	d.show_tab("radio")

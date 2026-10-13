@@ -124,6 +124,9 @@ func _ready() -> void:
 	var i18n: Node = get_node_or_null("/root/I18n")
 	if i18n != null and i18n.has_signal("locale_changed"):
 		i18n.connect("locale_changed", _on_locale_changed)
+	var settings: Node = get_node_or_null("/root/Settings")
+	if settings != null and settings.has_signal("changed"):
+		settings.connect("changed", _on_setting_changed)
 	_retitle_tabs()
 
 
@@ -339,6 +342,8 @@ func _on_spot_picked(room: int, col: int) -> void:
 		if mode == "move":
 			toast("toast.item_moved", {"item": I18nRef.t("item.%s.name" % item)}, "grab")
 			build_tab.select_instance(inst)
+	elif mode == "buy":
+		build_tab._report(r, build_tab.why_not(item, room, col))
 	else:
 		build_tab._report(r)
 
@@ -477,6 +482,12 @@ func _on_welcome_dismissed(go_radio: bool) -> void:
 		show_tab("radio")
 	else:
 		close()
+
+
+func _on_setting_changed(key: String) -> void:
+	if key == "text_size":
+		theme = UiTheme.build()
+		refresh(true)
 
 
 func _on_locale_changed(_code: String) -> void:

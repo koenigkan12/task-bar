@@ -34,6 +34,7 @@ var _inst: Array = [
 	{"id": 5, "item": "estante", "room": 2, "col": 2, "cols": 1, "state": "building", "build_ratio": 0.4},
 ]
 var _crop: Dictionary = {1: "batata", 2: "feijao", 3: "batata"}
+var _order: Dictionary = {}
 var _diary: Array = []
 var _bought_house: Dictionary = {"cama_dela": true, "cantinho": true}
 
@@ -104,7 +105,7 @@ func catalog(filter: String = "") -> Array[Dictionary]:
 		["calha", "transporte", 40, 1, 1, "available", [], ["tempo", "renda"]],
 		["estante", "decor", 30, 1, 1, "owned", [], ["historia"]],
 		["poltrona", "decor", 40, 1, 1, "available", [], ["historia", "tempo"]],
-		["cama_dela", "casa", 150, 2, 2, "locked", [["buy.post_contact", {}]], ["historia"]],
+		["cama_dela", "casa", 150, 2, 2, "locked", [["missing.item", {"item": "mesinha"}]], ["historia"]],
 		["comodo3", "escavacao", 210, 0, 3, "locked", [["missing.antenna", {"n": 3}]], ["espaco"]],
 	]
 	var out: Array[Dictionary] = []
@@ -112,13 +113,15 @@ func catalog(filter: String = "") -> Array[Dictionary]:
 		if filter != "" and r[1] != filter:
 			continue
 		var missing: Array[String] = []
+		var margs: Array[Dictionary] = []
 		for m: Array in r[6]:
-			missing.append(I18nRef.t(m[0], m[1]))
+			missing.append(m[0])
+			margs.append(m[1])
 		var pq: Array[String] = []
 		for p: String in r[7]:
 			pq.append(p)
 		out.append({"item": r[0], "name_key": "item.%s.name" % r[0], "desc_key": "item.%s.desc" % r[0],
-			"cost": r[2], "cols": r[3], "line": r[1], "tier": r[4], "status": r[5], "missing": missing,
+			"cost": r[2], "cols": r[3], "line": r[1], "tier": r[4], "status": r[5], "missing": missing, "missing_args": margs,
 			"pra_que": pq, "post_contact": r[1] == "casa", "pinned": pinned == r[0]})
 	return out
 
@@ -145,7 +148,8 @@ func dig_room() -> Dictionary:
 
 
 func antenna_info() -> Dictionary:
-	return {"level": level, "next_cost": 110, "can": false, "missing": [I18nRef.t("missing.supply", {"n": 5}), I18nRef.t("missing.rooms", {"n": 2})] as Array[String], "max": level >= 5}
+	return {"level": level, "next_cost": 110, "can": false, "missing": ["missing.supply", "missing.rooms"] as Array[String],
+		"missing_args": [{"n": 5}, {"n": 2}] as Array[Dictionary], "max": level >= 5}
 
 
 func upgrade_antenna() -> Dictionary:
@@ -155,6 +159,8 @@ func upgrade_antenna() -> Dictionary:
 
 func demolish(instance_id: int) -> Dictionary:
 	calls.append(["demolish", instance_id])
+	if instance_id == 4:
+		return {"ok": false, "refund": 0, "reason": "line_item"}
 	for i in _inst.size():
 		if _inst[i]["id"] == instance_id:
 			_inst.remove_at(i)
@@ -174,7 +180,13 @@ func available_crops(_instance_id: int) -> Array[String]:
 
 func set_instance_crop(instance_id: int, crop: String) -> void:
 	calls.append(["crop", instance_id, crop])
-	_crop[instance_id] = crop
+	_order[instance_id] = crop
+	if crop != "":
+		_crop[instance_id] = crop
+
+
+func crop_order(instance_id: int) -> String:
+	return str(_order.get(instance_id, ""))
 
 
 func pin_goal(item_id: String) -> void:

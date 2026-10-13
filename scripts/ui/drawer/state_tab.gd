@@ -44,7 +44,7 @@ func refresh(force: bool = false) -> void:
 	var g: Node = drawer.game
 	var st: Dictionary = g.stats()
 	var sig: String = "%s|%d|%.1f|%.2f|%.2f|%d|%d|%d|%s|%s|%s" % [doing_key(g), int(g.sucata()), float(g.box_stock()), float(g.busy()), float(g.tod_hours()),
-		int(g.power_supply()), int(g.power_demand()), int(g.antenna()), str(st), bool(g.contact_made()), I18nRef.locale()]
+		int(g.power_supply()), int(g.power_demand()), int(g.antenna()), str(st.get("harvested", "")), bool(g.contact_made()), I18nRef.locale()]
 	if bool(g.contact_made()):
 		sig += str(g.house_status()) + str(g.journey()) + str(g.arrived())
 	if sig == _sig and not force:
@@ -134,7 +134,7 @@ func _col_power(g: Node) -> void:
 	if bool(g.arrived()):
 		c.add_child(DrawerUi.label(I18nRef.t("drawer.journey.home"), "LabelAmber", true))
 	else:
-		var left: int = int(j.get("days_left", 0))
+		var left: int = ceili(float(j.get("days_left", 0)))
 		c.add_child(DrawerUi.label(I18nRef.t("drawer.journey.days", {"n": left}) if left > 0 else I18nRef.t("drawer.journey.soon"), "LabelAmber", true))
 
 

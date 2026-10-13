@@ -139,6 +139,10 @@ func press_buy() -> void:
 		r = g.dig_room()
 	elif int(e.get("cols", 0)) <= 0:
 		r = g.buy(_sel_item, 0, -1)
+		if not bool(r.get("ok", false)):
+			_report(r, why_not(_sel_item))
+			refresh(true)
+			return
 	else:
 		var hints: Array = g.placement_hints(_sel_item)
 		if hints.is_empty():
@@ -186,7 +190,8 @@ func press_pin() -> void:
 
 
 func press_antenna() -> void:
-	_report(drawer.game.upgrade_antenna())
+	var r: Dictionary = drawer.game.upgrade_antenna()
+	_report(r, drawer.game.antenna_info() if not bool(r.get("ok", false)) else {})
 	refresh(true)
 
 
@@ -307,6 +312,8 @@ func _refresh_detail(force: bool) -> void:
 		sig += str(_instance(_sel_inst)) + str(g.plots())
 	elif _sel_item == ANTENNA:
 		sig += str(g.antenna_info())
+	if _sel_inst >= 0 and drawer.game.has_method("crop_order"):
+		sig += str(drawer.game.crop_order(_sel_inst))
 	if sig == _detail_sig and not force:
 		return
 	_detail_sig = sig
@@ -372,11 +379,22 @@ func _tags(tags: Array) -> void:
 	_detail.add_child(h)
 
 
-func _missing(lines: Array) -> void:
-	for m in lines:
-		var row: HBoxContainer = DrawerUi.icon_text("lock", str(m))
+## Requisitos que faltam: `missing` são chaves i18n e `missing_args` os argumentos (seção 4.3).
+func _missing(src: Dictionary) -> void:
+	var keys: Array = src.get("missing", [])
+	var args: Array = src.get("missing_args", [])
+	for i in keys.size():
+		var row: HBoxContainer = DrawerUi.icon_text("lock", missing_text(str(keys[i]), args[i] if i < args.size() else {}))
 		(row.get_child(1) as Label).add_theme_color_override("font_color", UiTheme.RUST3)
 		_detail.add_child(row)
+
+
+## Traduz uma chave de requisito; `{item}` chega como id e vira o nome do item.
+static func missing_text(key: String, args: Variant) -> String:
+	var a: Dictionary = (args as Dictionary).duplicate() if args is Dictionary else {}
+	if a.has("item"):
+		a["item"] = I18nRef.t("item.%s.name" % str(a["item"]))
+	return I18nRef.t(key, a) if I18nRef.has_key(key) else key
 
 
 func _detail_item() -> void:
@@ -385,7 +403,7 @@ func _detail_item() -> void:
 	var cost: int = int(e.get("cost", 0))
 	_title(I18nRef.t(str(e.get("name_key", ""))), str(cost) if status != "owned" and status != "maxed" else "", "sucata" if status != "owned" and status != "maxed" else "check")
 	_detail.add_child(DrawerUi.label(I18nRef.t(str(e.get("desc_key", ""))), "LabelSmall", true))
-	_missing(e.get("missing", []))
+	_missing(e)
 	_tags(e.get("pra_que", []))
 	var meta: PackedStringArray = PackedStringArray()
 	var cols: int = int(e.get("cols", 0))
@@ -430,7 +448,7 @@ func _detail_antenna() -> void:
 		_detail.add_child(DrawerUi.label(I18nRef.t("ui.antenna.max"), "LabelAmber"))
 		return
 	_detail.add_child(DrawerUi.icon_text("arrow_up", I18nRef.t("drawer.antenna.next", {"name": I18nRef.t("antenna.%d.name" % (lvl + 1))})))
-	_missing(ant.get("missing", []))
+	_missing(ant)
 	var b: Button = DrawerUi.button(I18nRef.t("ui.antenna.cost", {"n": int(ant.get("next_cost", 0))}), "antena")
 	b.disabled = not bool(ant.get("can", false))
 	b.pressed.connect(press_antenna)
@@ -452,26 +470,34 @@ func _detail_instance() -> void:
 		bar.step = 0.0
 		bar.value = float(inst.get("build_ratio", 0.0))
 		_detail.add_child(bar)
-	# cultura (ordem permanente da estrutura)
+	# cultura (ordem permanente da estrutura; "" = automático, o padrão)
 	var crop: String = ""
 	for p: Dictionary in g.plots():
 		if int(p.get("instance", -1)) == _sel_inst:
 			crop = str(p.get("crop", ""))
 			break
-	var crops: Array = g.available_crops(_sel_inst) if crop != "" else []
 	if crop != "":
+		var order: String = str(g.crop_order(_sel_inst)) if g.has_method("crop_order") else crop
 		_detail.add_child(DrawerUi.icon_text("crop_" + crop, I18nRef.t("crop.current", {"crop": I18nRef.t("crop.%s.name" % crop)}), ""))
-		if crops.size() > 1:
-			var row := HBoxContainer.new()
-			row.add_theme_constant_override("separation", 2)
-			for c in crops:
-				var cb: Button = DrawerUi.button(I18nRef.t("crop.%s.name" % str(c)), "crop_" + str(c))
-				cb.disabled = str(c) == crop
-				cb.tooltip_text = I18nRef.t("crop.pick.help")
-				cb.pressed.connect(press_crop.bind(str(c)))
-				row.add_child(cb)
-			_detail.add_child(row)
-			_detail.add_child(DrawerUi.label(I18nRef.t("hint.planting"), "LabelMuted", true))
+		var crops: Array = g.available_crops(_sel_inst)
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 2)
+		var auto_b: Button = DrawerUi.button(I18nRef.t("drawer.crop.auto"))
+		auto_b.toggle_mode = true
+		auto_b.set_pressed_no_signal(order == "")
+		auto_b.tooltip_text = I18nRef.t("drawer.crop.auto.help")
+		auto_b.pressed.connect(press_crop.bind(""))
+		row.add_child(auto_b)
+		for c in crops:
+			var cb: Button = DrawerUi.button("", "crop_" + str(c))
+			cb.toggle_mode = true
+			cb.set_pressed_no_signal(str(c) == order)
+			cb.tooltip_text = I18nRef.t("crop.%s.name" % str(c))
+			cb.pressed.connect(press_crop.bind(str(c)))
+			cb.name = "Crop_" + str(c)
+			row.add_child(cb)
+		_detail.add_child(row)
+		_detail.add_child(DrawerUi.label(I18nRef.t("crop.pick.help"), "LabelMuted", true))
 	if _confirm_demolish:
 		_detail.add_child(DrawerUi.label(I18nRef.t("ui.demolish.confirm"), "", true))
 		var yes: Button = DrawerUi.button(I18nRef.t("ui.btn.yes"))
@@ -539,14 +565,28 @@ func _instance(id: int) -> Dictionary:
 	return {}
 
 
-func _report(r: Dictionary) -> void:
+## Falha de um comando vira um aviso curto. `why` (resultado de can_buy/antenna_info) traz
+## a 1ª chave que falta com os argumentos; sem isso, usa o `reason` do comando.
+func _report(r: Dictionary, why: Dictionary = {}) -> void:
 	if bool(r.get("ok", false)):
 		return
+	var keys: Array = why.get("missing", [])
+	var args: Array = why.get("missing_args", [])
 	var reason: String = str(r.get("reason", ""))
-	if reason != "" and I18nRef.has_key(reason):
-		drawer.toast(reason)
+	if not keys.is_empty():
+		drawer.toast(missing_text(str(keys[0]), args[0] if not args.is_empty() else {}), {}, "lock")
+	elif reason != "" and I18nRef.has_key("drawer.cant." + reason):
+		drawer.toast("drawer.cant." + reason, {}, "lock")
+	elif reason.begins_with("missing.") and I18nRef.has_key(reason):
+		drawer.toast(missing_text(reason, {}), {}, "lock")
 	else:
-		drawer.toast("drawer.toast.cant")
+		drawer.toast("drawer.toast.cant", {}, "lock")
+
+
+## Motivo detalhado de não poder comprar (para o aviso).
+func why_not(item_id: String, room: int = 0, col: int = -1) -> Dictionary:
+	var g: Node = drawer.game
+	return g.can_buy(item_id, room, col) if g.has_method("can_buy") else {}
 
 
 static func _rotated_arrow(left: bool) -> Texture2D:

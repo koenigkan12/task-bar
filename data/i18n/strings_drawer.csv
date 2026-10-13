@@ -15,3 +15,10 @@ drawer.journey.soon,Ela está quase chegando,She's almost here
 drawer.journey.home,Ela está em casa.,She's home.
 drawer.welcome.radio,Ler o rádio,Read the radio
 drawer.welcome.night_one,Ele dormiu 1 noite.,He slept 1 night.
+drawer.crop.auto,Automático,Automatic
+drawer.crop.auto.help,Ele planta a melhor cultura que já tem.,He plants the best crop he has.
+drawer.cant.line_item,Esse só se troca por um melhor.,This one only gets swapped for a better one.
+drawer.cant.locked,Esse veio com o bunker. Fica.,This came with the bunker. It stays.
+drawer.cant.house,É da casa dela. Fica.,It's part of her place. It stays.
+drawer.cant.has_overlay,Tire a caneca de cima antes.,Take the mug off it first.
+drawer.cant.invalid,Não dá aqui.,Can't do that here.
