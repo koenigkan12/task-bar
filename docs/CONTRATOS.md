@@ -84,8 +84,9 @@ Persistência em `user://settings.json`, escrita com atraso (debounce 0,5 s) e a
 signal changed(key: String)
 func get_value(key: String, default: Variant = null) -> Variant
 func set_value(key: String, value: Variant) -> void
+# extras: has_value(key), flush() -> bool (grava já), reset_all(), reload(path := "")
 ```
-Chaves e padrões: `locale` ("auto"), `audio_mode` ("ambient"; "silent"|"ambient"|"full"), `master_volume` (0.8), `ui_scale` ("auto"|1|2|3|4), `always_on_top` (false), `energy_mode` ("auto"; "auto"|"low"|"normal"), `window_pos` (Dictionary por monitor), `anchor` ("bottom_left"), `text_size` (1.0), `reduce_flicker` (false), `first_run_done` (false), `tray_enabled` (true), `autostart_hint_seen` (false), `sound_unlocked` (false; vira true na primeira interação).
+Valores com tipo errado/fora da faixa voltam ao padrão (ui_scale: "auto"|1..4, volume 0..1); chaves desconhecidas são preservadas; JSON corrompido vira `settings.json.bad`. `set_value` só emite `changed` se o valor mudou. Chaves e padrões: `locale` ("auto"), `audio_mode` ("ambient"; "silent"|"ambient"|"full"), `master_volume` (0.8), `ui_scale` ("auto"|1|2|3|4), `always_on_top` (false), `energy_mode` ("auto"; "auto"|"low"|"normal"), `window_pos` (Dictionary por monitor), `anchor` ("bottom_left"), `text_size` (1.0), `reduce_flicker` (false), `first_run_done` (false), `tray_enabled` (true), `autostart_hint_seen` (false), `sound_unlocked` (false; vira true na primeira interação).
 
 ### 4.2 `I18n` (scripts/i18n/i18n.gd) [CONTEÚDO]
 ```gdscript
@@ -228,6 +229,7 @@ func quit_game() -> void                         # salva e sai
 - Governador de FPS (`Engine.max_fps`): ativo/hover 30; ocioso (sem input 10 s) 12; sem foco e sem hover 8; recolhido ou `energy_mode=low` 2. Sempre `max_fps` explícito; vsync desligado.
 - Ícone de bandeja (`StatusIndicator`, só Windows/macOS): menu Mostrar/Recolher, Resetar posição, Sempre por cima, Sair.
 - `--reset-window` na linha de comando reseta a posição.
+- **Extras/desvios (módulo plataforma):** `set_logical_size()` recebe o tamanho da FAIXA fechada; `logical_size` é o efetivo (faixa + gaveta, ou 48×16 recolhido). `set_drawer(open, h, min_w)` soma `h` à altura e usa `max(largura_faixa, min_w)`; `is_drawer_open()`. Sinal extra `first_interaction()` (1º clique/tecla; também marca `sound_unlocked` e chama `AudioManager.unlock()` se existir). `note_activity()` já é chamado sozinho em todo input. Recolhido mostra sozinho uma aba desenhada por código (CanvasLayer 100, clique restaura, arrastar move): a cena só precisa reagir a `hidden_changed`. FPS: hover vence recolhido/`low` (12) e arrastar usa 60. Arrasto é manual por padrão (`use_native_drag = false`). Posição salva em `window_pos["WxH@X,Y"] = {x, y}` (distância da esquerda e do rodapé da área útil) + `"_last"`. Acesso à Settings é por nó (`/root/Settings`), I18n/Game/AudioManager também (sem dependência de compilação).
 - **Recolher (pedido do dono):** um botão fixo (`icon_hide`) na alça da janela chama `set_collapsed(true)`: a janela encolhe para uma aba pequena (≈48×16 lógicos) colada na borda inferior do canto onde estava, e a simulação continua. Um clique na aba (`icon_show`) restaura o tamanho e a posição anteriores. A aba pode pulsar o sinal de atenção (seção 10) com no máximo uma luz verde. O estado recolhido é salvo em Settings.
 
 ### 4.5 `AudioManager` (scripts/audio/audio_manager.gd) [ÁUDIO]
