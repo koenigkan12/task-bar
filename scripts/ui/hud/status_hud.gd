@@ -7,16 +7,20 @@ extends Control
 ## só a linha de cima recebe clique: o resto deixa passar, para a escotilha continuar clicável.
 
 signal clicked()
+## Clicou no retratinho do Joaquim: a Main abre o cartão dele.
+signal man_clicked()
 
 const BACK_ALPHA: float = 0.6
 const TIP_W: int = 150
 const BAR_W: int = 36
+const FACE: Rect2 = Rect2(10, 2, 12, 12)   # rosto no quadro do homem parado
 
 var steps: FirstSteps
 
 var _col: VBoxContainer
 var _row1: HBoxContainer
 var _row2: HBoxContainer
+var _face: TextureRect
 var _scrap_icon: TextureRect
 var _scrap: Label
 var _goal_icon: TextureRect
@@ -62,6 +66,14 @@ func _build() -> void:
 	_row1.add_theme_constant_override("separation", 2)
 	_row1.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_col.add_child(_row1)
+	_face = TextureRect.new()
+	var at := AtlasTexture.new()
+	at.atlas = BunkerArt.texture("man_idle")
+	at.region = FACE
+	_face.texture = at
+	_face.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
+	_face.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_row1.add_child(_face)
 	_scrap_icon = _icon("sucata")
 	_row1.add_child(_scrap_icon)
 	_scrap = _label()
@@ -179,7 +191,7 @@ func _layout() -> void:
 	_row_h = _row1.get_combined_minimum_size().y
 	_row_w = 2.0 + _row1.get_combined_minimum_size().x + 4.0
 	# posição da meta na linha (calculada pelos mínimos: o contêiner só se ajeita no quadro seguinte)
-	_goal_x = 2.0 + _scrap_icon.get_combined_minimum_size().x + _scrap.get_combined_minimum_size().x + 1.0 + 3.0 * 2.0
+	_goal_x = 2.0 + _face.get_combined_minimum_size().x + 2.0 + _scrap_icon.get_combined_minimum_size().x + _scrap.get_combined_minimum_size().x + 1.0 + 4.0 * 2.0
 	_pad.custom_minimum_size.x = _goal_x - 2.0 if _row2.visible else 0.0
 	custom_minimum_size = Vector2(_row_w, _col.get_combined_minimum_size().y)
 	size = custom_minimum_size
@@ -222,8 +234,16 @@ func _gui_input(event: InputEvent) -> void:
 	var mb := event as InputEventMouseButton
 	if mb == null or not mb.pressed or mb.button_index != MOUSE_BUTTON_LEFT:
 		return
-	clicked.emit()
+	if mb.position.x < 2.0 + _face.get_combined_minimum_size().x + 1.0:
+		man_clicked.emit()
+	else:
+		clicked.emit()
 	accept_event()
+
+
+## Retângulo do retratinho (coordenadas do pai), onde o cartão do Joaquim se ancora.
+func face_rect() -> Rect2:
+	return Rect2(position + Vector2(2, 0), Vector2(_face.get_combined_minimum_size().x, _row_h))
 
 
 func _show_tip() -> void:

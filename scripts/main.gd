@@ -151,6 +151,8 @@ func _on_game_started(is_new: bool) -> void:
 	_bunker.connect("generator_clicked", func(id: int) -> void: _open_card("gen", {"kind": "instance", "id": id}, id))
 	_hud = StatusHud.new()
 	_hud.clicked.connect(func() -> void: _drawer.open("build"))
+	_hud.man_clicked.connect(func() -> void:
+		_card.open_for("man", _hud.face_rect(), Vector2(_window_size())))
 	add_child(_hud)
 	_card = InfoCard.new()
 	_card.action.connect(_on_card_action)

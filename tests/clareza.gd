@@ -91,6 +91,13 @@ func _run() -> void:
 	_check(tip.hover_lines().size() >= 2 and tip.hover_rect().size != Vector2.ZERO, "hover do vaso: %s" % str(tip.hover_lines()))
 	await _shot("2_hover_vaso")
 
+	# retratinho do Joaquim na barra: clicar abre o cartão dele
+	await _click(bunker.to_local(hud.global_position + Vector2(6, 5)))
+	_check(card.is_open() and card.kind == "man", "clique no retrato do Joaquim abre o cartão")
+	await _shot("2b_retrato")
+	card.close()
+	await _frames(2)
+
 	# Joaquim: congela num lugar livre; hover mostra "Joaquim · ..."; clique abre o cartão
 	bunker.man.cinematic = true
 	bunker.man.position = Vector2(150, BunkerGeo.FEET_Y)
