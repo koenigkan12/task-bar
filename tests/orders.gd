@@ -56,6 +56,21 @@ func _run() -> void:
 	_check(ok1, "ele cumpre a ordem")
 	_check(_progress_of(game, pot) > p0, "e só então a planta cresce (%.2f -> %.2f)" % [p0, _progress_of(game, pot)])
 
+	# 1b) com a gaveta aberta o clique no vaso também vira ordem; ao cumprir sai o "+N%" em cima dele
+	var drawer: Node = main.get("_drawer")
+	drawer.call("open", "build")
+	await _frames(10)
+	drawer.call("_on_instance_picked", pot)
+	await _frames(3)
+	_check(bunker.orders.size() == 1 and String(bunker.orders[0]["kind"]) == "tend", "gaveta aberta: clique no vaso vira ordem")
+	var popped := {"n": 0}
+	var ok1b: bool = await _until(func() -> bool:
+		popped["n"] = maxi(popped["n"], bunker._tip._pops.size())
+		return bunker.orders.is_empty(), 3000)
+	_check(ok1b and popped["n"] > 0, "aparece o +N%% quando ele ajuda (%d)" % popped["n"])
+	drawer.call("close")
+	await _frames(10)
+
 	# 2) obra: ele larga o que fazia e vem martelar; cliques repetidos viram fila (máximo 4)
 	var r: Dictionary = game.buy("vaso", 1, 7)
 	var site: int = int(r["instance_id"])

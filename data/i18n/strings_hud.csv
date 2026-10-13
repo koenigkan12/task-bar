@@ -38,3 +38,7 @@ plot.build_help,Clique: ele vem martelar,Click: he comes to hammer
 plot.tend_help,Clique: ele vem cuidar,Click: he comes to tend it
 hud.order_asleep,Ele está dormindo. De manhã ele atende.,He is asleep. He will help in the morning.
 hud.order_full,Ele já tem pedidos demais. Espere um pouco.,He already has plenty of orders. Wait a moment.
+plot.helped,+{n}%,+{n}%
+plot.auto,Automático: ele cuida sozinho,Automatic: he tends it himself
+hud.order_cap,Por hoje já deu de ajuda. Ele toca sozinho.,That is enough help for today. He carries on alone.
+hud.order_auto,Isso já é automático. Ele cuida sozinho.,That is automatic now. He handles it himself.

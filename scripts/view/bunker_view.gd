@@ -656,7 +656,17 @@ func finish_order(o: Dictionary) -> void:
 		res = link.q("help_box", {"ok": false, "reason": "off"}) as Dictionary
 	else:
 		res = link.q("help_instance", {"ok": false, "reason": "off"}, [int(o["id"])]) as Dictionary
+	if bool(res.get("ok", false)) and int(res.get("gain", 0)) > 0:
+		var at: Variant = order_anchor_of(o)
+		if at != null:
+			_tip.pop(at as Vector2, ScreenUtil.tr_key("plot.helped", {"n": int(res["gain"])}))
 	order_done.emit(String(o["kind"]), res)
+
+
+## Onde sai o "+N%" de uma ajuda feita (em cima do alvo).
+func order_anchor_of(o: Dictionary) -> Variant:
+	var at: Variant = order_anchor(o)
+	return (at as Vector2) + Vector2(-8, 4) if at != null else null
 
 
 ## Onde pôr a marca da ordem (canto de cima do alvo), ou null.

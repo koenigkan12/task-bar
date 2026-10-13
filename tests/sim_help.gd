@@ -85,6 +85,11 @@ func _initialize() -> void:
 	check(float(q.active_jobs()[0]["ratio"]) > r4 and float(q.active_jobs()[0]["eta_min"]) < eta4, "andamento e tempo seguem entre os passos")
 	q.debug_advance_minutes(40.0)
 	check(q.active_jobs().is_empty(), "sem clicar, a obra do vaso fecha sozinha")
+	var gn: Dictionary = Sim.new().help_instance(1)
+	var gs := Sim.new()
+	gs.new_game(1, 9.0)
+	var gr: Dictionary = gs.help_instance(vaso_id)
+	check(bool(gr["ok"]) and int(gr.get("gain", 0)) > 0, "a ajuda diz quanto adiantou (%s%%)" % str(gr.get("gain", "?")))
 	# cada máquina tira um clique
 	var t := Sim.new()
 	t.new_game()

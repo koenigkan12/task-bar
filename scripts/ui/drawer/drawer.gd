@@ -228,16 +228,12 @@ func set_strip_height(h: int) -> void:
 		_overlay.offset_bottom = DRAWER_H + strip_h
 
 
-## Clique numa estrutura com a gaveta aberta: seleciona como sempre e, se for uma obra, também é um
-## pedido para ele vir martelar (o mesmo que o clique com a gaveta fechada; quem trata é a cena).
+## Clique numa estrutura com a gaveta aberta: seleciona como sempre e, enquanto a ajuda vale, também é um
+## pedido para ele (vir martelar ou cuidar das plantas, como o clique com a gaveta fechada; quem trata é a cena).
 func _on_instance_picked(instance_id: int) -> void:
 	select_instance(instance_id)
-	if game == null or not game.has_method("instances"):
-		return
-	for i: Dictionary in game.instances():
-		if int(i["id"]) == instance_id and String(i["state"]) == "building":
-			order_requested.emit(instance_id)
-			return
+	if game != null and game.has_method("help_available") and bool(game.call("help_available")):
+		order_requested.emit(instance_id)
 
 
 ## Abre a aba Construir com o objeto escolhido (cultura, mover, desmontar).

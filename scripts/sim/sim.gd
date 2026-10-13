@@ -507,6 +507,7 @@ func help_instance(instance_id: int) -> Dictionary:
 		return {"ok": false, "reason": "off"}
 	var click: float = Balance.num("help.click_min", 4.0)
 	var n: int = 0
+	var gain: float = 0.0
 	for p in _plots:
 		if int(p["inst"]) != instance_id:
 			continue
@@ -516,6 +517,7 @@ func help_instance(instance_id: int) -> Dictionary:
 		var use: float = minf(click, budget)
 		_help_used += use
 		p["progress"] = float(p["progress"]) + use / _cycle_of(p)
+		gain = maxf(gain, use / _cycle_of(p))
 		if float(p["progress"]) >= 1.0 - 1e-9:
 			_harvest(p)
 		n += 1
@@ -524,7 +526,7 @@ func help_instance(instance_id: int) -> Dictionary:
 	if not _muted:
 		helped.emit(instance_id)
 		state_changed.emit()
-	return {"ok": true, "plots": n}
+	return {"ok": true, "plots": n, "gain": int(roundf(gain * 100.0))}
 
 
 ## Clicar numa obra ajuda a martelar: adianta `help.build_click_min` de trabalho da obra.
@@ -544,7 +546,7 @@ func _help_build(instance_id: int) -> Dictionary:
 			if not _muted:
 				helped.emit(instance_id)
 				state_changed.emit()
-			return {"ok": true, "plots": 0, "build": true}
+			return {"ok": true, "plots": 0, "build": true, "gain": int(roundf(use / maxf(0.001, float(j["total"])) * 100.0))}
 	return {"ok": false, "reason": "none"}
 
 

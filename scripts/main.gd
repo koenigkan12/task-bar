@@ -130,7 +130,7 @@ func _on_game_started(is_new: bool) -> void:
 	_drawer.open_changed.connect(_on_drawer_open_changed)
 	_drawer.order_requested.connect(func(id: int) -> void:
 		var why: String = _bunker.give_order("instance", id)
-		if why != "":
+		if why != "" and why != "off" and why != "none":   # com a gaveta aberta o clique também seleciona
 			_order_refused(why))
 	var opts := OptionsScreen.new()
 	opts.show_header = false
@@ -215,6 +215,12 @@ func _order_refused(why: String) -> bool:
 ## O homem fez o pedido: o resultado da caixa vira aviso na tela.
 func _on_order_done(kind: String, res: Dictionary) -> void:
 	if kind != "box":
+		if not bool(res.get("ok", false)):
+			match String(res.get("reason", "")):
+				"cap":
+					_drawer.toast("hud.order_cap")
+				"off":
+					_drawer.toast("hud.order_auto")
 		return
 	if bool(res.get("ok", false)):
 		_drawer.toast("hud.box_sold", {"n": int(res.get("scrap", 0))})

@@ -22,8 +22,8 @@ func _ready() -> void:
 	z_index = 9
 
 
-func pop(pos: Vector2) -> void:
-	_pops.append({"pos": pos, "t": 0.0})
+func pop(pos: Vector2, text: String = "") -> void:
+	_pops.append({"pos": pos, "t": 0.0, "text": text})
 
 
 func _process(delta: float) -> void:
@@ -83,6 +83,8 @@ func _update_tip() -> void:
 		_tip_lines.append(ScreenUtil.tr_key("plot.asleep"))
 	elif bool(view.link.q("help_plots_available", false)):
 		_tip_lines.append(ScreenUtil.tr_key("plot.tend_help"))
+	else:
+		_tip_lines.append(ScreenUtil.tr_key("plot.auto"))
 	_tip_pos = view.plot_pos(best)
 
 
@@ -130,7 +132,9 @@ func _draw() -> void:
 		var c: Color = UiTheme.SIGNAL
 		c.a = 1.0 - k * k
 		var at: Vector2 = (pp["pos"] as Vector2) + Vector2(-14, -12 - 14 * k)
-		var txt: String = ScreenUtil.tr_key("plot.gain")
+		var txt: String = String(pp.get("text", ""))
+		if txt == "":
+			txt = ScreenUtil.tr_key("plot.gain")
 		draw_string_outline(font, at.round(), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, 3, Color(ink, c.a))
 		draw_string(font, at.round(), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, c)
 	if _tip_lines.is_empty():
