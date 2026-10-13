@@ -1,0 +1,372 @@
+{
+  "vaso": {
+    "file": "obj/vaso.png",
+    "frame_w": 16,
+    "frame_h": 16,
+    "frames": 1,
+    "fps": 0,
+    "anchor": [
+      8,
+      16
+    ],
+    "plots": [
+      [
+        8,
+        14
+      ]
+    ]
+  },
+  "canteiro": {
+    "file": "obj/canteiro.png",
+    "frame_w": 32,
+    "frame_h": 16,
+    "frames": 1,
+    "fps": 0,
+    "anchor": [
+      16,
+      16
+    ],
+    "plots": [
+      [
+        6,
+        14
+      ],
+      [
+        16,
+        14
+      ],
+      [
+        26,
+        14
+      ]
+    ]
+  },
+  "prateleira": {
+    "file": "obj/prateleira.png",
+    "frame_w": 32,
+    "frame_h": 32,
+    "frames": 1,
+    "fps": 0,
+    "anchor": [
+      16,
+      32
+    ],
+    "plots": [
+      [
+        6,
+        28
+      ],
+      [
+        16,
+        28
+      ],
+      [
+        26,
+        28
+      ],
+      [
+        11,
+        14
+      ],
+      [
+        21,
+        14
+      ]
+    ]
+  },
+  "estufa": {
+    "file": "obj/estufa.png",
+    "frame_w": 48,
+    "frame_h": 32,
+    "frames": 1,
+    "fps": 0,
+    "anchor": [
+      24,
+      32
+    ],
+    "plots": [
+      [
+        8,
+        19
+      ],
+      [
+        21,
+        19
+      ],
+      [
+        34,
+        19
+      ],
+      [
+        14,
+        29
+      ],
+      [
+        27,
+        29
+      ],
+      [
+        40,
+        29
+      ]
+    ]
+  },
+  "crop_batata": {
+    "file": "obj/crop_batata.png",
+    "frame_w": 12,
+    "frame_h": 12,
+    "frames": 4,
+    "fps": 0,
+    "anchor": [
+      6,
+      12
+    ]
+  },
+  "crop_feijao": {
+    "file": "obj/crop_feijao.png",
+    "frame_w": 12,
+    "frame_h": 12,
+    "frames": 4,
+    "fps": 0,
+    "anchor": [
+      6,
+      12
+    ]
+  },
+  "crop_tomate": {
+    "file": "obj/crop_tomate.png",
+    "frame_w": 12,
+    "frame_h": 12,
+    "frames": 4,
+    "fps": 0,
+    "anchor": [
+      6,
+      12
+    ]
+  },
+  "gotejador": {
+    "file": "obj/gotejador.png",
+    "frame_w": 16,
+    "frame_h": 16,
+    "frames": 2,
+    "fps": 2,
+    "anchor": [
+      8,
+      16
+    ]
+  },
+  "cisterna": {
+    "file": "obj/cisterna.png",
+    "frame_w": 32,
+    "frame_h": 32,
+    "frames": 2,
+    "fps": 1,
+    "anchor": [
+      16,
+      32
+    ]
+  },
+  "bomba": {
+    "file": "obj/bomba.png",
+    "frame_w": 16,
+    "frame_h": 16,
+    "frames": 3,
+    "fps": 6,
+    "anchor": [
+      8,
+      16
+    ]
+  },
+  "bicicleta": {
+    "file": "obj/bicicleta.png",
+    "frame_w": 16,
+    "frame_h": 16,
+    "frames": 4,
+    "fps": 8,
+    "anchor": [
+      8,
+      16
+    ]
+  },
+  "moinho": {
+    "file": "obj/moinho.png",
+    "frame_w": 16,
+    "frame_h": 32,
+    "frames": 4,
+    "fps": 8,
+    "anchor": [
+      8,
+      32
+    ]
+  },
+  "bateria": {
+    "file": "obj/bateria.png",
+    "frame_w": 32,
+    "frame_h": 16,
+    "frames": 2,
+    "fps": 2,
+    "anchor": [
+      16,
+      16
+    ]
+  },
+  "painel": {
+    "file": "obj/painel.png",
+    "frame_w": 32,
+    "frame_h": 16,
+    "frames": 1,
+    "fps": 0,
+    "anchor": [
+      16,
+      16
+    ]
+  },
+  "calha": {
+    "file": "obj/calha.png",
+    "frame_w": 16,
+    "frame_h": 16,
+    "frames": 3,
+    "fps": 4,
+    "anchor": [
+      8,
+      16
+    ]
+  },
+  "roldana": {
+    "file": "obj/roldana.png",
+    "frame_w": 16,
+    "frame_h": 32,
+    "frames": 4,
+    "fps": 6,
+    "anchor": [
+      8,
+      32
+    ]
+  },
+  "esteira": {
+    "file": "obj/esteira.png",
+    "frame_w": 32,
+    "frame_h": 16,
+    "frames": 4,
+    "fps": 8,
+    "anchor": [
+      16,
+      16
+    ]
+  },
+  "estante": {
+    "file": "obj/estante.png",
+    "frame_w": 16,
+    "frame_h": 32,
+    "frames": 1,
+    "fps": 0,
+    "anchor": [
+      8,
+      32
+    ]
+  },
+  "poltrona": {
+    "file": "obj/poltrona.png",
+    "frame_w": 16,
+    "frame_h": 16,
+    "frames": 1,
+    "fps": 0,
+    "anchor": [
+      8,
+      16
+    ]
+  },
+  "mesinha": {
+    "file": "obj/mesinha.png",
+    "frame_w": 16,
+    "frame_h": 16,
+    "frames": 1,
+    "fps": 0,
+    "anchor": [
+      8,
+      16
+    ]
+  },
+  "foto": {
+    "file": "obj/foto.png",
+    "frame_w": 16,
+    "frame_h": 16,
+    "frames": 1,
+    "fps": 0,
+    "anchor": [
+      8,
+      16
+    ]
+  },
+  "cama_dela": {
+    "file": "obj/cama_dela.png",
+    "frame_w": 32,
+    "frame_h": 16,
+    "frames": 1,
+    "fps": 0,
+    "anchor": [
+      16,
+      16
+    ]
+  },
+  "cantinho": {
+    "file": "obj/cantinho.png",
+    "frame_w": 32,
+    "frame_h": 16,
+    "frames": 1,
+    "fps": 0,
+    "anchor": [
+      16,
+      16
+    ]
+  },
+  "planta_dela": {
+    "file": "obj/planta_dela.png",
+    "frame_w": 16,
+    "frame_h": 16,
+    "frames": 1,
+    "fps": 0,
+    "anchor": [
+      8,
+      16
+    ]
+  },
+  "cabide": {
+    "file": "obj/cabide.png",
+    "frame_w": 16,
+    "frame_h": 32,
+    "frames": 1,
+    "fps": 0,
+    "anchor": [
+      8,
+      32
+    ]
+  },
+  "caneca": {
+    "file": "obj/caneca.png",
+    "frame_w": 8,
+    "frame_h": 8,
+    "frames": 2,
+    "fps": 0,
+    "anchor": [
+      4,
+      8
+    ],
+    "overlay_on": "mesinha",
+    "overlay_pos": [
+      8,
+      0
+    ]
+  },
+  "foto_dela": {
+    "file": "obj/foto_dela.png",
+    "frame_w": 16,
+    "frame_h": 16,
+    "frames": 1,
+    "fps": 0,
+    "anchor": [
+      8,
+      16
+    ]
+  }
+}

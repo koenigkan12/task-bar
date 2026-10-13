@@ -355,6 +355,8 @@ Para não haver conflito de arquivos, a tabela abaixo foi dividida: **[ARTE-AMBI
 | (manifest_ui) | | | cada entrada 9-slice traz `"margins": [esq, topo, dir, base]` (usar em `StyleBoxTexture.texture_margin_*`); ícones têm `anchor [4,4]`. Fonte: `assets/fonts/Jersey15-Regular.ttf` (ver `assets/fonts/ui_theme_hint.md`: 13 normal, 12 pequeno, 15 título) |
 | icon_* | 8×8 | 1 | `sucata, cesto, energia, radio, antena, espaco, tempo, porta, historia, renda, estrela, check, lock, arrow_up, arrow_down, close, speaker_on, speaker_off, hide, show, gear, book, hammer, home, plus, crop_batata, crop_feijao, crop_tomate, grab` (ícones legíveis em 8 px; `estrela` e `check` usam a cor signal) |
 
+Notas [ARTE-OBJETOS]: os `crop_*` têm `anchor [6,12]` (base-centro; o pé cai em `plots`); a prateleira usa plots `[[6,28],[16,28],[26,28],[11,14],[21,14]]` (andar de baixo, depois o de cima) e a estufa `[[8,19],[21,19],[34,19],[14,29],[27,29],[40,29]]` (fileira de trás, depois a da frente); as estruturas não têm pixels opacos acima da linha de terra, então a planta pode ser desenhada por cima ou por baixo. A `caneca` tem `overlay_on:"mesinha"` e `overlay_pos:[8,0]` (canto sup. esq. do overlay dentro da mesinha). `bateria` pisca a 2 fps. A folha `_contact_obj*.png` não entra no manifesto.
+
 Plots por estrutura (x,y do pé de cada planta no sprite): vaso `[[8,14]]`; canteiro `[[6,14],[16,14],[26,14]]`; prateleira 5 posições em 2 andares; estufa 6 em 2 fileiras.
 
 ### 7.2 Personagem [ARTE-PERSONAGEM] → `assets/art/man/`, `manifest_man.json`
