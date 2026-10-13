@@ -125,7 +125,7 @@ func _build_tab() -> void:
 	# Aba recolhida: camada própria por cima de tudo, ocupa a janela inteira (48×16).
 	_tab_layer = CanvasLayer.new()
 	_tab_layer.name = "TabLayer"
-	_tab_layer.layer = 100
+	_tab_layer.layer = 101   # acima da aba genérica do WindowService (camada 100)
 	add_child(_tab_layer)
 	_tab = Control.new()
 	_tab.name = "Tab"
