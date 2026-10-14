@@ -78,6 +78,32 @@ func tex(name: String) -> Texture2D:
 	return _tex[name]
 
 
+## Versão "de dia" do sprite: janelas e lampiões (os dois laranjas acesos) viram vidro escuro.
+## Sem nenhum pixel aceso, devolve a própria textura.
+func tex_day(name: String) -> Texture2D:
+	var key := name + "#dia"
+	if _tex.has(key):
+		return _tex[key]
+	var t := tex(name)
+	var out: Texture2D = t
+	if t != null:
+		var img := t.get_image()
+		if img.is_compressed():
+			img.decompress()
+		var lit := {Color8(255, 179, 71).to_rgba32(): Color8(58, 54, 70), Color8(255, 211, 107).to_rgba32(): Color8(84, 80, 98)}
+		var changed := false
+		for y in img.get_height():
+			for x in img.get_width():
+				var c := img.get_pixel(x, y)
+				if c.a > 0.99 and lit.has(Color(c, 1.0).to_rgba32()):
+					img.set_pixel(x, y, lit[Color(c, 1.0).to_rgba32()])
+					changed = true
+		if changed:
+			out = ImageTexture.create_from_image(img)
+	_tex[key] = out
+	return out
+
+
 func world_size() -> Vector2:
 	return Vector2(sim.w * TILE, sim.h * TILE)
 
@@ -253,6 +279,8 @@ func _make_building(b: Dictionary) -> Dictionary:
 		spr.hframes = 4
 	else:
 		spr.texture = tex(_btex_name(b))
+	var tex_lit: Texture2D = spr.texture
+	var tex_dia: Texture2D = spr.texture if tp == "fogueira" else tex_day(_btex_name(b))
 	if spr.texture != null:
 		spr.offset = Vector2(0, -spr.texture.get_height())
 	spr.visible = show_main
@@ -305,7 +333,7 @@ func _make_building(b: Dictionary) -> Dictionary:
 		warn.position = Vector2(fp.x * TILE / 2.0, -fp.y * TILE - 10)
 		warn.visible = false
 		root.add_child(warn)
-	return {"root": root, "sprite": spr, "overlay": ov, "crops": crops, "lights": lights, "key": "", "warn": warn}
+	return {"root": root, "sprite": spr, "overlay": ov, "crops": crops, "lights": lights, "key": "", "warn": warn, "tex_lit": tex_lit, "tex_dia": tex_dia}
 
 
 func _input_of(b: Dictionary) -> Dictionary:
@@ -476,16 +504,17 @@ func _process(delta: float) -> void:
 	_overlay.queue_redraw()
 
 
-## Cor do dia pela hora local: dia claro e quente, fim de tarde dourado, noite bem escura e azul
+## Cor do dia pela hora do relógio: dia claro e quente, fim de tarde dourado, noite bem escura e azul
 ## (aí as luzes quentes da fogueira e das janelas se destacam). Acima de 1 clareia o chão.
 func _update_light() -> void:
-	var hr := sim.local_hour()
+	# Pela hora que o relógio mostra (dia 6–18, noite 18–6): 16h ainda é dia claro.
+	var hr := sim.display_hour()
 	var night := Color(0.09, 0.10, 0.22)
 	var day := Color(1.5, 1.4, 1.12)
 	var keys := [
-		[0.0, night], [4.0, night], [5.2, Color(0.62, 0.55, 0.74)],
-		[6.5, day], [17.0, day], [19.0, Color(1.08, 0.80, 0.62)],
-		[20.5, Color(0.48, 0.38, 0.58)], [22.0, night], [24.0, night]]
+		[0.0, night], [5.0, night], [5.6, Color(0.62, 0.55, 0.74)],
+		[6.3, day], [16.6, day], [17.4, Color(1.3, 0.95, 0.72)],
+		[18.0, Color(0.48, 0.38, 0.58)], [18.6, night], [24.0, night]]
 	var col: Color = keys[0][1]
 	for i in keys.size() - 1:
 		var a: float = keys[i][0]
@@ -505,6 +534,14 @@ func _update_light() -> void:
 		l.energy = float(e["base"]) * 2.0 * k * flick
 		l.visible = l.energy > 0.01   # de dia a luz apagada nem entra no desenho
 	_lights = _lights.filter(func(e: Dictionary) -> bool: return is_instance_valid(e["light"]))
+	# Janelas acendem ao anoitecer e apagam de manhã.
+	var lit_on := _night_k > 0.45
+	for id in _bnodes:
+		var n: Dictionary = _bnodes[id]
+		var want: Texture2D = n["tex_lit"] if lit_on else n["tex_dia"]
+		var sp: Sprite2D = n["sprite"]
+		if want != null and sp.texture != want:
+			sp.texture = want
 
 
 ## Área da vila: fora do alcance da torre o chão fica mais escuro, e a borda leva uma linha tracejada.
