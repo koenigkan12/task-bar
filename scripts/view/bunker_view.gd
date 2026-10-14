@@ -759,7 +759,12 @@ func give_order(kind: String, id: int = 0) -> String:
 	if orders.size() >= MAX_ORDERS:
 		return "full"
 	var order: Dictionary = {"kind": kind, "id": id, "taken": false}
-	if kind == "box":
+	if kind == "instance" and id < 0:
+		# escavação: ele vai até a frente da sala nova e cava; nenhuma máquina tira esse pedido
+		if _dig_job().is_empty():
+			return "none"
+		order["kind"] = "dig"
+	elif kind == "box":
 		var why: String = String(link.q("help_box_check", "off"))
 		if why != "ok":
 			return why
@@ -771,8 +776,6 @@ func give_order(kind: String, id: int = 0) -> String:
 		if obj == null:
 			return "none"
 		if obj.building:
-			if not bool(link.q("help_available", false)):
-				return "off"
 			order["kind"] = "hammer"
 		else:
 			if not bool(link.q("help_plots_available", false)):
@@ -842,7 +845,11 @@ func order_anchor_of(o: Dictionary) -> Variant:
 ## Onde pôr a marca da ordem (canto de cima do alvo), ou null.
 func order_anchor(o: Dictionary) -> Variant:
 	var r := Rect2()
-	if String(o["kind"]) == "box":
+	if String(o["kind"]) == "dig":
+		if _dig_job().is_empty():
+			return null
+		r = dig_rect()
+	elif String(o["kind"]) == "box":
 		var box: BunkerObject = _fixed.get("hatch_box")
 		if box == null:
 			return null
@@ -853,6 +860,13 @@ func order_anchor(o: Dictionary) -> Variant:
 			return null
 		r = obj.bounds()
 	return Vector2(r.end.x - 3.0, r.position.y + 3.0)
+
+
+## A sala em escavação (Rect2() se não há escavação): clicar nela manda ele cavar.
+func dig_rect() -> Rect2:
+	if _dig_job().is_empty():
+		return Rect2()
+	return BunkerGeo.room_rect(_rooms + 1)
 
 
 ## Onde fica o relógio da escavação (em cima da sala que está abrindo).
@@ -996,6 +1010,8 @@ func get_object_at(pos: Vector2) -> Dictionary:
 		var f: BunkerObject = _fixed[id]
 		if f.bounds().has_point(pos):
 			return {"kind": "fixed", "id": id, "room": f.room, "col": f.col}
+	if dig_rect().has_point(pos):
+		return {"kind": "instance", "id": -(_rooms + 1), "item": "comodo%d" % (_rooms + 1), "room": _rooms + 1, "col": 0}
 	var rc := room_col_at(pos)
 	if rc.x > 0:
 		return {"kind": "room", "room": rc.x, "col": rc.y}
@@ -1022,6 +1038,8 @@ func rect_of(hit: Dictionary) -> Rect2:
 		"antenna":
 			return _antenna.bounds()
 		"instance":
+			if int(hit.get("id", -1)) < 0:
+				return dig_rect()
 			var o: BunkerObject = _inst.get(int(hit.get("id", -1)))
 			return o.bounds() if o != null else Rect2()
 	return Rect2()

@@ -160,6 +160,12 @@ func _run() -> void:
 	_check(bunker.world_height() == BunkerGeo.height(2), "o mundo ganhou o andar da sala nova (%d)" % bunker.world_height())
 	var ok6: bool = await _until(func() -> bool: return absf(man.feet_y() - float(BunkerGeo.feet_y(2))) < 0.5, 4000)
 	_check(ok6, "ele desce até o andar da escavação")
+	var dig_hit: Dictionary = bunker.get_object_at(bunker.dig_rect().get_center())
+	_check(int(dig_hit.get("id", 0)) == -2 and bunker.rect_of(dig_hit) == bunker.dig_rect(), "a sala em escavação é clicável (%s)" % str(dig_hit))
+	var d0: float = float(game.active_jobs()[0]["ratio"])
+	_check(bunker.give_order("instance", -2) == "", "clique na escavação vira ordem")
+	var ok6b: bool = await _until(func() -> bool: return bunker.orders.is_empty(), 4000)
+	_check(ok6b and (game.active_jobs().is_empty() or float(game.active_jobs()[0]["ratio"]) > d0), "ele cava e o tempo diminui (%.3f -> %.3f)" % [d0, float(game.active_jobs()[0]["ratio"]) if not game.active_jobs().is_empty() else 1.0])
 	var ok7: bool = await _until(func() -> bool: return absf(bunker.scroll_y - bunker.follow_target()) < 1.0, 4000)
 	_check(ok7 and bunker.scroll_y > 40.0, "a câmera desce com ele (rolagem %.0f)" % bunker.scroll_y)
 

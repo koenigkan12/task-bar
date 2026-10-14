@@ -140,8 +140,7 @@ func _hover_instance(hit: Dictionary, rect: Rect2, lines: PackedStringArray, m: 
 	if not job.is_empty():
 		lines.append(ScreenUtil.tr_key("plot.build", {"item": item_name}))
 		lines.append(ScreenUtil.tr_key("plot.build_eta", {"t": ClockText.of(float(job.get("eta_min", 0.0)))}))
-		if bool(view.link.q("help_available", false)):
-			lines.append(ScreenUtil.tr_key("plot.build_help"))
+		lines.append(ScreenUtil.tr_key("plot.dig_help" if id < 0 else "plot.build_help"))
 		return pos
 	if view.is_generator(String(hit["item"])):
 		lines.append(item_name)

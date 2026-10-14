@@ -435,6 +435,9 @@ func _plan_order() -> void:
 				ofy = BunkerGeo.FEET_Y
 			walk_to(tx, false, ofy)
 			act("man_hammer", 2.5, "hammer", 1, {"on_start": func() -> void: view.build_fx(obj), "on_finish": finish})
+		"dig":
+			walk_to(view.dig_spot_x(), false, view.dig_spot_y())
+			act("man_dig", 2.5, "dig", 1, {"on_start": view.dig_fx, "on_finish": finish})
 		"tend":
 			var target: Dictionary = {}
 			for p: Dictionary in link.plots():

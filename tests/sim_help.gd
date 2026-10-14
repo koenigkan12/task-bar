@@ -75,6 +75,15 @@ func _initialize() -> void:
 		if int(i["id"]) == int(bv["instance_id"]):
 			ready = String(i["state"]) == "ready"
 	check(ready, "vaso pronto depois da obra")
+	# escavação: clicar também adianta o tempo (id = -sala), mesmo sem nenhuma ajuda de plantio
+	var dg := Sim.new()
+	dg.new_game(1, 9.0)
+	dg.scrap = 500.0
+	var dr: Dictionary = dg.dig_room()
+	check(bool(dr["ok"]), "escava a sala 2 (%s)" % str(dr.get("reason", "")))
+	var dr0: float = float(dg.active_jobs()[0]["ratio"])
+	var rd: Dictionary = dg.help_instance(-int(dr["room"]))
+	check(bool(rd["ok"]) and float(dg.active_jobs()[0]["ratio"]) > dr0, "clique na escavação adianta o tempo (%.3f -> %.3f)" % [dr0, float(dg.active_jobs()[0]["ratio"])])
 	# a porcentagem da obra anda entre os passos de 10 min (antes ficava em 0% até o passo fechar)
 	var q := Sim.new()
 	q.new_game(1, 9.0)

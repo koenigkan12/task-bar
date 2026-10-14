@@ -224,7 +224,14 @@ func _show_intro() -> void:
 ## Com a gaveta fechada e a ajuda ligada (começo do jogo): clicar numa estrutura é um pedido para ele:
 ## vem martelar a obra ou cuidar das plantas. O efeito vale quando ele chega e faz (ver BunkerView.give_order).
 func _on_object_clicked(id: int) -> void:
-	if not _drawer.is_open() and bool(Game.help_available()):
+	if id < 0:   # a sala em escavação: clicar manda ele cavar (a gaveta não tem nada a mostrar)
+		if not _drawer.is_open():
+			var why_dig: String = _bunker.give_order("instance", id)
+			if why_dig != "":
+				_order_refused(why_dig)
+		return
+	var site: BunkerObject = _bunker.object_by_id(id)
+	if not _drawer.is_open() and (bool(Game.help_available()) or (site != null and site.building)):
 		var why: String = _bunker.give_order("instance", id)
 		if why == "" or _order_refused(why):
 			return

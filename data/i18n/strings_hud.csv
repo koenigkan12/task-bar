@@ -26,6 +26,7 @@ plot.asleep,Joaquim dorme,Joaquim is asleep
 plot.build,{item} · obra,{item} · building
 plot.build_eta,Pronto em {t},Ready in {t}
 plot.build_help,Clique: martelar,Click: hammer
+plot.dig_help,Clique: cavar,Click: dig
 plot.tend_help,Clique: cuidar,Click: tend
 hud.order_asleep,Joaquim dorme. Ajuda de manhã.,Joaquim is asleep. Help in the morning.
 hud.order_full,Fila cheia. Espere um pouco.,Queue full. Wait a moment.

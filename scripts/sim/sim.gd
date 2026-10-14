@@ -606,13 +606,15 @@ func _help_budget() -> float:
 
 
 func help_instance(instance_id: int) -> Dictionary:
-	if not help_available():
-		return {"ok": false, "reason": "off"}
+	if instance_id < 0:
+		return _help_build(instance_id)   # escavação: o id é -sala
 	var inst: Dictionary = _inst_by_id(instance_id)
 	if inst.is_empty():
 		return {"ok": false, "reason": "none"}
 	if String(inst.get("state", "ready")) == "building":
-		return _help_build(instance_id)
+		return _help_build(instance_id)   # obra: nenhuma máquina tira o martelo, vale sempre (dentro do teto do dia)
+	if not help_available():
+		return {"ok": false, "reason": "off"}
 	if not help_plots_available():
 		return {"ok": false, "reason": "off"}
 	var click: float = Balance.num("help.click_min", 4.0)
@@ -639,13 +641,13 @@ func help_instance(instance_id: int) -> Dictionary:
 	return {"ok": true, "plots": n, "gain": int(roundf(gain * 100.0))}
 
 
-## Clicar numa obra ajuda a martelar: adianta `help.build_click_min` de trabalho da obra.
+## Clicar numa obra (ou escavação) ajuda a martelar: adianta `help.build_click_min` de trabalho da obra.
 func _help_build(instance_id: int) -> Dictionary:
 	var budget: float = _help_budget()
 	if budget <= 0.0:
 		return {"ok": false, "reason": "cap"}
 	for j in _jobs:
-		if int(j["instance"]) == instance_id and String(j["kind"]) == "build":
+		if int(j["instance"]) == instance_id and String(j["kind"]) in ["build", "dig"]:
 			var use: float = minf(Balance.num("help.build_click_min", 1.5), budget)
 			use = minf(use, float(j["total"]) - float(j["done"]))
 			_help_used += use
