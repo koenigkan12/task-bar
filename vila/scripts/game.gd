@@ -21,6 +21,8 @@ signal catch_up_progress(frac: float)       # alcançando o tempo fechado (0..1)
 signal arrival_started                      # ela chegou com a vila aberta (o AudioManager toca o epílogo)
 
 const SAVE := "user://vila.json"
+const SAVE_BAK := "user://vila.json.bak"   # o save anterior: se o atual estragar, volta dele
+const SAVE_TMP := "user://vila.json.tmp"
 
 ## Prédio -> "item" que o AudioManager sabe tocar em loop (MACHINE_LOOP).
 const LOOP_ITEM := {"poco": "bomba", "serraria": "esteira", "ferrovelho": "roldana", "horta": "gotejador"}
@@ -69,7 +71,20 @@ func is_test_session() -> bool:
 
 # ================================================================ API das telas
 func has_save() -> bool:
-	return not args.has("fresh") and FileAccess.file_exists(SAVE)
+	return not args.has("fresh") and (FileAccess.file_exists(SAVE) or FileAccess.file_exists(SAVE_BAK))
+
+
+## Lê o save; se estiver estragado (arquivo cortado, JSON quebrado), tenta a cópia anterior.
+func _read_save() -> Dictionary:
+	for path in [SAVE, SAVE_BAK]:
+		if not FileAccess.file_exists(path):
+			continue
+		var d: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
+		if d is Dictionary and int((d as Dictionary).get("v", 0)) == 1:
+			if path == SAVE_BAK:
+				push_warning("save principal estragado; usando a cópia anterior")
+			return d
+	return {}
 
 
 ## Resumo do save para o título: {day, antenna}. O título soma 1 ao dia.
@@ -84,8 +99,8 @@ func prepare_title() -> void:
 	in_game = false
 	_from_save = false
 	if has_save():
-		var d: Variant = JSON.parse_string(FileAccess.get_file_as_string(SAVE))
-		if d is Dictionary and int((d as Dictionary).get("v", 0)) == 1:
+		var d := _read_save()
+		if not d.is_empty():
 			_set_sim(VilaSim.new())
 			sim.from_dict(d, bal, tz)
 			_from_save = true
@@ -150,14 +165,24 @@ func new_game() -> void:
 func save_game() -> void:
 	if sim == null or not in_game or is_test_session():
 		return
-	var f := FileAccess.open(SAVE, FileAccess.WRITE)
-	if f != null:
-		f.store_string(JSON.stringify(sim.to_dict()))
+	# Grava num arquivo à parte e só troca quando terminou: se o PC desligar no meio, o save
+	# de antes continua inteiro. O anterior vira a cópia de segurança.
+	var txt := JSON.stringify(sim.to_dict())
+	var f := FileAccess.open(SAVE_TMP, FileAccess.WRITE)
+	if f == null:
+		return
+	f.store_string(txt)
+	f.close()
+	var dir := DirAccess.open("user://")
+	if FileAccess.file_exists(SAVE):
+		dir.rename(SAVE.trim_prefix("user://"), SAVE_BAK.trim_prefix("user://"))
+	dir.rename(SAVE_TMP.trim_prefix("user://"), SAVE.trim_prefix("user://"))
 
 
 func delete_save() -> void:
-	if FileAccess.file_exists(SAVE):
-		DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE))
+	for path in [SAVE, SAVE_BAK, SAVE_TMP]:
+		if FileAccess.file_exists(path):
+			DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 	_from_save = false
 
 

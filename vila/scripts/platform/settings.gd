@@ -12,7 +12,7 @@ const ENERGY_MODES: Array[String] = ["auto", "low", "normal"]
 ## Padrões de todas as chaves conhecidas (outros módulos podem guardar chaves extras).
 const DEFAULTS: Dictionary = {
 	"locale": "auto",
-	"audio_mode": "full",
+	"audio_mode": "ambient",
 	"master_volume": 0.8,
 	"ui_scale": "auto",
 	"always_on_top": true,
