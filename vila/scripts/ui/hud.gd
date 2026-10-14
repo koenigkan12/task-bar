@@ -1185,6 +1185,9 @@ func _card_person() -> void:
 		var stip := fmt("TIP_TIRED", {"t": tired, "n": -pct,
 				"left": tired * int(sim.bal["night"]["rest_nights_per_tired"]) - int(floor(float(p.get("rest", 0.0))))})
 		_card_box.add_child(_stats([_stat("lua", "%+d%%" % pct, stip, C_WARN)]))
+	var em := float(p.get("eat_mult", 1.0))
+	if em > 1.0:
+		_card_box.add_child(_stats([_stat("comida", "+%d%%" % int(round((em - 1.0) * 100.0)), fmt("TIP_EATS_MORE", {"n": int(round((em - 1.0) * 100.0))}), C_WARN)]))
 	if p["hungry"]:
 		_card_box.add_child(_row([_icon_rect("comida"), _icon_rect("alerta"), _label(I18n.t("UI_HUNGRY"), C_WARN)]))
 	if p["thirsty"]:
@@ -1269,6 +1272,9 @@ func _card_gate() -> void:
 			brow.tooltip_text = fmt("UI_BRINGS", {"n": br[r], "r": I18n.t("RES_" + r)})
 			brow.mouse_filter = Control.MOUSE_FILTER_PASS
 			v.add_child(brow)
+		var em := float(c.get("eat_mult", 1.0))
+		if em > 1.0:
+			v.add_child(_stat("comida", "+%d%%" % int(round((em - 1.0) * 100.0)), fmt("TIP_EATS_MORE", {"n": int(round((em - 1.0) * 100.0))}), C_WARN))
 		# Empurra o botão para o fundo: os três "Escolher" ficam na mesma linha.
 		var fill := Control.new()
 		fill.size_flags_vertical = Control.SIZE_EXPAND_FILL

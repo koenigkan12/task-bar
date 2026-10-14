@@ -578,25 +578,23 @@
    39,
    15
   ],
-  "pity_after_commons": 5,
-  "two_passives_chance": 0.3,
-  "brings_chance": 0.5,
-  "brings_amount": [
-   4,
-   10
-  ]
+  "pity_after_commons": 15,
+  "two_passives_chance": 0.2,
+  "power_points": {"comum": 1, "rara": 2, "excelente": 3},
+  "brings_by_power": {"1": [[10, 16], [4, 8]], "2": [[5, 10]]},
+  "excelente_eat_mult": 1.25
  },
  "rarity": {
   "comum": {
-   "weight": 70,
+   "weight": 89,
    "bonus": 0.15
   },
   "rara": {
-   "weight": 25,
+   "weight": 9.5,
    "bonus": 0.3
   },
   "excelente": {
-   "weight": 5,
+   "weight": 1.5,
    "bonus": 0.5
   }
  },

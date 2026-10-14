@@ -716,6 +716,7 @@ func choose(index: int) -> void:
 		var c: Dictionary = gate_group[index]
 		var from := _v(bal["arrivals"]["walk_in_from"])
 		var p := _add_person(String(c["name"]), int(c["look"]), c["passives"], from, "", int(c["bio"]))
+		p["eat_mult"] = float(c.get("eat_mult", 1.0))
 		var br: Dictionary = c.get("brings", {})
 		for r in br:
 			stock[r] = minf(cap(r), float(stock[r]) + float(br[r]))
@@ -1227,7 +1228,7 @@ func _needs(dt: float, night: bool) -> void:
 	var drink_s: float = float(bal["people"]["drink_every_s"])
 	var f := _prod_frac()
 	for p in people:
-		var em := 1.0 / bonus(p, "eat")
+		var em := float(p.get("eat_mult", 1.0)) / bonus(p, "eat")
 		p["eat_acc"] = float(p["eat_acc"]) + dt * f * em / eat_s
 		p["drink_acc"] = float(p["drink_acc"]) + dt * f / drink_s
 		while float(p["eat_acc"]) >= 1.0:
@@ -1585,12 +1586,21 @@ func _make_group() -> void:
 				pid = String(ids[_rng.randi_range(0, ids.size() - 1)])
 			used[pid] = true
 			passives.append({"id": pid, "rar": _roll_rarity()})
+		# Ninguém é só pior: quem tem passiva fraca chega trazendo recursos; o excelente chega sem nada
+		# e come mais.
+		var ar: Dictionary = bal["arrivals"]
+		var power := 0
+		var exc := false
+		for ps in passives:
+			power += int(ar["power_points"][String(ps["rar"])])
+			exc = exc or String(ps["rar"]) == "excelente"
 		var brings := {}
-		if _rng.randf() < float(bal["arrivals"]["brings_chance"]):
-			var amt: Array = bal["arrivals"]["brings_amount"]
-			brings[RES[_rng.randi_range(0, RES.size() - 1)]] = _rng.randi_range(int(amt[0]), int(amt[1]))
+		var pool: Array = ["comida", "agua", "madeira", "sucata"]   # peças não: atalho grande demais
+		for amt in ar["brings_by_power"].get(str(power), []):
+			var r: String = pool.pop_at(_rng.randi_range(0, pool.size() - 1))
+			brings[r] = _rng.randi_range(int(amt[0]), int(amt[1]))
 		gate_group.append({"name": nm, "look": _rng.randi_range(1, 5), "passives": passives,
-				"brings": brings, "bio": bios.pop_at(_rng.randi_range(0, bios.size() - 1)) if not bios.is_empty() else 0})
+				"brings": brings, "eat_mult": float(ar["excelente_eat_mult"]) if exc else 1.0, "bio": bios.pop_at(_rng.randi_range(0, bios.size() - 1)) if not bios.is_empty() else 0})
 
 
 func _roll_rarity() -> String:
@@ -2122,7 +2132,8 @@ func to_dict() -> Dictionary:
 		ps.append({"id": p["id"], "name": p["name"], "look": p["look"], "passives": p["passives"],
 				"pos": [p["pos"].x, p["pos"].y], "story": p["story"], "bio": p["bio"],
 				"eat_acc": p["eat_acc"], "drink_acc": p["drink_acc"],
-				"carry_res": p["carry_res"], "carry": p["carry"], "tired": p["tired"], "rest": p["rest"]})
+				"carry_res": p["carry_res"], "carry": p["carry"], "tired": p["tired"], "rest": p["rest"],
+				"eat_mult": p.get("eat_mult", 1.0)})
 	var rg: Array = []
 	for c in regrow:
 		rg.append([c.x, c.y, regrow[c]])
@@ -2174,6 +2185,7 @@ func from_dict(d: Dictionary, balance: Dictionary, tz_bias: int = 0) -> void:
 		p["carry"] = float(e.get("carry", 0.0))
 		p["tired"] = int(e.get("tired", 0))
 		p["rest"] = float(e.get("rest", 0.0))
+		p["eat_mult"] = float(e.get("eat_mult", 1.0))
 	regrow.clear()
 	for e in d["regrow"]:
 		regrow[Vector2i(int(e[0]), int(e[1]))] = float(e[2])

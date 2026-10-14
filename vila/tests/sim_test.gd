@@ -181,6 +181,7 @@ func _init() -> void:
 	var pb: Dictionary = night.buildings[night.buildings.size() - 1]
 	_check(String(pb["state"]) == "site" and float(pb["progress"]) == 0.0, "obra não anda de noite")
 	_test_orders()
+	_test_rarity()
 	print("FALHAS: ", fails)
 	quit(1 if fails > 0 else 0)
 
@@ -240,3 +241,37 @@ func _test_orders() -> void:
 	sim.set_cycle_hour(23.0)
 	o = sim.order(int(jo["id"]), cell)
 	_check(not bool(o["ok"]) and String(o["reason"]) == "night", "ordens: de noite diz que todo mundo dorme")
+
+
+## Raro é ocasião, não regra; e ninguém no portão é só pior que os outros.
+func _test_rarity() -> void:
+	var sim := VilaSim.new()
+	var start := 1760000000.0 - fposmod(1760000000.0, 86400.0) + 7.0 * 3600.0
+	sim.setup(_bal(), start, 0)
+	var groups := 2000
+	var with_rare := 0
+	var with_exc := 0
+	var fair := true
+	for g in groups:
+		sim._make_group()
+		var gr := false
+		var ge := false
+		for c in sim.gate_group:
+			var power := 0
+			var exc := false
+			for ps in c["passives"]:
+				power += {"comum": 1, "rara": 2, "excelente": 3}[String(ps["rar"])]
+				exc = exc or String(ps["rar"]) == "excelente"
+				gr = gr or String(ps["rar"]) != "comum"
+			ge = ge or exc
+			var nb: int = (c["brings"] as Dictionary).size()
+			if (power == 1 and nb != 2) or (power == 2 and nb != 1) or (power >= 3 and nb != 0) or (exc != (float(c["eat_mult"]) > 1.0)):
+				fair = false
+		with_rare += 1 if gr else 0
+		with_exc += 1 if ge else 0
+	var fr := float(with_rare) / groups
+	var fe := float(with_exc) / groups
+	print("grupos com raro ou melhor: %.0f%%, com excelente: %.0f%%" % [fr * 100.0, fe * 100.0])
+	_check(fr > 0.25 and fr < 0.5, "raridade: raro ou melhor em menos da metade dos grupos (era ~75%)")
+	_check(fe < 0.12, "raridade: excelente em menos de 12% dos grupos")
+	_check(fair, "raridade: fraco traz recursos, forte não traz, excelente come mais")

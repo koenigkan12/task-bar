@@ -324,3 +324,4 @@ ORD_full,Sem vaga,No free slot
 ORD_blocked,Não dá pra chegar,Can't get there
 ORD_no_work,Aqui não tem trabalho,No work here
 ORD_gone,,
+TIP_EATS_MORE,"Come {n}% a mais que os outros: quem é muito bom no que faz chega sem nada e com fome.","Eats {n}% more than others: someone this good arrives empty-handed and hungry."
