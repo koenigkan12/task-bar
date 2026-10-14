@@ -8,6 +8,8 @@ signal build_chosen(type: String)
 signal zoom_step(dir: int)
 signal quit_pressed
 signal options_pressed
+signal goal_pressed
+signal res_clicked(res: String)
 
 const ART := "res://assets/art/"
 const W := 384.0
@@ -40,6 +42,13 @@ var _toast_t: float = 0.0
 var _tip: Label
 var _refresh_acc: float = 0.0
 var handle: WindowHandle
+var build_btn: Button
+var tower_btn: Button
+var goal_btn: Button
+## Botões do menu Construir por tipo (o tutorial aponta para eles).
+var build_btns: Dictionary = {}
+## Tutorial: só este tipo fica liberado no menu Construir ("" = todos).
+var tut_only: String = ""
 
 
 func setup(s: VilaSim) -> void:
@@ -221,6 +230,11 @@ func _build_top() -> void:
 		chip.add_theme_constant_override("separation", 1)
 		chip.mouse_filter = Control.MOUSE_FILTER_PASS
 		chip.tooltip_text = I18n.t("RES_" + r)
+		chip.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		chip.gui_input.connect(func(ev: InputEvent) -> void:
+			if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT:
+				chip.accept_event()
+				show_res(r))
 		chip.add_child(_icon_rect(r))
 		var l := _label("0")
 		chip.add_child(l)
@@ -265,6 +279,7 @@ func _build_bottom() -> void:
 	h.add_theme_constant_override("separation", 3)
 	bar.add_child(h)
 	var bb := Button.new()
+	build_btn = bb
 	bb.icon = icon("martelo")
 	bb.text = I18n.t("UI_BUILD")
 	bb.pressed.connect(func() -> void:
@@ -274,6 +289,7 @@ func _build_bottom() -> void:
 			show_build_menu())
 	h.add_child(bb)
 	var tb := Button.new()
+	tower_btn = tb
 	tb.icon = icon("torre")
 	tb.text = I18n.t("UI_TOWER_BTN")
 	tb.pressed.connect(func() -> void:
@@ -287,7 +303,10 @@ func _build_bottom() -> void:
 	_goal_btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_goal_btn.clip_text = true
 	_goal_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_goal_btn.pressed.connect(_on_goal)
+	_goal_btn.pressed.connect(func() -> void:
+		goal_pressed.emit()
+		_on_goal())
+	goal_btn = _goal_btn
 	h.add_child(_goal_btn)
 	var zm := Button.new()
 	zm.text = "-"
@@ -499,6 +518,25 @@ func show_build_menu() -> void:
 	_open("build")
 
 
+## Cartão de um recurso: quanto tem, quanto cabe e quanto entra e sai por minuto.
+func show_res(r: String) -> void:
+	_open("res:" + r)
+	res_clicked.emit(r)
+
+
+func _card_res() -> void:
+	var r := _card_kind.trim_prefix("res:")
+	_clear_card()
+	_header(r, I18n.t("RES_" + r))
+	var v := int(floor(float(sim.stock[r])))
+	_card_box.add_child(_row([_icon_rect("check"), _label(fmt("UI_RES_HAVE", {"n": v, "cap": int(sim.cap(r))}))]))
+	var fl := sim.flow_per_min(r)
+	_card_box.add_child(_row([_icon_rect("seta"), _label(fmt("UI_RES_IN", {"n": "%.1f" % float(fl["prod"])}), C_GOOD)]))
+	if float(fl["use"]) > 0.0:
+		_card_box.add_child(_row([_icon_rect("alerta"), _label(fmt("UI_RES_OUT", {"n": "%.1f" % float(fl["use"])}), C_WARN)]))
+	_card_box.add_child(_wrap(I18n.t("RD_" + r), C_MUTED))
+
+
 func show_welcome(summary: Dictionary) -> void:
 	_card_kind = "welcome"
 	_card.visible = true
@@ -572,7 +610,10 @@ func _rebuild_card() -> void:
 		"rubble":
 			_card_rubble()
 		_:
-			return
+			if _card_kind.begins_with("res:"):
+				_card_res()
+			else:
+				return
 	_place_card()
 
 
@@ -795,6 +836,7 @@ func _card_gate() -> void:
 
 func _card_build() -> void:
 	_clear_card()
+	build_btns.clear()
 	_header("martelo", I18n.t("UI_BUILD"))
 	var locked: Array[String] = []
 	for tp in sim.bal["build_order"]:
@@ -807,8 +849,9 @@ func _card_build() -> void:
 		btn.text = bname(type)
 		btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		btn.custom_minimum_size = Vector2(62, 12)
-		btn.disabled = not sim.can_afford(lv["cost"])
+		btn.disabled = not sim.can_afford(lv["cost"]) or (tut_only != "" and tut_only != type)
 		btn.tooltip_text = I18n.t("BD_" + type)
+		build_btns[type] = btn
 		btn.pressed.connect(func() -> void:
 			close_card()
 			build_chosen.emit(type))

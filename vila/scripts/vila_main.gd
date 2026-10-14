@@ -14,6 +14,8 @@ var cam: Camera2D
 var _layer: CanvasLayer
 var _title: TitleScreen
 var _options: OptionsScreen
+var _tut: VilaTutorial
+var _tut_layer: CanvasLayer
 var _zoom_i: int = 1
 var _press_pos: Vector2 = Vector2(-1, -1)
 var _dragging: bool = false
@@ -60,6 +62,10 @@ func _bind_sim() -> void:
 	if hud != null:
 		hud.queue_free()
 		hud = null
+	if _tut_layer != null:
+		_tut_layer.queue_free()
+		_tut_layer = null
+		_tut = null
 	if Game.in_game:
 		_make_hud()
 
@@ -79,6 +85,15 @@ func _make_hud() -> void:
 		if not b.is_empty() and String(b["type"]) != "torre":
 			hud.toast(hud.fmt("UI_DONE", {"b": hud.bname(String(b["type"]), int(b["level"]))})))
 	sim.group_arrived.connect(func() -> void: hud.toast(hud.fmt("UI_GATE_BADGE", {"n": sim.gate_group.size()})))
+	_tut_layer = CanvasLayer.new()
+	_tut_layer.layer = 5
+	add_child(_tut_layer)
+	_tut = VilaTutorial.new()
+	_tut_layer.add_child(_tut)
+	_tut.setup(self, hud, sim)
+	# Capturas e testes jogam sem tutorial (--notut, ou quando o jogo andou sozinho com --demo).
+	if not (Game.args.has("notut") or Game.args.has("demo")):
+		_tut.start()
 
 
 # ================================================================ telas

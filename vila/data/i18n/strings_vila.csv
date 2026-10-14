@@ -144,3 +144,30 @@ RAR_comum,comum,common
 RAR_rara,rara,rare
 RAR_excelente,excelente,excellent
 TIP_ZOOM,Roda do mouse: zoom · arrastar: mover,Mouse wheel: zoom · drag: move
+UI_RES_HAVE,Tem {n} · cabem {cap},Have {n} · room for {cap}
+UI_RES_IN,Entra {n} por minuto,{n} in per minute
+UI_RES_OUT,Sai {n} por minuto,{n} out per minute
+RD_comida,"Cada pessoa come. Hortas fazem comida, mas bebem um pouco de água.","Everyone eats. Gardens make food but drink some water."
+RD_agua,Cada pessoa bebe. O barril e o poço juntam água.,Everyone drinks. Barrels and wells collect water.
+RD_madeira,Quase toda obra pede madeira. Cortam das árvores em volta.,Almost every build needs wood. They cut it from the trees around.
+RD_sucata,Vem do entulho. A torre e as obras de metal pedem sucata.,Comes from rubble. The tower and metal builds need scrap.
+TUT_radio,Rádio,Radio
+TUT_skip,Pular,Skip
+TUT_ok,Certo,OK
+TUT_skip_q,Pular o tutorial?,Skip the tutorial?
+TUT_skip_text,Dá para jogar sem ele. As dicas ainda aparecem uma vez cada.,You can play without it. Tips still show up once each.
+TUT_joaquim,Faz tempo que ninguém sai daqui. Clique no Joaquim.,It's been a long time since anyone came out. Click Joaquim.
+TUT_res,"Comida, água, madeira e sucata. Clique na comida para ver quanto entra e quanto sai.","Food, water, wood and scrap. Click food to see what comes in and goes out."
+TUT_build,Ele precisa de água. Clique em Construir.,He needs water. Click Build.
+TUT_pick,Comece pelo barril de chuva.,Start with the rain barrel.
+TUT_place,"Escolha um lugar perto do bunker. Perto, ele anda menos.","Pick a spot near the bunker. Closer means less walking."
+TUT_wait,Agora é com ele. O Joaquim constrói sozinho.,Now it's up to him. Joaquim builds on his own.
+TUT_goal,A meta aqui embaixo diz o que vem depois. Clique nela.,The goal down here tells you what comes next. Click it.
+TUT_horta,Uma horta. Ponha onde quiser.,A garden. Put it wherever you like.
+TUT_tower,"Se a torre subir, alguém pode ouvir. Clique em Torre.","If the tower goes up, someone might hear. Click Tower."
+TUT_zoom,Use a roda do mouse para afastar e aproximar.,Use the mouse wheel to zoom out and in.
+TUT_end,Ele trabalha sozinho. Pode ir fazer suas coisas que a vila continua.,He works on his own. Go do your things; the village keeps going.
+HINT_gate,Gente na estrada! Clique no selo para escolher quem entra.,People on the road! Click the badge to pick who comes in.
+HINT_tower_ready,A torre já pode subir. Clique em Torre.,The tower can go up now. Click Tower.
+HINT_space,Falta chão. Clique num entulho dentro da área para mandar limpar.,Out of ground. Click rubble inside the area to have it cleared.
+HINT_short,"Está acabando comida ou água. A meta diz o que construir.","Food or water is running out. The goal tells you what to build."

@@ -1217,6 +1217,12 @@ func _deliver(p: Dictionary) -> void:
 # ================================================================ resumo para a interface
 ## Saldo aproximado por minuto (produção estimada pelas vagas ocupadas menos consumo).
 func balance_per_min(res: String) -> float:
+	var f := flow_per_min(res)
+	return float(f["prod"]) - float(f["use"])
+
+
+## Quanto entra (quem está produzindo agora) e quanto sai por minuto (bocas, horta bebendo água).
+func flow_per_min(res: String) -> Dictionary:
 	var prod := 0.0
 	for p in people:
 		var j: Dictionary = p["job"]
@@ -1238,7 +1244,7 @@ func balance_per_min(res: String) -> float:
 		for p in people:
 			if String(p["job"].get("res", "")) == "comida" and String(p["job"].get("kind", "")) == "work":
 				use += 60.0 / 45.0 * float(bal["horta_water_per_food"])
-	return prod - use
+	return {"prod": prod, "use": use}
 
 
 func doing(p: Dictionary) -> String:
