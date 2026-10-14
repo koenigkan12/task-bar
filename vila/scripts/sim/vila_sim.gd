@@ -11,6 +11,7 @@ signal tower_up(level: int)
 signal person_joined(id: int)
 signal group_arrived                               # um grupo de 3 chegou ao portão
 signal harvested(id: int, res: String, amount: int) # alguém entregou no depósito (para o "+N")
+signal site_started(id: int)                       # obra nova, melhoria ou torre começou (som de martelo)
 
 const RES: Array[String] = ["comida", "agua", "madeira", "sucata"]
 const T_GROUND := 0
@@ -43,6 +44,10 @@ var _rng := RandomNumberGenerator.new()
 var _group_ready_t: float = -1.0
 var _story_done: Dictionary = {}
 var _rethink_acc: float = 0.0
+var _m_cap: Dictionary = {}
+var _m_urg: Dictionary = {}
+var _m_beds: int = -1
+var _id_index: Dictionary = {}
 var _fdirty: bool = true            # terreno mudou: refaz a lista de árvores e entulhos
 var _fcache: Dictionary = {}
 
@@ -212,10 +217,20 @@ func level_def(b: Dictionary, level: int = -1) -> Dictionary:
 
 
 func by_id(id: int) -> Dictionary:
-	for b in buildings:
-		if int(b["id"]) == id:
-			return b
-	return {}
+	if _id_index.size() != buildings.size():
+		_id_index.clear()
+		for b in buildings:
+			_id_index[int(b["id"])] = b
+	return _id_index.get(id, {})
+
+
+## Memória por passo (limite do depósito, camas, urgência): o offline chama isso milhares de vezes.
+## Limpa a cada passo e sempre que um prédio muda.
+func _invalidate() -> void:
+	_m_cap.clear()
+	_m_urg.clear()
+	_m_beds = -1
+	_id_index.clear()
 
 
 func person(id: int) -> Dictionary:
@@ -268,20 +283,26 @@ func day_number() -> int:
 
 
 func cap(res: String) -> float:
+	if _m_cap.has(res):
+		return _m_cap[res]
 	var c: float = float(bal["storage"]["hatch_cap"])
 	for b in buildings:
 		if String(b["type"]) == "deposito" and String(b["state"]) != "site":
 			c += float(level_def(b).get("cap", 0))
+	_m_cap[res] = c
 	return c
 
 
 func beds_total() -> int:
+	if _m_beds >= 0:
+		return _m_beds
 	var n := 0
 	for b in buildings:
 		# Moradia em melhoria continua com as camas do nível atual (ninguém fica sem cama).
 		if String(b["state"]) == "site":
 			continue
 		n += int(level_def(b).get("beds", def(String(b["type"])).get("beds", 0)))
+	_m_beds = n
 	return n
 
 
@@ -376,8 +397,10 @@ func build(type: String, cell: Vector2i) -> Dictionary:
 			var c := cell + Vector2i(dx, dy)
 			terrain[_i(c)] = T_GROUND
 			_fdirty = true
+	_invalidate()
 	_rebuild_astar()
 	changed.emit()
+	site_started.emit(int(b["id"]))
 	return {"ok": true, "id": int(b["id"])}
 
 
@@ -397,7 +420,9 @@ func upgrade(id: int) -> Dictionary:
 	b["progress"] = 0.0
 	b["total"] = float(lv["time_s"])
 	b["queued_t"] = t
+	_invalidate()
 	changed.emit()
+	site_started.emit(int(b["id"]))
 	return {"ok": true}
 
 
@@ -415,7 +440,9 @@ func tower_upgrade() -> Dictionary:
 	b["progress"] = 0.0
 	b["total"] = float(nx["time_s"])
 	b["queued_t"] = t
+	_invalidate()
 	changed.emit()
+	site_started.emit(int(b["id"]))
 	return {"ok": true}
 
 
@@ -437,6 +464,7 @@ func cancel(id: int) -> Dictionary:
 	if String(b["state"]) == "site":
 		_mark(b, false)
 		buildings.erase(b)
+		_invalidate()
 		_rebuild_astar()
 	else:
 		b["state"] = "built"
@@ -475,6 +503,7 @@ func _mark(b: Dictionary, on: bool) -> void:
 
 # ================================================================ caminhos
 func _rebuild_astar() -> void:
+	_invalidate()
 	_astar = AStarGrid2D.new()
 	_astar.region = Rect2i(0, 0, w, h)
 	_astar.cell_size = Vector2(1, 1)
@@ -535,6 +564,14 @@ func _work_mult(p: Dictionary) -> float:
 
 ## O que mais falta, de 0 a ~2. Comida e água pesam pelo consumo; madeira e sucata pela próxima meta.
 func urgency(res: String) -> float:
+	if _m_urg.has(res):
+		return _m_urg[res]
+	var u := _urgency(res)
+	_m_urg[res] = u
+	return u
+
+
+func _urgency(res: String) -> float:
 	var s: float = float(stock[res])
 	if s >= cap(res) - 0.5:
 		return 0.0
@@ -590,7 +627,7 @@ func _pick_job(p: Dictionary) -> Dictionary:
 	var best := {}
 	var best_v := 0.0
 	# Entulho marcado pelo jogador: limpar vale a pena mesmo com sucata sobrando (é o espaço que importa).
-	if not marked.is_empty() and _nearest_forage("sucata", p["pos"]) != Vector2i(-1, -1):
+	if not marked.is_empty() and _has_forage("sucata", true):
 		var assigned := _assigned_to("sucata", p)
 		if assigned < maxi(1, people.size() / 2):
 			best = {"kind": "forage", "res": "sucata", "clear": true}
@@ -616,7 +653,7 @@ func _pick_job(p: Dictionary) -> Dictionary:
 			var f: Dictionary = bal["forage"][res]
 			var rate_f: float = float(f["yield"]) / (float(f["work_s"]) + 8.0) / 3.0
 			var v2: float = u * rate_f * bonus(p, res)
-			if v2 > best_v and _nearest_forage(res, p["pos"]) != Vector2i(-1, -1):
+			if v2 > best_v and _has_forage(res):
 				best_v = v2
 				best = {"kind": "forage", "res": res}
 	if best.is_empty():
@@ -662,6 +699,24 @@ func _nearest_forage(res: String, from: Vector2) -> Vector2i:
 		bd = d
 		best = c
 	return best
+
+
+## Só "existe algo para coletar?" (o _pick_job não precisa do mais perto; isso pesa no offline).
+func _has_forage(res: String, only_marked: bool = false) -> bool:
+	var taken := {}
+	for q in people:
+		if q["target_cell"] != Vector2i(-1, -1):
+			taken[q["target_cell"]] = true
+	if res == "sucata":
+		for c0 in marked:
+			if not taken.has(c0) and terrain[_i(c0)] == T_RUBBLE and _reachable_neighbor(c0):
+				return true
+		if only_marked:
+			return false
+	for c in _forage_cells(T_TREE if res == "madeira" else T_RUBBLE):
+		if not taken.has(c) and _reachable_neighbor(c):
+			return true
+	return false
 
 
 func _reachable_neighbor(c: Vector2i) -> bool:
@@ -833,12 +888,17 @@ func _secs_to_morning() -> float:
 
 func _step(dt: float) -> void:
 	t += dt
+	_m_urg.clear()   # o estoque muda a cada passo; limite e camas só mudam com prédio (_invalidate)
 	var night := is_night()
 	_needs(dt, night)
 	_regrow()
 	_arrivals()
 	_rethink_acc += dt
-	var rethink := _rethink_acc >= float(bal["people"]["rethink_s"])
+	# Offline o passo é longo: repensar a cada passo pesa e não muda quase nada no resultado.
+	var rethink_s: float = float(bal["people"]["rethink_s"])
+	if offline:
+		rethink_s = maxf(rethink_s, float(bal["time"].get("offline_rethink_s", 30.0)))
+	var rethink := _rethink_acc >= rethink_s
 	if rethink:
 		_rethink_acc = 0.0
 	for p in people:
@@ -899,7 +959,7 @@ func _regrow() -> void:
 
 
 func _arrivals() -> void:
-	if tower < int(bal["arrivals"]["story_tower"]) or beds_free() <= 0:
+	if tower < int(bal["arrivals"]["story_tower"]) or not gate_group.is_empty() or beds_free() <= 0:
 		return
 	var story: String = String(bal["arrivals"]["story_first"])
 	if not _story_done.has(story):
@@ -1039,6 +1099,7 @@ func _finish(b: Dictionary) -> void:
 	else:
 		b["state"] = "built"
 	stats["built"] = int(stats["built"]) + 1
+	_invalidate()
 	building_done.emit(int(b["id"]))
 	changed.emit()
 

@@ -79,7 +79,7 @@ func _init() -> void:
 	var t1 := Time.get_ticks_msec()
 	sim2.catch_up(sim2.t + 72.0 * 3600.0)
 	print("offline 72 h em ", Time.get_ticks_msec() - t1, " ms")
-	_check(Time.get_ticks_msec() - t1 < 15000, "offline de 72 h em menos de 15 s")
+	_check(Time.get_ticks_msec() - t1 < 10000, "offline de 72 h em menos de 10 s")
 	for r in VilaSim.RES:
 		_check(float(sim2.stock[r]) <= sim2.cap(r) + 0.01, "offline respeita o depósito (%s)" % r)
 	# A noite para tudo.

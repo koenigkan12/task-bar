@@ -10,6 +10,19 @@ config/features=PackedStringArray("4.6", "GL Compatibility")
 config/use_custom_user_dir=true
 config/custom_user_dir_name="QuantosDiasVila"
 
+[autoload]
+
+Settings="*res://scripts/platform/settings.gd"
+I18n="*res://scripts/i18n/i18n.gd"
+Game="*res://scripts/game.gd"
+WindowService="*res://scripts/platform/window_service.gd"
+AudioManager="*res://scripts/audio/audio_manager.gd"
+
+[audio]
+
+buses/default_bus_layout="res://assets/audio/bus_layout.tres"
+driver/enable_input=false
+
 [display]
 
 window/size/viewport_width=384
@@ -24,10 +37,6 @@ window/size/always_on_top=true
 window/size/resizable=false
 window/energy_saving/keep_screen_on=false
 
-[internationalization]
-
-locale/translations=PackedStringArray("res://data/i18n/strings.pt_BR.translation", "res://data/i18n/strings.en.translation")
-locale/fallback="pt_BR"
 
 [rendering]
 

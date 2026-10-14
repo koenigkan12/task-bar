@@ -2,12 +2,12 @@ class_name VilaHud
 extends Control
 ## Interface da vila numa tela lógica de 384×216: barra de recursos em cima; embaixo, Construir,
 ## Torre, a meta e o zoom; selo do portão, cartões (prédio, torre, pessoa, portão), menu de construir e avisos.
-## Todo texto passa por tr() (CSV em data/i18n). Cor nunca é o único sinal: falta vem com ícone.
+## Todo texto passa por I18n.t() (CSV em data/i18n). Cor nunca é o único sinal: falta vem com ícone.
 
 signal build_chosen(type: String)
 signal zoom_step(dir: int)
 signal quit_pressed
-signal window_drag(delta: Vector2i)
+signal options_pressed
 
 const ART := "res://assets/art/"
 const W := 384.0
@@ -39,7 +39,7 @@ var _toast: Label
 var _toast_t: float = 0.0
 var _tip: Label
 var _refresh_acc: float = 0.0
-var _drag_from: Vector2i = Vector2i(-1, -1)
+var handle: WindowHandle
 
 
 func setup(s: VilaSim) -> void:
@@ -177,17 +177,17 @@ static func fmt_time(sec: float) -> String:
 
 
 func fmt(key: String, args: Dictionary = {}) -> String:
-	return tr(key).format(args)
+	return I18n.t(key, args)
 
 
 func bname(type: String, level: int = 1) -> String:
 	var k := "B_%s_%d" % [type, level]
-	return tr(k) if tr(k) != k else tr("B_" + type)
+	return I18n.t(k) if I18n.has_key(k) else I18n.t("B_" + type)
 
 
 func pname(p: Dictionary) -> String:
 	var n := String(p.get("name", ""))
-	return tr("P_" + n.substr(1)) if n.begins_with("@") else n
+	return I18n.t("P_" + n.substr(1)) if n.begins_with("@") else n
 
 
 ## Custo em ícones; o que falta fica laranja com o ícone de alerta (cor + ícone).
@@ -220,7 +220,7 @@ func _build_top() -> void:
 		var chip := HBoxContainer.new()
 		chip.add_theme_constant_override("separation", 1)
 		chip.mouse_filter = Control.MOUSE_FILTER_PASS
-		chip.tooltip_text = tr("RES_" + r)
+		chip.tooltip_text = I18n.t("RES_" + r)
 		chip.add_child(_icon_rect(r))
 		var l := _label("0")
 		chip.add_child(l)
@@ -241,22 +241,18 @@ func _build_top() -> void:
 	h.add_child(_clock_icon)
 	_clock_label = _label("")
 	h.add_child(_clock_label)
-	var x := Button.new()
-	x.text = "x"
-	x.tooltip_text = tr("UI_CLOSE")
-	x.custom_minimum_size = Vector2(10, 10)
-	x.pressed.connect(func() -> void: quit_pressed.emit())
-	h.add_child(x)
+	# Alça do jogo do bunker: gaveta (modo gestão), som, Opções, recolher e fechar.
+	handle = WindowHandle.new()
+	handle.show_drawer = false
+	handle.quit_requested.connect(func() -> void: quit_pressed.emit())
+	handle.options_requested.connect(func() -> void: options_pressed.emit())
+	h.add_child(handle)
 
 
 ## Arrastar a barra de cima move a janela (ela não tem borda).
 func _on_bar_input(ev: InputEvent) -> void:
-	if ev is InputEventMouseButton and ev.button_index == MOUSE_BUTTON_LEFT:
-		_drag_from = DisplayServer.mouse_get_position() if ev.pressed else Vector2i(-1, -1)
-	elif ev is InputEventMouseMotion and _drag_from.x >= 0:
-		var now := DisplayServer.mouse_get_position()
-		window_drag.emit(now - _drag_from)
-		_drag_from = now
+	if ev is InputEventMouseButton and ev.button_index == MOUSE_BUTTON_LEFT and ev.pressed:
+		WindowService.start_drag()
 
 
 func _build_bottom() -> void:
@@ -270,7 +266,7 @@ func _build_bottom() -> void:
 	bar.add_child(h)
 	var bb := Button.new()
 	bb.icon = icon("martelo")
-	bb.text = tr("UI_BUILD")
+	bb.text = I18n.t("UI_BUILD")
 	bb.pressed.connect(func() -> void:
 		if _card_kind == "build":
 			close_card()
@@ -279,7 +275,7 @@ func _build_bottom() -> void:
 	h.add_child(bb)
 	var tb := Button.new()
 	tb.icon = icon("torre")
-	tb.text = tr("UI_TOWER_BTN")
+	tb.text = I18n.t("UI_TOWER_BTN")
 	tb.pressed.connect(func() -> void:
 		if _card_kind == "tower":
 			close_card()
@@ -296,13 +292,13 @@ func _build_bottom() -> void:
 	var zm := Button.new()
 	zm.text = "-"
 	zm.custom_minimum_size = Vector2(14, 0)
-	zm.tooltip_text = tr("TIP_ZOOM")
+	zm.tooltip_text = I18n.t("TIP_ZOOM")
 	zm.pressed.connect(func() -> void: zoom_step.emit(-1))
 	h.add_child(zm)
 	var zp := Button.new()
 	zp.text = "+"
 	zp.custom_minimum_size = Vector2(14, 0)
-	zp.tooltip_text = tr("TIP_ZOOM")
+	zp.tooltip_text = I18n.t("TIP_ZOOM")
 	zp.pressed.connect(func() -> void: zoom_step.emit(1))
 	h.add_child(zp)
 	_gate_btn = Button.new()
@@ -321,13 +317,13 @@ func _goal_text() -> String:
 		"more":
 			return fmt("GOAL_more", {"n": g["idle"], "b": bname(g["type"])})
 		"short":
-			return fmt("GOAL_short", {"r": tr("RES_" + String(g["res"])), "b": bname(g["type"])})
+			return fmt("GOAL_short", {"r": I18n.t("RES_" + String(g["res"])), "b": bname(g["type"])})
 		"beds":
-			return tr("GOAL_beds")
+			return I18n.t("GOAL_beds")
 		"space":
-			return tr("GOAL_space")
+			return I18n.t("GOAL_space")
 		"storage":
-			return fmt("GOAL_storage", {"n": g["need"], "r": tr("RES_" + String(g["res"])), "cap": g["cap"]})
+			return fmt("GOAL_storage", {"n": g["need"], "r": I18n.t("RES_" + String(g["res"])), "cap": g["cap"]})
 		"tower_wait":
 			return fmt("GOAL_tower_wait", {"n": g["level"]})
 		"tower":
@@ -336,9 +332,9 @@ func _goal_text() -> String:
 				return fmt("GOAL_tower_ready", {"n": g["level"]})
 			var parts: Array[String] = []
 			for r in miss:
-				parts.append("%d %s" % [miss[r], tr("RES_" + r)])
+				parts.append("%d %s" % [miss[r], I18n.t("RES_" + r)])
 			return fmt("GOAL_tower", {"n": g["level"]}) + " · " + fmt("UI_MISSING", {"list": ", ".join(parts)})
-	return tr("GOAL_done")
+	return I18n.t("GOAL_done")
 
 
 func _on_goal() -> void:
@@ -349,7 +345,7 @@ func _on_goal() -> void:
 		"beds":
 			show_building(int(sim._first("moradia").get("id", -1)))
 		"space":
-			toast(tr("UI_CLEAR_TOWER"))
+			toast(I18n.t("UI_CLEAR_TOWER"))
 		"storage":
 			var dep := sim._first("deposito")
 			if dep.is_empty():
@@ -386,7 +382,7 @@ func refresh() -> void:
 		l.add_theme_color_override("font_color", C_WARN if low else (C_AMBER if full else C_TEXT))
 		(_res_warn[r] as Control).visible = low
 		var bpm := sim.balance_per_min(r)
-		l.get_parent().tooltip_text = "%s %d/%d · %+.1f/min" % [tr("RES_" + r), v, cap, bpm] + ((" · " + tr("UI_FULL")) if full else "")
+		l.get_parent().tooltip_text = "%s %d/%d · %+.1f/min" % [I18n.t("RES_" + r), v, cap, bpm] + ((" · " + I18n.t("UI_FULL")) if full else "")
 	_people_label.text = "%d/%d" % [sim.people.size(), sim.beds_total()]
 	var hr := sim.local_hour()
 	_clock_label.text = "%s %02d:%02d" % [fmt("UI_DAY", {"n": sim.day_number()}), int(hr), int(fposmod(hr * 60.0, 60.0))]
@@ -476,19 +472,19 @@ func _card_rubble() -> void:
 	if sim.terrain_at(_rubble_cell) != VilaSim.T_RUBBLE:
 		close_card()
 		return
-	_header("sucata", tr("B_entulho"), tr("BD_entulho"))
+	_header("sucata", I18n.t("B_entulho"), I18n.t("BD_entulho"))
 	_card_box.add_child(_row([_icon_rect("sucata"), _label(fmt("UI_CLEAR_LEFT", {"n": int(sim.rubble.get(_rubble_cell, 0))}))]))
 	var on := sim.marked.has(_rubble_cell)
 	if on:
-		_card_box.add_child(_row([_icon_rect("check"), _label(tr("UI_CLEAR_MARKED"), C_GOOD)]))
+		_card_box.add_child(_row([_icon_rect("check"), _label(I18n.t("UI_CLEAR_MARKED"), C_GOOD)]))
 	var b := Button.new()
-	b.text = tr("UI_UNCLEAR" if on else "UI_CLEAR")
+	b.text = I18n.t("UI_UNCLEAR" if on else "UI_CLEAR")
 	b.icon = icon("martelo")
 	b.pressed.connect(func() -> void:
 		sim.toggle_mark(_rubble_cell)
 		_rebuild_card())
 	_card_box.add_child(b)
-	_card_box.add_child(_wrap(tr("UI_CLEAR_TOWER"), C_MUTED))
+	_card_box.add_child(_wrap(I18n.t("UI_CLEAR_TOWER"), C_MUTED))
 
 
 func show_person(id: int) -> void:
@@ -512,13 +508,13 @@ func show_welcome(summary: Dictionary) -> void:
 	for r in VilaSim.RES:
 		var v: int = int(d.get(r, 0))
 		if v != 0:
-			_card_box.add_child(_row([_icon_rect(r), _label("%+d %s" % [v, tr("RES_" + r)], C_GOOD if v > 0 else C_WARN)]))
+			_card_box.add_child(_row([_icon_rect(r), _label("%+d %s" % [v, I18n.t("RES_" + r)], C_GOOD if v > 0 else C_WARN)]))
 	if int(summary.get("built", 0)) > 0:
 		_card_box.add_child(_row([_icon_rect("martelo"), _label(fmt("UI_DONE", {"b": str(summary["built"])}))]))
 	if bool(summary.get("group", false)):
 		_card_box.add_child(_row([_icon_rect("pessoa"), _label(fmt("UI_GATE_BADGE", {"n": sim.gate_group.size()}))]))
 	var ok := Button.new()
-	ok.text = tr("UI_OK")
+	ok.text = I18n.t("UI_OK")
 	ok.pressed.connect(close_card)
 	_card_box.add_child(ok)
 	_place_card()
@@ -591,7 +587,7 @@ func _card_building() -> void:
 	var title := bname(tp, int(b["level"]))
 	if d.has("levels") and (d["levels"] as Array).size() > 1:
 		title += " · " + fmt("UI_LEVEL", {"n": b["level"]})
-	_header("martelo", title, tr("BD_" + tp))
+	_header("martelo", title, I18n.t("BD_" + tp))
 	var st := String(b["state"])
 	if st != "built":
 		_progress_lines(b)
@@ -626,27 +622,27 @@ func _card_building() -> void:
 			_card_box.add_child(_wrap(fmt("UI_UPGRADE_TO", {"b": bname(tp, nl)}) + gain, C_MUTED))
 			_card_box.add_child(_row([_cost_row(nd["cost"]), _icon_rect("relogio"), _label(fmt_time(float(nd["time_s"])))]))
 			var up := Button.new()
-			up.text = tr("UI_UPGRADE")
+			up.text = I18n.t("UI_UPGRADE")
 			up.icon = icon("seta")
 			up.disabled = not sim.can_afford(nd["cost"])
 			up.pressed.connect(func() -> void:
 				var r := sim.upgrade(_card_id)
 				if not bool(r["ok"]):
-					toast(tr("UI_MISSING").format({"list": ""}))
+					toast(I18n.t("UI_MISSING").format({"list": ""}))
 				_rebuild_card())
 			_card_box.add_child(up)
 
 
 func _progress_lines(b: Dictionary) -> void:
 	var left := float(b["total"]) - float(b["progress"])
-	var lbl := tr("UI_UPGRADING") if String(b["state"]) == "upgrade" else tr("UI_BUILDING")
+	var lbl := I18n.t("UI_UPGRADING") if String(b["state"]) == "upgrade" else I18n.t("UI_BUILDING")
 	_card_box.add_child(_row([_icon_rect("relogio"), _label("%s · %s" % [lbl, fmt_time(left)])]))
 	if int(b["builder"]) < 0:
-		_card_box.add_child(_row([_icon_rect("alerta"), _label(tr("UI_WAITING_BUILDER"), C_WARN)]))
+		_card_box.add_child(_row([_icon_rect("alerta"), _label(I18n.t("UI_WAITING_BUILDER"), C_WARN)]))
 	else:
 		_card_box.add_child(_row([_icon_rect("pessoa"), _label(pname(sim.person(int(b["builder"]))))]))
 	var c := Button.new()
-	c.text = tr("UI_CANCEL")
+	c.text = I18n.t("UI_CANCEL")
 	c.pressed.connect(func() -> void:
 		sim.cancel(int(b["id"]))
 		close_card())
@@ -661,7 +657,7 @@ func _card_tower() -> void:
 		_progress_lines(b)
 		return
 	if sim.tower >= sim.tower_max():
-		_card_box.add_child(_wrap(tr("UI_TOWER_PROTO"), C_MUTED))
+		_card_box.add_child(_wrap(I18n.t("UI_TOWER_PROTO"), C_MUTED))
 		return
 	var n := sim.tower + 1
 	_card_box.add_child(_label(fmt("UI_TOWER_NEXT", {"n": n}), C_MUTED))
@@ -678,12 +674,12 @@ func _card_tower() -> void:
 		else:
 			txt = bname(s)
 		var soon: bool = not sim.bal["buildings"].has(s.split("@")[0]) and s != "area" and s != "estrada"
-		grid.add_child(_row([_icon_rect("cadeado" if soon else "seta"), _label(txt + ((" (" + tr("UI_SOON") + ")") if soon else ""), C_MUTED if soon else C_TEXT)]))
+		grid.add_child(_row([_icon_rect("cadeado" if soon else "seta"), _label(txt + ((" (" + I18n.t("UI_SOON") + ")") if soon else ""), C_MUTED if soon else C_TEXT)]))
 	_card_box.add_child(grid)
 	var nx := sim.tower_next()
 	_card_box.add_child(_row([_cost_row(nx["cost"]), _icon_rect("relogio"), _label(fmt_time(float(nx["time_s"])))]))
 	var up := Button.new()
-	up.text = tr("UI_TOWER_UP")
+	up.text = I18n.t("UI_TOWER_UP")
 	up.icon = icon("seta")
 	up.disabled = not sim.can_afford(nx["cost"])
 	up.pressed.connect(func() -> void:
@@ -694,12 +690,12 @@ func _card_tower() -> void:
 
 func _passive_lines(passives: Array, box: Container, width: float = 92.0) -> void:
 	if passives.is_empty():
-		box.add_child(_wrap(tr("UI_NO_PASSIVES"), C_MUTED, width))
+		box.add_child(_wrap(I18n.t("UI_NO_PASSIVES"), C_MUTED, width))
 	for ps in passives:
 		var rar := String(ps["rar"])
 		var pct := int(round(float(sim.bal["rarity"][rar]["bonus"]) * 100.0))
 		# raridade: cor E palavra (cor não é o único sinal)
-		var txt := "%s %s: %s" % [tr("PAS_" + String(ps["id"])), tr("RAR_" + rar), fmt("PASD_" + String(ps["id"]), {"p": pct})]
+		var txt := "%s %s: %s" % [I18n.t("PAS_" + String(ps["id"])), I18n.t("RAR_" + rar), fmt("PASD_" + String(ps["id"]), {"p": pct})]
 		box.add_child(_wrap(txt, RAR_COLOR[rar], width))
 
 
@@ -710,13 +706,13 @@ func _card_person() -> void:
 		return
 	_clear_card()
 	var story := String(p["story"])
-	var bio := tr("PB_" + story) if story != "" else (tr("BIO_%d" % int(p["bio"])) if int(p["bio"]) >= 0 else "")
+	var bio := I18n.t("PB_" + story) if story != "" else (I18n.t("BIO_%d" % int(p["bio"])) if int(p["bio"]) >= 0 else "")
 	_header("pessoa", pname(p), "\"" + bio + "\"" if bio != "" else "")
 	_card_box.add_child(_row([_icon_rect("relogio"), _label(_doing_text(p))]))
 	if p["hungry"]:
-		_card_box.add_child(_row([_icon_rect("comida"), _icon_rect("alerta"), _label(tr("UI_HUNGRY"), C_WARN)]))
+		_card_box.add_child(_row([_icon_rect("comida"), _icon_rect("alerta"), _label(I18n.t("UI_HUNGRY"), C_WARN)]))
 	if p["thirsty"]:
-		_card_box.add_child(_row([_icon_rect("agua"), _icon_rect("alerta"), _label(tr("UI_THIRSTY"), C_WARN)]))
+		_card_box.add_child(_row([_icon_rect("agua"), _icon_rect("alerta"), _label(I18n.t("UI_THIRSTY"), C_WARN)]))
 	var box := VBoxContainer.new()
 	_passive_lines(p["passives"], box, 138.0)
 	_card_box.add_child(box)
@@ -731,14 +727,14 @@ func _doing_text(p: Dictionary) -> String:
 		"work":
 			return fmt("DO_work", {"b": bname(parts[1])})
 		"carry":
-			return tr("DO_carry")
+			return I18n.t("DO_carry")
 		"forage":
-			return tr("DO_forage_" + parts[1])
+			return I18n.t("DO_forage_" + parts[1])
 		"sleep":
-			return tr("DO_sleep")
+			return I18n.t("DO_sleep")
 		"to_bed":
-			return tr("DO_to_bed")
-	return tr("DO_idle")
+			return I18n.t("DO_to_bed")
+	return I18n.t("DO_idle")
 
 
 func _card_gate() -> void:
@@ -747,20 +743,20 @@ func _card_gate() -> void:
 		close_card()
 		return
 	var free := sim.beds_free()
-	_header("pessoa", tr("UI_GATE_TITLE"))
+	_header("pessoa", I18n.t("UI_GATE_TITLE"))
 	var top := _row([_label(fmt("UI_GATE_PICK" if free == 1 else "UI_GATE_PICK_N", {"n": free}) if free > 0 else "", C_MUTED)])
 	var sp := Control.new()
 	sp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	top.add_child(sp)
 	var none := Button.new()
-	none.text = tr("UI_GATE_NONE")
+	none.text = I18n.t("UI_GATE_NONE")
 	none.pressed.connect(func() -> void:
 		sim.choose(-1)
 		close_card())
 	top.add_child(none)
 	_card_box.add_child(top)
 	if free <= 0:
-		_card_box.add_child(_row([_icon_rect("cama"), _icon_rect("alerta"), _label(tr("UI_GATE_NOBED"), C_WARN)]))
+		_card_box.add_child(_row([_icon_rect("cama"), _icon_rect("alerta"), _label(I18n.t("UI_GATE_NOBED"), C_WARN)]))
 	var cols := HBoxContainer.new()
 	cols.add_theme_constant_override("separation", 3)
 	for i in sim.gate_group.size():
@@ -777,14 +773,14 @@ func _card_gate() -> void:
 		face.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
 		face.custom_minimum_size = Vector2(16, 16)
 		v.add_child(_row([face, _label(String(c["name"]), C_AMBER)]))
-		v.add_child(_wrap("\"" + tr("BIO_%d" % int(c["bio"])) + "\"", C_MUTED, 92))
+		v.add_child(_wrap("\"" + I18n.t("BIO_%d" % int(c["bio"])) + "\"", C_MUTED, 92))
 		v.add_child(HSeparator.new())
 		_passive_lines(c["passives"], v)
 		var br: Dictionary = c.get("brings", {})
 		for r in br:
-			v.add_child(_row([_icon_rect(r), _label(fmt("UI_BRINGS", {"n": br[r], "r": tr("RES_" + r)}), C_GOOD)]))
+			v.add_child(_row([_icon_rect(r), _label(fmt("UI_BRINGS", {"n": br[r], "r": I18n.t("RES_" + r)}), C_GOOD)]))
 		var pick := Button.new()
-		pick.text = tr("UI_CHOOSE")
+		pick.text = I18n.t("UI_CHOOSE")
 		pick.disabled = free <= 0
 		var idx := i
 		pick.pressed.connect(func() -> void:
@@ -799,7 +795,7 @@ func _card_gate() -> void:
 
 func _card_build() -> void:
 	_clear_card()
-	_header("martelo", tr("UI_BUILD"))
+	_header("martelo", I18n.t("UI_BUILD"))
 	var locked: Array[String] = []
 	for tp in sim.bal["build_order"]:
 		var type := String(tp)
@@ -812,7 +808,7 @@ func _card_build() -> void:
 		btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		btn.custom_minimum_size = Vector2(62, 12)
 		btn.disabled = not sim.can_afford(lv["cost"])
-		btn.tooltip_text = tr("BD_" + type)
+		btn.tooltip_text = I18n.t("BD_" + type)
 		btn.pressed.connect(func() -> void:
 			close_card()
 			build_chosen.emit(type))

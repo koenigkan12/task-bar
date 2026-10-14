@@ -31,6 +31,7 @@ var _sync_acc: float = 0.0
 func setup(s: VilaSim) -> void:
 	sim = s
 	for c in get_children():
+		remove_child(c)   # fora da árvore já: não desenha mais com o estado novo
 		c.queue_free()
 	_terrain_nodes.clear()
 	_bnodes.clear()

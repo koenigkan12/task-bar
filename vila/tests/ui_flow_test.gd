@@ -15,22 +15,22 @@ func _check(ok: bool, msg: String) -> void:
 
 
 func _initialize() -> void:
-	var main: Node2D = load("res://scenes/vila.tscn").instantiate()
+	var main: Node = load("res://scenes/vila.tscn").instantiate()
 	root.add_child(main)
 	await process_frame
 	await process_frame
-	var sim: VilaSim = main.sim
-	var hud: VilaHud = main.hud
-	var free := AutoPlayer.spot(sim, "poco")
+	var sim = main.sim
+	var hud = main.hud   # sem tipo: o hud usa autoloads que só existem com a árvore rodando
+	var free: Vector2i = AutoPlayer.spot(sim, "poco")
 	var scr: Vector2 = main.get_canvas_transform() * (Vector2(free) * 16.0 + Vector2(8, 8))
 	main._click(scr)
 	_check(hud.card_open() and hud._card_kind == "build", "clicar no chão abre Construir")
 	hud.build_chosen.emit("poco")
 	_check(main._placing == "poco", "escolher o poço entra em posicionamento")
-	var n0 := sim.buildings.size()
+	var n0: int = sim.buildings.size()
 	main._click(scr)
 	_check(sim.buildings.size() == n0 + 1 and main._placing == "", "clicar põe a obra")
-	var tb := sim.tower_building()
+	var tb: Dictionary = sim.tower_building()
 	var tscr: Vector2 = main.get_canvas_transform() * (Vector2(Vector2i(tb["cell"])) * 16.0 + Vector2(8, 8))
 	main._click(tscr)
 	_check(hud._card_kind == "tower", "clicar na torre abre o cartão da torre")

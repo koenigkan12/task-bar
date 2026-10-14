@@ -1,0 +1,80 @@
+key,pt_BR,en
+ui.btn.ok,OK,OK
+ui.btn.cancel,Cancelar,Cancel
+ui.btn.close,Fechar,Close
+ui.btn.back,Voltar,Back
+ui.btn.yes,Sim,Yes
+ui.btn.no,Não,No
+ui.btn.buy,Comprar,Buy
+ui.btn.place,Colocar aqui,Place here
+ui.btn.move,Mover,Move
+ui.btn.demolish,Desmontar,Dismantle
+ui.btn.upgrade,Melhorar,Upgrade
+ui.btn.dig,Escavar,Dig
+ui.btn.hide,Esconder,Hide
+ui.btn.show,Mostrar,Show
+ui.btn.mark_read,Marcar lidas,Mark as read
+ui.btn.more,Ver mais,See more
+ui.btn.next,Próximo,Next
+ui.handle,Arrastar,Drag
+title.name,Quantos Dias?,Quantos Dias?
+title.subtitle,"Uma barraca, um rádio, uma vila inteira esperando.","A tent, a radio, a whole village waiting."
+title.btn.continue,Continuar,Continue
+title.btn.new,Novo jogo,New game
+title.btn.options,Opções,Options
+title.btn.quit,Sair,Quit
+title.btn.credits,Créditos,Credits
+title.save_info,Dia {day} · Torre {antenna},Day {day} · Tower {antenna}
+title.new.title,Começar de novo?,Start over?
+title.new.text,Um novo jogo apaga o salvo.,A new game erases your save.
+title.new.btn,Começar,Start
+title.delete.title,Apagar progresso?,Erase progress?
+title.delete.text,Isso apaga o jogo salvo. Não dá pra desfazer.,This erases your save. It can't be undone.
+title.delete.btn,Apagar,Erase
+title.credits.title,Créditos,Credits
+title.credits.text,Feito com sucata e carinho.,Made with scrap and care.
+opt.title,Opções,Options
+opt.language,Idioma,Language
+opt.language.auto,Automático,Automatic
+opt.language.pt,Português,Português
+opt.language.en,English,English
+opt.audio,Áudio,Audio
+opt.audio.silent,Silencioso,Silent
+opt.audio.ambient,Ambiente,Ambient
+opt.audio.full,Completo,Full
+opt.audio.help,Ambiente deixa só o vento e os sons da vila.,Ambient keeps only the wind and village sounds.
+opt.volume,Volume,Volume
+opt.scale,Tamanho da janela,Window size
+opt.scale.auto,Auto,Auto
+opt.scale.1,1×,1×
+opt.scale.2,2×,2×
+opt.scale.3,3×,3×
+opt.scale.4,4×,4×
+opt.on_top,Sempre por cima,Always on top
+opt.energy,Economia de energia,Power saving
+opt.energy.auto,Automática,Automatic
+opt.energy.normal,Normal,Normal
+opt.energy.low,Máxima,Maximum
+opt.energy.help,"Menos quadros por segundo, menos bateria.","Fewer frames per second, less battery."
+opt.text_size,Tamanho do texto,Text size
+opt.text_size.normal,Normal,Normal
+opt.text_size.large,Grande,Large
+opt.text_size.huge,Enorme,Huge
+opt.reduce_flicker,Reduzir piscadas,Reduce flicker
+opt.tray,Ícone na bandeja,Tray icon
+opt.reset_window,Resetar posição,Reset position
+opt.reset_window.btn,Resetar,Reset
+opt.erase,Apagar progresso,Erase progress
+opt.erase.btn,Apagar,Erase
+opt.erase.help,Volta para a barraca do primeiro dia. Sem volta.,Back to the first-day tent. No undo.
+opt.on,Ligado,On
+opt.off,Desligado,Off
+tray.show,Mostrar,Show
+tray.collapse,Recolher,Collapse
+tray.reset,Resetar posição,Reset position
+tray.on_top,Sempre por cima,Always on top
+tray.quit,Sair,Quit
+opt.quit,Fechar o jogo,Close the game
+opt.quit.btn,Sair,Quit
+opt.quit.help,Salva sozinho antes de fechar.,Saves by itself before closing.
+opt.reduce_flicker.help,As luzes deixam de piscar.,Lights stop flickering.
