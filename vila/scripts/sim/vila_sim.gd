@@ -371,12 +371,12 @@ func set_cycle_hour(hour: float) -> void:
 	_was_night = is_night()
 
 
-## Fração da produção: +bônus com o sono em dia; cada noite virada que falta descansar tira um tanto.
+## Fração da produção: 1 com o sono em dia; cada noite virada que falta descansar tira um tanto.
 func rest_mult(p: Dictionary) -> float:
 	var nb: Dictionary = bal["night"]
 	var tired := int(p.get("tired", 0))
 	if tired <= 0:
-		return 1.0 + float(nb["rested_bonus"])
+		return 1.0
 	return maxf(float(nb["tired_min_mult"]), 1.0 - float(nb["tired_penalty"]) * tired)
 
 

@@ -533,8 +533,7 @@ func refresh() -> void:
 	_night_btn.visible = sim.is_night() or sim.work_tonight
 	_night_btn.text = I18n.t("UI_NIGHT_ON") if sim.work_tonight else I18n.t("UI_NIGHT_OFF")
 	_night_btn.add_theme_color_override("font_color", C_WARN if sim.work_tonight else C_TEXT)
-	_night_btn.tooltip_text = fmt("TIP_NIGHT", {"bonus": int(round(float(nb["rested_bonus"]) * 100.0)),
-			"pen": int(round(float(nb["tired_penalty"]) * 100.0)), "rest": int(nb["rest_nights_per_tired"])})
+	_night_btn.tooltip_text = fmt("TIP_NIGHT", {"pen": int(round(float(nb["tired_penalty"]) * 100.0)), "rest": int(nb["rest_nights_per_tired"])})
 	_gate_btn.visible = not sim.gate_group.is_empty()
 	_gate_btn.text = fmt("UI_GATE_BADGE", {"n": sim.gate_group.size()})
 	_gate_btn.size = Vector2(10, 14)
@@ -1014,13 +1013,13 @@ func _card_person() -> void:
 	var bio := I18n.t("PB_" + story) if story != "" else (I18n.t("BIO_%d" % int(p["bio"])) if int(p["bio"]) >= 0 else "")
 	_header("pessoa", pname(p), "\"" + bio + "\"" if bio != "" else "")
 	_card_box.add_child(_row([_icon_rect("relogio"), _label(_doing_text(p))]))
-	# Sono: +10% com o sono em dia; cada noite virada tira 10% até descansar 2 noites por ela.
-	var rm := sim.rest_mult(p)
-	var pct := int(round((rm - 1.0) * 100.0))
+	# Cansaço: cada noite virada tira 10% até descansar 2 noites por ela. Com o sono em dia não mostra nada.
 	var tired := int(p.get("tired", 0))
-	var stip := fmt("TIP_RESTED", {"n": pct}) if tired <= 0 else fmt("TIP_TIRED", {"t": tired, "n": -pct,
-			"left": tired * int(sim.bal["night"]["rest_nights_per_tired"]) - int(floor(float(p.get("rest", 0.0))))})
-	_card_box.add_child(_stats([_stat("lua", "%+d%%" % pct, stip, C_GOOD if tired <= 0 else C_WARN)]))
+	if tired > 0:
+		var pct := int(round((sim.rest_mult(p) - 1.0) * 100.0))
+		var stip := fmt("TIP_TIRED", {"t": tired, "n": -pct,
+				"left": tired * int(sim.bal["night"]["rest_nights_per_tired"]) - int(floor(float(p.get("rest", 0.0))))})
+		_card_box.add_child(_stats([_stat("lua", "%+d%%" % pct, stip, C_WARN)]))
 	if p["hungry"]:
 		_card_box.add_child(_row([_icon_rect("comida"), _icon_rect("alerta"), _label(I18n.t("UI_HUNGRY"), C_WARN)]))
 	if p["thirsty"]:

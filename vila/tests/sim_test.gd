@@ -85,7 +85,7 @@ func _init() -> void:
 	sim.advance(cyc)
 	_check(int(jq["tired"]) == 1, "1 noite de descanso ainda não recupera")
 	sim.advance(cyc)
-	_check(int(jq["tired"]) == 0 and sim.rest_mult(jq) > 1.0, "2 noites de descanso recuperam e voltam o bônus")
+	_check(int(jq["tired"]) == 0 and sim.rest_mult(jq) == 1.0, "2 noites de descanso recuperam a produção normal")
 	# Desmontar: libera o chão, devolve metade e não deixa mexer no bunker nem na torre.
 	var pc: Dictionary = sim._first("poco")
 	var cell0: Vector2i = pc["cell"]

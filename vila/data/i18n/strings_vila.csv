@@ -300,6 +300,5 @@ UI_NIGHT_OFF,Virar a noite,Pull an all-nighter
 UI_NIGHT_ON,Virando a noite,Pulling an all-nighter
 UI_NIGHT_ON_TOAST,"Todo mundo trabalha esta noite. Amanhã vão estar cansados.","Everyone works tonight. They will be tired tomorrow."
 UI_NIGHT_OFF_TOAST,Todo mundo vai descansar esta noite.,Everyone rests tonight.
-TIP_NIGHT,"De noite a vila descansa. Virar a noite põe todo mundo para trabalhar só nesta noite, mas cada noite virada tira {pen}% da produção até descansarem {rest} noites. Com o sono em dia, produzem {bonus}% a mais.","At night the village rests. An all-nighter puts everyone to work for this night only, but each one costs {pen}% output until they rest {rest} nights. Well rested, they make {bonus}% more."
-TIP_RESTED,"Sono em dia: produz {n}% a mais.","Well rested: makes {n}% more."
+TIP_NIGHT,"De noite a vila descansa. Virar a noite põe todo mundo para trabalhar só nesta noite, mas cada noite virada tira {pen}% da produção até descansarem {rest} noites.","At night the village rests. An all-nighter puts everyone to work for this night only, but each one costs {pen}% output until they rest {rest} nights."
 TIP_TIRED,"Cansado ({t} noites viradas): produz {n}% a menos e anda mais devagar. Faltam {left} noites de descanso.","Tired ({t} all-nighters): makes {n}% less and walks slower. {left} nights of rest to go."
