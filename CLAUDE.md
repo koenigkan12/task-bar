@@ -6,6 +6,10 @@ Idle cozy em Godot 4.6 (GDScript tipado), janela baixa grudada no rodapé da tel
 - Pergunte antes de implementar quando o Vinícius pedir só opinião ("me fala se faz sentido", "antes de implementar"). Nesses casos, proponha e espere.
 - Todo balanceamento fica em `data/balance.json`; texto visível só via `I18n` (CSV em `data/i18n/`).
 
+## UI
+- Cor nunca é o único sinal de estado: todo aviso por cor (medidor vermelho, sala sem energia etc.) vem junto de um ícone, número ou texto.
+- Toda proposta de UI termina com a lista dos assets que ela precisa (ícones e tamanhos, fontes, texturas), antes de ir para o código.
+
 ## Godot
 - As skills de Godot estão em `.claude/skills/` (origem e licenças em `.claude/skills/ORIGEM.md`); consulte a que se aplica antes de escrever cena, shader, animação, áudio ou tilemap.
 - Chame o Godot por `bash Ferramentas/godot.sh <args>` (usa `GODOT_BIN` ou o `godot` do PATH). A raiz do projeto é a raiz do repositório: `--path .`.
