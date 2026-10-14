@@ -522,19 +522,22 @@ func _draw_zone() -> void:
 var _timer_font: Font
 
 
-## Tempo restante (contagem regressiva) centrado acima de um ponto. Some no zoom mais longe, onde
-## o texto não daria para ler.
-func _timer_text(bottom_center: Vector2, sec: float, col: Color) -> void:
-	if sec < 0.0 or get_viewport().get_camera_2d() == null or get_viewport().get_camera_2d().zoom.x < 0.99:
+## Tempo restante (contagem regressiva, 2:35) logo à direita da barra. `left_mid` é o ponto do meio da
+## borda esquerda do texto. No zoom de longe o texto cresce para continuar legível.
+func _timer_text(left_mid: Vector2, sec: float, col: Color) -> void:
+	if sec < 0.0:
 		return
 	if _timer_font == null:
 		_timer_font = load("res://assets/fonts/DotGothic16-Regular.ttf")
+	var cam := get_viewport().get_camera_2d()
+	var k := 1.0 / cam.zoom.x if cam != null and cam.zoom.x < 0.99 else 1.0
 	var txt := VilaHud.fmt_clock(sec)
 	var sz := 8
 	var wdt := _timer_font.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, sz).x
-	var pos := (bottom_center + Vector2(-wdt / 2.0, -1)).round()
-	_overlay.draw_rect(Rect2(pos + Vector2(-1, -7), Vector2(wdt + 2, 8)), Color(0.05, 0.04, 0.06, 0.75))
-	_overlay.draw_string(_timer_font, pos, txt, HORIZONTAL_ALIGNMENT_LEFT, -1, sz, col)
+	_overlay.draw_set_transform(left_mid.round(), 0.0, Vector2(k, k))
+	_overlay.draw_rect(Rect2(Vector2(0, -4), Vector2(wdt + 2, 8)), Color(0.05, 0.04, 0.06, 0.8))
+	_overlay.draw_string(_timer_font, Vector2(1, 3), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, sz, col)
+	_overlay.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 
 func _draw_overlay() -> void:
@@ -548,7 +551,7 @@ func _draw_overlay() -> void:
 		var r := clampf(float(b["progress"]) / maxf(0.001, float(b["total"])), 0.0, 1.0)
 		_overlay.draw_rect(Rect2(top + Vector2(2, 0), Vector2(wpx, 4)), Color(0.05, 0.04, 0.06, 0.9))
 		_overlay.draw_rect(Rect2(top + Vector2(3, 1), Vector2((wpx - 2.0) * r, 2)), Color(1.0, 0.75, 0.3) if int(b["builder"]) >= 0 else Color(0.55, 0.5, 0.55))
-		_timer_text(top + Vector2(2.0 + wpx / 2.0, -1), sim.site_eta(b), Color(1.0, 0.85, 0.55) if int(b["builder"]) >= 0 else Color(0.7, 0.66, 0.7))
+		_timer_text(top + Vector2(3.0 + wpx, 2), sim.site_eta(b), Color(1.0, 0.85, 0.55) if int(b["builder"]) >= 0 else Color(0.7, 0.66, 0.7))
 	# Barrinha em cima de quem está trabalhando: quanto falta para levar a carga (ou derrubar a árvore,
 	# ou terminar a obra), com o ícone do que está fazendo.
 	var icons := tex("icons")
@@ -583,7 +586,7 @@ func _draw_overlay() -> void:
 			_overlay.draw_texture_rect_region(icons, Rect2(at + Vector2(13, -3), Vector2(8, 8)), Rect2(ic * 8, 0, 8, 8))
 		# A obra já mostra o tempo dela em cima; aqui só carga e coleta.
 		if ph != "building":
-			_timer_text(at + Vector2(6, -1), sim.eta(p), Color(0.75, 1.0, 0.8))
+			_timer_text(at + Vector2(22 if ic >= 0 else 13, 1), sim.eta(p), Color(0.75, 1.0, 0.8))
 	# Obra esperando alguém livre: ampulheta (relógio) piscando em cima.
 	for b in sim.buildings:
 		if String(b["state"]) != "built" and int(b["builder"]) < 0 and icons != null and int(_anim_t * 2.0) % 2 == 0:
