@@ -288,7 +288,7 @@ func _make_building(b: Dictionary) -> Dictionary:
 		var l := PointLight2D.new()
 		l.texture = tex("light")
 		l.color = spec["color"]
-		l.texture_scale = float(spec["scale"])
+		l.texture_scale = float(spec["scale"]) * 1.8   # luz que ilumina o chão em volta, não só o prédio
 		l.position = spec["pos"]
 		l.energy = 0.0
 		root.add_child(l)
@@ -480,7 +480,7 @@ func _process(delta: float) -> void:
 ## (aí as luzes quentes da fogueira e das janelas se destacam). Acima de 1 clareia o chão.
 func _update_light() -> void:
 	var hr := sim.local_hour()
-	var night := Color(0.19, 0.21, 0.42)
+	var night := Color(0.09, 0.10, 0.22)
 	var day := Color(1.5, 1.4, 1.12)
 	var keys := [
 		[0.0, night], [4.0, night], [5.2, Color(0.62, 0.55, 0.74)],
@@ -502,7 +502,7 @@ func _update_light() -> void:
 			continue
 		var l := lo as PointLight2D
 		var k := _night_k if not bool(e["always"]) else 0.25 + 0.75 * _night_k
-		l.energy = float(e["base"]) * 1.5 * k * flick
+		l.energy = float(e["base"]) * 2.0 * k * flick
 		l.visible = l.energy > 0.01   # de dia a luz apagada nem entra no desenho
 	_lights = _lights.filter(func(e: Dictionary) -> bool: return is_instance_valid(e["light"]))
 
