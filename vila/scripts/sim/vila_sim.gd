@@ -277,9 +277,52 @@ func terrain_at(c: Vector2i) -> int:
 
 
 ## Célula na frente do prédio (embaixo do meio): onde as pessoas param para trabalhar ou entregar.
+## Se a da frente estiver tomada (outro prédio, árvore, entulho), usa a mais perto dela em volta.
 func _door(b: Dictionary) -> Vector2i:
-	var fp := _fp(String(b["type"]))
-	return Vector2i(b["cell"]) + Vector2i(fp.x / 2, fp.y)
+	var d := door_for(String(b["type"]), Vector2i(b["cell"]))
+	return d if d.x >= 0 else Vector2i(b["cell"]) + Vector2i(_fp(String(b["type"])).x / 2, _fp(String(b["type"])).y)
+
+
+## Porta de um prédio do tipo `type` posto em `cell`: a da frente, ou a célula livre mais perto
+## dela em volta do prédio; (-1, -1) se ele ficaria todo cercado.
+func door_for(type: String, cell: Vector2i) -> Vector2i:
+	var fp := _fp(type)
+	var pref := cell + Vector2i(fp.x / 2, fp.y)
+	if _walkable_door(pref, cell, fp):
+		return pref
+	var best := Vector2i(-1, -1)
+	var bd := 1 << 30
+	for y in range(cell.y - 1, cell.y + fp.y + 1):
+		for x in range(cell.x - 1, cell.x + fp.x + 1):
+			var c := Vector2i(x, y)
+			var inner := x >= cell.x and x < cell.x + fp.x and y >= cell.y and y < cell.y + fp.y
+			var corner := (x == cell.x - 1 or x == cell.x + fp.x) and (y == cell.y - 1 or y == cell.y + fp.y)
+			if inner or corner or not _walkable_door(c, cell, fp):
+				continue
+			var dd := (c - pref).length_squared()
+			if dd < bd:
+				bd = dd
+				best = c
+	return best
+
+
+func _walkable_door(c: Vector2i, cell: Vector2i, fp: Vector2i) -> bool:
+	if not _inside(c):
+		return false
+	var o := occ[_i(c)]
+	# a célula do próprio prédio (quando ele já existe) não conta como livre
+	if o >= 0:
+		return false
+	var k := terrain[_i(c)]
+	return k != T_TREE and k != T_RUBBLE
+
+
+## Por que cada célula da pegada não serve (para o fantasma pintar só a que bloqueia).
+func cell_ok(c: Vector2i) -> bool:
+	if not _inside(c) or occ[_i(c)] >= 0 or not in_zone(c):
+		return false
+	var k := terrain[_i(c)]
+	return k == T_GROUND or k == T_STUMP
 
 
 func is_night() -> bool:
@@ -414,16 +457,9 @@ func can_place(type: String, cell: Vector2i) -> bool:
 	var fp := _fp(type)
 	for dy in fp.y:
 		for dx in fp.x:
-			var c := cell + Vector2i(dx, dy)
-			if not _inside(c) or occ[_i(c)] >= 0 or not in_zone(c):
+			if not cell_ok(cell + Vector2i(dx, dy)):
 				return false
-			var k := terrain[_i(c)]
-			if k != T_GROUND and k != T_STUMP:
-				return false
-	var door := cell + Vector2i(fp.x / 2, fp.y)
-	if not _inside(door) or occ[_i(door)] >= 0 or terrain[_i(door)] == T_TREE or terrain[_i(door)] == T_RUBBLE:
-		return false
-	return true
+	return door_for(type, cell).x >= 0
 
 
 func tower_next() -> Dictionary:
