@@ -35,6 +35,7 @@ func _ready() -> void:
 	add_child(cam)
 	cam.make_current()
 	_layer = CanvasLayer.new()
+	_layer.layer = 2   # a camada 1 é dos vaga-lumes (por cima do mundo, fora do escuro da noite)
 	add_child(_layer)
 	Game.sim_replaced.connect(_bind_sim)
 	AudioManager.set_station(true)

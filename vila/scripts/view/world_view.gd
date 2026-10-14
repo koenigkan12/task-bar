@@ -15,6 +15,7 @@ var _ground: TileMapLayer
 const ICON_FRAMES := 21                 # icons.png: 21 ícones de 8 px
 var _objects: Node2D
 var _floor: Node2D
+var _fx: VilaFx
 var _merchant_nodes: Array = []          # carroça e mascate na praça enquanto o mercador está lá
 var _overlay: Node2D
 var _zone: Node2D
@@ -53,6 +54,9 @@ func setup(s: VilaSim) -> void:
 	_objects.y_sort_enabled = true
 	add_child(_objects)
 	_merchant_nodes = []
+	_fx = VilaFx.new()
+	add_child(_fx)
+	_fx.setup(world_size())
 	_overlay = Node2D.new()
 	_overlay.z_index = 50
 	_overlay.draw.connect(_draw_overlay)
@@ -170,6 +174,7 @@ func _sync_terrain(all: bool) -> void:
 		match k:
 			VilaSim.T_TREE:
 				spr = _frame_sprite("tree", 4, _hash(c) % 4, 32)
+				spr.material = _fx.tree_mat
 			VilaSim.T_RUBBLE:
 				spr = _frame_sprite("rubble", 3, _hash(c) % 3, 16)
 			VilaSim.T_STUMP:
@@ -251,6 +256,8 @@ func _make_building(b: Dictionary) -> Dictionary:
 		spr.offset = Vector2(0, -spr.texture.get_height())
 	spr.visible = show_main
 	root.add_child(spr)
+	if st == "built" and spr.texture != null:
+		_fx.attach(root, tp, int(b["level"]), spr.texture.get_height(), int(b["id"]))
 	var ov: Sprite2D = null
 	if st != "built":
 		ov = Sprite2D.new()
@@ -458,6 +465,7 @@ func _process(delta: float) -> void:
 				_update_building(b, node)
 	_sync_people(delta)
 	_update_light()
+	_fx.update_fx(delta, sim, _night_k)
 	if _zone_level != sim.tower:
 		_zone_level = sim.tower
 		_zone.queue_redraw()
