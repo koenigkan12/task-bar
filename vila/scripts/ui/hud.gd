@@ -553,7 +553,8 @@ func toast(text: String) -> void:
 	_toast.position = Vector2(roundf(x0 + (W - x0) / 2.0 - _toast.get_minimum_size().x / 2.0), 18)
 
 
-func show_tip(text: String, at: Vector2) -> void:
+## above: em cima do cursor (no posicionamento o fantasma do prédio fica embaixo e à direita).
+func show_tip(text: String, at: Vector2, above: bool = false) -> void:
 	if text == "":
 		_tip.visible = false
 		return
@@ -567,7 +568,8 @@ func show_tip(text: String, at: Vector2) -> void:
 		_tip.custom_minimum_size = Vector2(160, 0)
 	_tip.size = Vector2.ZERO
 	var s := _tip.get_combined_minimum_size()
-	_tip.position = Vector2(clampf(at.x + 8.0, 0.0, W - s.x), clampf(at.y + 10.0, 16.0, H - 18.0 - s.y))
+	var ty := at.y - s.y - 6.0 if above else at.y + 10.0
+	_tip.position = Vector2(clampf(at.x + 8.0, 0.0, W - s.x), clampf(ty, 16.0, H - 18.0 - s.y))
 
 
 func card_open() -> bool:

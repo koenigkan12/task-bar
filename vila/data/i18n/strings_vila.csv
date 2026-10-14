@@ -290,3 +290,9 @@ UI_DEMOLISH,Desmontar,Take down
 UI_DEMOLISH_Q,Desmontar este prédio?,Take this building down?
 UI_DEMOLISH_TEXT,"Volta metade do que ele custou e o chão fica livre. Quem trabalhava aqui fica livre também.","You get half its cost back and the ground is freed. Whoever worked here is freed too."
 UI_DEMOLISHED,{b} desmontado,{b} taken down
+UI_PLACE_out,"Fora da área limpa (a borda tracejada). A torre aumenta a área quando sobe.","Outside the cleared area (the dashed edge). The tower widens it when it rises."
+UI_PLACE_busy,Já tem um prédio aqui.,There is already a building here.
+UI_PLACE_tree,"Tem uma árvore aqui. Clique nela para mandar cortar.","There is a tree here. Click it to have it cut."
+UI_PLACE_rubble,"Tem entulho aqui. Clique nele para mandar limpar.","There is rubble here. Click it to have it cleared."
+UI_PLACE_road,Aqui é a estrada.,This is the road.
+UI_PLACE_closed,"Ficaria todo cercado: ninguém conseguiria chegar até ele.","It would be boxed in: nobody could reach it."

@@ -386,7 +386,12 @@ func _update_hover() -> void:
 	var c := world.cell_at(wp) if _test_cell.x < 0 else _test_cell
 	world.hover_cell = c
 	world.ghost_cell = c
-	if _placing != "" or _dragging:
+	if _placing != "":
+		# Diz na hora por que não dá para pôr ali.
+		var why := sim.place_reason(_placing, c) if c.x >= 0 else "out"
+		hud.show_tip(I18n.t("UI_PLACE_" + why) if why != "" else "", mp, true)
+		return
+	if _dragging:
 		hud.show_tip("", mp)
 		return
 	var pid := world.person_at(wp)
@@ -471,7 +476,8 @@ func _click(screen: Vector2) -> void:
 			else:
 				hud.toast(hud.fmt("UI_SITE_NEXT", {"b": hud.bname(tp)}))
 		elif String(r["reason"]) == "place":
-			hud.toast(I18n.t("UI_NO_SPACE"))
+			var why := sim.place_reason(tp, c)
+			hud.toast(I18n.t("UI_PLACE_" + why) if why != "" else I18n.t("UI_NO_SPACE"))
 		else:
 			hud.toast(I18n.t("UI_MISSING").format({"list": ""}).strip_edges())
 			_stop_placing()

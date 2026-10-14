@@ -317,6 +317,29 @@ func _walkable_door(c: Vector2i, cell: Vector2i, fp: Vector2i) -> bool:
 	return k != T_TREE and k != T_RUBBLE
 
 
+## Motivo de não dar para construir ali ("" = pode): o primeiro problema achado, para o jogo dizer
+## na hora junto do cursor. out = fora da área limpa, tree, rubble, busy = outro prédio, road, closed = sem lado livre.
+func place_reason(type: String, cell: Vector2i) -> String:
+	var fp := _fp(type)
+	for dy in fp.y:
+		for dx in fp.x:
+			var c := cell + Vector2i(dx, dy)
+			if not _inside(c) or not in_zone(c):
+				return "out"
+			if occ[_i(c)] >= 0:
+				return "busy"
+			var k := terrain[_i(c)]
+			if k == T_TREE:
+				return "tree"
+			if k == T_RUBBLE:
+				return "rubble"
+			if k != T_GROUND and k != T_STUMP:
+				return "road"
+	if door_for(type, cell).x < 0:
+		return "closed"
+	return ""
+
+
 ## Por que cada célula da pegada não serve (para o fantasma pintar só a que bloqueia).
 func cell_ok(c: Vector2i) -> bool:
 	if not _inside(c) or occ[_i(c)] >= 0 or not in_zone(c):
