@@ -1,7 +1,7 @@
 {
   "_comment": "Todo o balanceamento da vila. Tempos em segundos reais (o jogo usa o relógio real). Números de partida para o protótipo da torre 1 e 2.",
   "map": { "w": 40, "h": 30, "seed": 7, "center": [19, 14], "hatch": [18, 13], "tower": [21, 11], "tent": [15, 13], "gate": [36, 14], "road_row": 15,
-    "open_radius": { "1": 4.2, "2": 7.0, "3": 10.0 } },
+    "ring_rubble": 0.16, "outer_rubble": 0.05, "open_radius": { "1": 4.2, "2": 7.0, "3": 10.0 } },
   "open_scrap_share": 0.5,
   "time": {
     "step_s": 0.25,

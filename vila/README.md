@@ -3,7 +3,7 @@
 Primeiro pedaço jogável da versão "assentamento" (design em `/mnt/project-files/bunker/descricao-do-jogo.md`).
 Projeto Godot 4.6 separado do jogo do bunker (que continua na raiz do repositório), para os dois não se atrapalharem.
 
-**O que tem:** vista de cima numa janela de canto (640×400, sempre por cima), zoom em 3 degraus e arrastar;
+**O que tem:** vista de cima numa janela de canto (1152×648 (3×; 2× em tela pequena), sempre por cima), zoom em 3 degraus e arrastar;
 torre do rádio níveis 1 a 3 (o 3 ainda não libera nada); 8 prédios (poço, horta, depósito, barraco, casa,
 fogueira, serraria, ferro-velho) com nível 2 de horta e depósito; pessoas autônomas que andam, constroem,
 cortam lenha, catam sucata e levam tudo ao depósito; seu Ari chega na torre 2; depois, grupos de 3 no portão

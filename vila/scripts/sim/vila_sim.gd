@@ -85,19 +85,29 @@ func _gen_map() -> void:
 	var noise := FastNoiseLite.new()
 	noise.seed = int(m["seed"])
 	noise.frequency = 0.18
+	var clump := FastNoiseLite.new()
+	clump.seed = int(m["seed"]) + 11
+	clump.frequency = 0.12
 	for y in h:
 		for x in w:
 			var i := y * w + x
 			var d := Vector2(x, y).distance_to(c) + noise.get_noise_2d(x, y) * 1.2
 			var k := T_GROUND
 			var r := _rng.randf()
+			var trees := clump.get_noise_2d(x, y) > 0.18   # árvores em bosques, não espalhadas
 			if d <= r1:
 				k = T_GROUND
 			elif d <= rmax + 1.5:
-				# Anel de entulho e mato: é o que a vila precisa abrir para crescer (nada de chão livre aqui).
-				k = T_RUBBLE if r < 0.72 else T_TREE
+				# Em volta da clareira: chão com alguns montes de entulho e um ou outro bosque.
+				if trees and d > r1 + 1.5:
+					k = T_TREE
+				elif r < float(m.get("ring_rubble", 0.16)):
+					k = T_RUBBLE
 			else:
-				k = T_TREE if r < 0.7 else T_RUBBLE
+				if trees or r < 0.06:
+					k = T_TREE
+				elif r < 0.06 + float(m.get("outer_rubble", 0.05)):
+					k = T_RUBBLE
 			terrain[i] = k
 			if k == T_RUBBLE:
 				rubble[Vector2i(x, y)] = int(bal["rubble_amount"])
@@ -311,12 +321,17 @@ func missing(cost: Dictionary) -> Dictionary:
 	return out
 
 
+## A área da vila: só se constrói dentro do raio que a torre alcança.
+func in_zone(c: Vector2i) -> bool:
+	return Vector2(c).distance_to(center()) <= open_radius(tower)
+
+
 func can_place(type: String, cell: Vector2i) -> bool:
 	var fp := _fp(type)
 	for dy in fp.y:
 		for dx in fp.x:
 			var c := cell + Vector2i(dx, dy)
-			if not _inside(c) or occ[_i(c)] >= 0:
+			if not _inside(c) or occ[_i(c)] >= 0 or not in_zone(c):
 				return false
 			var k := terrain[_i(c)]
 			if k != T_GROUND and k != T_STUMP:
@@ -1222,7 +1237,7 @@ func goal() -> Dictionary:
 func _free_build_cells() -> int:
 	var n := 0
 	for i in terrain.size():
-		if occ[i] < 0 and (terrain[i] == T_GROUND or terrain[i] == T_STUMP):
+		if occ[i] < 0 and (terrain[i] == T_GROUND or terrain[i] == T_STUMP) and in_zone(Vector2i(i % w, i / w)):
 			n += 1
 	return n
 

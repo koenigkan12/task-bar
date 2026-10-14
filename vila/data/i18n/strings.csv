@@ -50,7 +50,7 @@ UI_CLEAR,Limpar primeiro,Clear first
 UI_UNCLEAR,Desmarcar,Unmark
 UI_CLEAR_LEFT,Ainda tem {n} de sucata,{n} scrap left
 UI_CLEAR_MARKED,Marcado: alguém vem limpar,Marked: someone will clear it
-UI_CLEAR_TOWER,A torre limpa uma área maior quando sobe,The tower clears a bigger area when it rises
+UI_CLEAR_TOWER,A torre aumenta a área da vila quando sobe,The tower widens the village area when it rises
 UI_LEVEL,Nível {n},Level {n}
 UI_WORKERS,Trabalham: {a}/{b},Workers: {a}/{b}
 UI_BUILDING,Em obra,Under construction
@@ -61,6 +61,8 @@ UI_CAP,Guarda {n} de cada,Stores {n} of each
 UI_RATE,{n}/min por pessoa,{n}/min per person
 UI_PLACE,Clique para pôr · botão direito cancela,Click to place · right click cancels
 UI_NO_SPACE,Não cabe aqui,Doesn't fit here
+UI_OUTSIDE,Fora da área da vila: suba a torre para crescer,Outside the village area: raise the tower to grow
+UI_TOWER_BTN,Torre,Tower
 UI_LOCKED_TOWER,Torre {n},Tower {n}
 UI_TOWER_NEXT,Nível {n} libera:,Level {n} unlocks:
 UI_TOWER_UP,Subir a torre,Raise the tower
@@ -102,7 +104,7 @@ GOAL_more,{n} sem trabalho: construa mais {b},{n} idle: build another {b}
 GOAL_short,Acabando {r}: construa mais um {b},Running out of {r}: build another {b}
 GOAL_beds,Sem cama livre: melhore a barraca ou faça outra,No free bed: upgrade the tent or build another
 GOAL_storage,A torre pede {n} {r} e só cabem {cap}: melhore o depósito,The tower needs {n} {r} but only {cap} fit: upgrade storage
-GOAL_space,Pouco chão livre: clique no entulho para limpar,Little free ground: click rubble to clear it
+GOAL_space,Pouco chão livre: limpe entulho ou suba a torre,Little free ground: clear rubble or raise the tower
 GOAL_done,Fim do protótipo. Obrigado por testar!,End of the prototype. Thanks for testing!
 DO_idle,Sem nada pra fazer,Nothing to do
 DO_sleep,Dormindo,Sleeping

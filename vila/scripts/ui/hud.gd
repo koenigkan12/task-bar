@@ -1,7 +1,7 @@
 class_name VilaHud
 extends Control
-## Interface da vila numa tela lógica de 320×200: barra de recursos em cima, meta embaixo,
-## zoom, selo do portão, cartões (prédio, torre, pessoa, portão), menu de construir e avisos.
+## Interface da vila numa tela lógica de 384×216: barra de recursos em cima; embaixo, Construir,
+## Torre, a meta e o zoom; selo do portão, cartões (prédio, torre, pessoa, portão), menu de construir e avisos.
 ## Todo texto passa por tr() (CSV em data/i18n). Cor nunca é o único sinal: falta vem com ícone.
 
 signal build_chosen(type: String)
@@ -10,6 +10,8 @@ signal quit_pressed
 signal window_drag(delta: Vector2i)
 
 const ART := "res://assets/art/"
+const W := 384.0
+const H := 216.0
 const ICON := {"comida": 0, "agua": 1, "madeira": 2, "sucata": 3, "pessoa": 4, "cama": 5, "relogio": 6,
 		"torre": 7, "martelo": 8, "seta": 9, "cadeado": 10, "check": 11, "estrela": 12, "sol": 13, "lua": 14, "alerta": 15}
 const C_TEXT := Color(0.93, 0.88, 0.9)
@@ -207,7 +209,7 @@ func _cost_row(cost: Dictionary) -> HBoxContainer:
 func _build_top() -> void:
 	var bar := PanelContainer.new()
 	bar.position = Vector2(0, 0)
-	bar.size = Vector2(320, 14)
+	bar.size = Vector2(W, 14)
 	bar.mouse_filter = Control.MOUSE_FILTER_STOP
 	bar.gui_input.connect(_on_bar_input)
 	add_child(bar)
@@ -258,28 +260,51 @@ func _on_bar_input(ev: InputEvent) -> void:
 
 
 func _build_bottom() -> void:
+	var bar := PanelContainer.new()
+	bar.position = Vector2(0, H - 16)
+	bar.size = Vector2(W, 16)
+	bar.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(bar)
+	var h := HBoxContainer.new()
+	h.add_theme_constant_override("separation", 3)
+	bar.add_child(h)
+	var bb := Button.new()
+	bb.icon = icon("martelo")
+	bb.text = tr("UI_BUILD")
+	bb.pressed.connect(func() -> void:
+		if _card_kind == "build":
+			close_card()
+		else:
+			show_build_menu())
+	h.add_child(bb)
+	var tb := Button.new()
+	tb.icon = icon("torre")
+	tb.text = tr("UI_TOWER_BTN")
+	tb.pressed.connect(func() -> void:
+		if _card_kind == "tower":
+			close_card()
+		else:
+			show_tower())
+	h.add_child(tb)
 	_goal_btn = Button.new()
 	_goal_btn.icon = icon("estrela")
-	_goal_btn.position = Vector2(2, 184)
-	_goal_btn.size = Vector2(10, 14)
 	_goal_btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	_goal_btn.clip_text = true
+	_goal_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_goal_btn.pressed.connect(_on_goal)
-	add_child(_goal_btn)
+	h.add_child(_goal_btn)
 	var zm := Button.new()
 	zm.text = "-"
-	zm.position = Vector2(286, 185)
-	zm.custom_minimum_size = Vector2(14, 13)
-	zm.add_theme_constant_override("h_separation", 0)
+	zm.custom_minimum_size = Vector2(14, 0)
 	zm.tooltip_text = tr("TIP_ZOOM")
 	zm.pressed.connect(func() -> void: zoom_step.emit(-1))
-	add_child(zm)
+	h.add_child(zm)
 	var zp := Button.new()
 	zp.text = "+"
-	zp.position = Vector2(302, 185)
-	zp.custom_minimum_size = Vector2(14, 13)
+	zp.custom_minimum_size = Vector2(14, 0)
 	zp.tooltip_text = tr("TIP_ZOOM")
 	zp.pressed.connect(func() -> void: zoom_step.emit(1))
-	add_child(zp)
+	h.add_child(zp)
 	_gate_btn = Button.new()
 	_gate_btn.icon = icon("pessoa")
 	_gate_btn.position = Vector2(2, 17)
@@ -367,7 +392,7 @@ func refresh() -> void:
 	_clock_label.text = "%s %02d:%02d" % [fmt("UI_DAY", {"n": sim.day_number()}), int(hr), int(fposmod(hr * 60.0, 60.0))]
 	_clock_icon.texture = icon("lua" if sim.is_night() else "sol")
 	_goal_btn.text = _goal_text()
-	_goal_btn.size = Vector2(10, 14)
+	_goal_btn.tooltip_text = _goal_btn.text
 	_gate_btn.visible = not sim.gate_group.is_empty()
 	_gate_btn.text = fmt("UI_GATE_BADGE", {"n": sim.gate_group.size()})
 	_gate_btn.size = Vector2(10, 14)
@@ -381,7 +406,7 @@ func toast(text: String) -> void:
 	_toast.modulate.a = 1.0
 	_toast_t = 3.0
 	_toast.size = Vector2(0, 14)
-	_toast.position = Vector2(160 - _toast.get_minimum_size().x / 2.0, 18)
+	_toast.position = Vector2(W / 2.0 - _toast.get_minimum_size().x / 2.0, 18)
 
 
 func show_tip(text: String, at: Vector2) -> void:
@@ -392,7 +417,7 @@ func show_tip(text: String, at: Vector2) -> void:
 	_tip.visible = true
 	_tip.size = Vector2.ZERO
 	var s := _tip.get_minimum_size()
-	_tip.position = Vector2(clampf(at.x + 8.0, 0.0, 320.0 - s.x), clampf(at.y + 10.0, 16.0, 182.0 - s.y))
+	_tip.position = Vector2(clampf(at.x + 8.0, 0.0, W - s.x), clampf(at.y + 10.0, 16.0, H - 18.0 - s.y))
 
 
 func card_open() -> bool:
@@ -409,9 +434,9 @@ func mouse_over_ui(pos: Vector2) -> bool:
 		if c is Control and (c as Control).visible and (c as Control).mouse_filter == Control.MOUSE_FILTER_STOP:
 			if (c as Control).get_global_rect().has_point(pos):
 				return true
-	if _goal_btn.get_global_rect().has_point(pos) or (_gate_btn.visible and _gate_btn.get_global_rect().has_point(pos)):
+	if _gate_btn.visible and _gate_btn.get_global_rect().has_point(pos):
 		return true
-	return pos.y < 14 or (pos.x > 280 and pos.y > 182)
+	return pos.y < 14 or pos.y > H - 16
 
 
 # ================================================================ cartões
@@ -529,9 +554,9 @@ func _place_card() -> void:
 	var s := _card.get_combined_minimum_size()
 	_card.size = s
 	if _card_kind == "gate":
-		_card.position = Vector2(roundf(160.0 - s.x / 2.0), 17)
+		_card.position = Vector2(roundf(W / 2.0 - s.x / 2.0), 17)
 	else:
-		_card.position = Vector2(320.0 - s.x - 2.0, 17)
+		_card.position = Vector2(W - s.x - 2.0, 17)
 
 
 func _rebuild_card() -> void:

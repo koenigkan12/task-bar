@@ -14,6 +14,8 @@ var ghost_cell: Vector2i = Vector2i(-1, -1)
 var _ground: TileMapLayer
 var _objects: Node2D
 var _overlay: Node2D
+var _zone: Node2D
+var _zone_level: int = -1
 var _modulate: CanvasModulate
 var _terrain_cache: PackedByteArray = PackedByteArray()
 var _terrain_nodes: Dictionary = {}     # célula -> Sprite2D (árvore, toco, entulho)
@@ -37,6 +39,10 @@ func setup(s: VilaSim) -> void:
 	_ground = TileMapLayer.new()
 	_ground.tile_set = _make_tileset()
 	add_child(_ground)
+	_zone = Node2D.new()
+	_zone.draw.connect(_draw_zone)
+	add_child(_zone)
+	_zone_level = -1
 	_objects = Node2D.new()
 	_objects.y_sort_enabled = true
 	add_child(_objects)
@@ -403,6 +409,9 @@ func _process(delta: float) -> void:
 				_update_building(b, node)
 	_sync_people(delta)
 	_update_light()
+	if _zone_level != sim.tower:
+		_zone_level = sim.tower
+		_zone.queue_redraw()
 	_overlay.queue_redraw()
 
 
@@ -430,6 +439,26 @@ func _update_light() -> void:
 		var k := _night_k if not bool(e["always"]) else 0.25 + 0.75 * _night_k
 		l.energy = float(e["base"]) * k * flick
 	_lights = _lights.filter(func(e: Dictionary) -> bool: return is_instance_valid(e["light"]))
+
+
+## Área da vila: fora do alcance da torre o chão fica mais escuro, e a borda leva uma linha tracejada.
+func _draw_zone() -> void:
+	var shade := Color(0.03, 0.02, 0.05, 0.32)
+	var edge := Color(0.95, 0.85, 0.6, 0.45)
+	for y in sim.h:
+		for x in sim.w:
+			var c := Vector2i(x, y)
+			var p := Vector2(c) * TILE
+			if not sim.in_zone(c):
+				_zone.draw_rect(Rect2(p, Vector2(TILE, TILE)), shade)
+				continue
+			for d: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+				if sim.in_zone(c + d):
+					continue
+				var a := p + Vector2(maxi(d.x, 0), maxi(d.y, 0)) * TILE
+				var along := Vector2(absi(d.y), absi(d.x))
+				for k in 4:
+					_zone.draw_line(a + along * (k * 4 + 0.5), a + along * (k * 4 + 2.5), edge, 1.0)
 
 
 func _draw_overlay() -> void:

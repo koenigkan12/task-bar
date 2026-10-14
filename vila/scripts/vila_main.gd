@@ -121,6 +121,10 @@ func _place_window() -> void:
 	var win := get_window()
 	var scr := win.current_screen
 	var r := DisplayServer.screen_get_usable_rect(scr)
+	# Escala inteira maior que couber na tela (3× numa tela comum, 2× numa pequena).
+	var base := Vector2i(384, 216)
+	var k := clampi(mini((r.size.x - 16) / base.x, (r.size.y - 16) / base.y), 1, 3)
+	win.size = base * k
 	win.position = r.position + r.size - win.size - Vector2i(8, 8)
 
 
