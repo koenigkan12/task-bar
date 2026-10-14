@@ -222,6 +222,14 @@ static func fmt_time(sec: float) -> String:
 	return "%dh%02d" % [s / 3600, (s % 3600) / 60]
 
 
+## Contagem regressiva (2:35, 1:02:10): para o que está andando agora.
+static func fmt_clock(sec: float) -> String:
+	var s := int(ceil(maxf(sec, 0.0)))
+	if s >= 3600:
+		return "%d:%02d:%02d" % [s / 3600, (s % 3600) / 60, s % 60]
+	return "%d:%02d" % [s / 60, s % 60]
+
+
 func fmt(key: String, args: Dictionary = {}) -> String:
 	return I18n.t(key, args)
 
@@ -859,9 +867,9 @@ func _res_list() -> String:
 
 
 func _progress_lines(b: Dictionary) -> void:
-	var left := float(b["total"]) - float(b["progress"])
+	var left := sim.site_eta(b)
 	var lbl := I18n.t("UI_UPGRADING") if String(b["state"]) == "upgrade" else I18n.t("UI_BUILDING")
-	_card_box.add_child(_row([_icon_rect("relogio"), _label("%s · %s" % [lbl, fmt_time(left)])]))
+	_card_box.add_child(_row([_icon_rect("relogio"), _label("%s · %s" % [lbl, fmt_clock(left)])]))
 	if int(b["builder"]) < 0:
 		_card_box.add_child(_row([_icon_rect("alerta"), _label(I18n.t("UI_WAITING_BUILDER"), C_WARN)]))
 	else:

@@ -519,6 +519,24 @@ func _draw_zone() -> void:
 					_zone.draw_line(a + along * (k * 4 + 0.5), a + along * (k * 4 + 2.5), edge, 1.0)
 
 
+var _timer_font: Font
+
+
+## Tempo restante (contagem regressiva) centrado acima de um ponto. Some no zoom mais longe, onde
+## o texto não daria para ler.
+func _timer_text(bottom_center: Vector2, sec: float, col: Color) -> void:
+	if sec < 0.0 or get_viewport().get_camera_2d() == null or get_viewport().get_camera_2d().zoom.x < 0.99:
+		return
+	if _timer_font == null:
+		_timer_font = load("res://assets/fonts/DotGothic16-Regular.ttf")
+	var txt := VilaHud.fmt_clock(sec)
+	var sz := 8
+	var wdt := _timer_font.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, sz).x
+	var pos := (bottom_center + Vector2(-wdt / 2.0, -1)).round()
+	_overlay.draw_rect(Rect2(pos + Vector2(-1, -7), Vector2(wdt + 2, 8)), Color(0.05, 0.04, 0.06, 0.75))
+	_overlay.draw_string(_timer_font, pos, txt, HORIZONTAL_ALIGNMENT_LEFT, -1, sz, col)
+
+
 func _draw_overlay() -> void:
 	# Barras de obra
 	for b in sim.buildings:
@@ -530,6 +548,7 @@ func _draw_overlay() -> void:
 		var r := clampf(float(b["progress"]) / maxf(0.001, float(b["total"])), 0.0, 1.0)
 		_overlay.draw_rect(Rect2(top + Vector2(2, 0), Vector2(wpx, 4)), Color(0.05, 0.04, 0.06, 0.9))
 		_overlay.draw_rect(Rect2(top + Vector2(3, 1), Vector2((wpx - 2.0) * r, 2)), Color(1.0, 0.75, 0.3) if int(b["builder"]) >= 0 else Color(0.55, 0.5, 0.55))
+		_timer_text(top + Vector2(2.0 + wpx / 2.0, -1), sim.site_eta(b), Color(1.0, 0.85, 0.55) if int(b["builder"]) >= 0 else Color(0.7, 0.66, 0.7))
 	# Barrinha em cima de quem está trabalhando: quanto falta para levar a carga (ou derrubar a árvore,
 	# ou terminar a obra), com o ícone do que está fazendo.
 	var icons := tex("icons")
@@ -562,11 +581,14 @@ func _draw_overlay() -> void:
 		_overlay.draw_rect(Rect2(at + Vector2(1, 1), Vector2(10.0 * clampf(frac, 0.0, 1.0), 1)), Color(0.55, 0.95, 0.7))
 		if icons != null and ic >= 0:
 			_overlay.draw_texture_rect_region(icons, Rect2(at + Vector2(13, -3), Vector2(8, 8)), Rect2(ic * 8, 0, 8, 8))
+		# A obra já mostra o tempo dela em cima; aqui só carga e coleta.
+		if ph != "building":
+			_timer_text(at + Vector2(6, -1), sim.eta(p), Color(0.75, 1.0, 0.8))
 	# Obra esperando alguém livre: ampulheta (relógio) piscando em cima.
 	for b in sim.buildings:
 		if String(b["state"]) != "built" and int(b["builder"]) < 0 and icons != null and int(_anim_t * 2.0) % 2 == 0:
 			var fpw := sim._fp(String(b["type"]))
-			var pos := Vector2(Vector2i(b["cell"])) * TILE + Vector2(fpw.x * TILE / 2.0 - 4.0, -15)
+			var pos := Vector2(Vector2i(b["cell"])) * TILE + Vector2(fpw.x * TILE / 2.0 - 4.0, -24)
 			_overlay.draw_texture_rect_region(icons, Rect2(pos, Vector2(8, 8)), Rect2(6 * 8, 0, 8, 8))
 	# Fantasma de posicionamento
 	if ghost_type != "" and ghost_cell.x >= 0:

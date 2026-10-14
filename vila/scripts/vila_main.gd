@@ -389,7 +389,8 @@ func _update_hover() -> void:
 	var pid := world.person_at(wp)
 	if pid >= 0:
 		var p := sim.person(pid)
-		hud.show_tip(hud.pname(p) + " · " + hud._doing_text(p), mp)
+		var pe := sim.eta(p)
+		hud.show_tip(hud.pname(p) + " · " + hud._doing_text(p) + ((" · " + VilaHud.fmt_clock(pe)) if pe >= 0.0 else ""), mp)
 		return
 	if sim.terrain_at(c) == VilaSim.T_RUBBLE:
 		hud.show_tip(I18n.t("B_entulho") + " · " + I18n.t("UI_CLEAR"), mp)
@@ -401,7 +402,7 @@ func _update_hover() -> void:
 	if not b.is_empty():
 		var t := hud.bname(String(b["type"]), int(b["level"]))
 		if String(b["state"]) != "built":
-			t += " · " + VilaHud.fmt_time(float(b["total"]) - float(b["progress"]))
+			t += " · " + VilaHud.fmt_clock(sim.site_eta(b))
 		if I18n.has_key("BD_" + String(b["type"])):
 			t += "\n" + I18n.t("BD_" + String(b["type"]))
 		hud.show_tip(t, mp)

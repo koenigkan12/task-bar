@@ -351,6 +351,51 @@ func can_afford(cost: Dictionary) -> bool:
 	return true
 
 
+## Segundos que faltam para a pessoa terminar o que está fazendo agora (carga, coleta ou obra);
+## -1 se não está numa atividade com fim. Usa a velocidade de agora (bônus, energia, offline).
+func eta(p: Dictionary) -> float:
+	var job: Dictionary = p["job"]
+	var res := String(job.get("res", ""))
+	match String(p["phase"]):
+		"working":
+			var b := by_id(int(job.get("b", -1)))
+			if b.is_empty():
+				return -1.0
+			var m := bonus(p, res) * _work_mult(p) * _prod_frac()
+			if float(def(String(b["type"])).get("power_use", 0)) > 0.0:
+				m *= power_frac()
+			if m <= 0.0:
+				return -1.0
+			var left := maxf(0.0, work_trip(b) - float(p["carry"]))
+			return left * float(level_def(b)["rate_s"]) / m
+		"foraging":
+			var f: Dictionary = bal["forage"].get(res, {})
+			var m2 := bonus(p, res) * _work_mult(p) * _prod_frac()
+			if f.is_empty() or m2 <= 0.0:
+				return -1.0
+			return maxf(0.0, float(f["work_s"]) - float(p["work_t"])) / m2
+		"building":
+			var bb := by_id(int(job.get("b", -1)))
+			if bb.is_empty():
+				return -1.0
+			return site_eta(bb)
+	return -1.0
+
+
+## Segundos que faltam para a obra ficar pronta: na velocidade de quem constrói, ou na normal se
+## ainda espera alguém.
+func site_eta(b: Dictionary) -> float:
+	var left := maxf(0.0, float(b["total"]) - float(b["progress"]))
+	var bid := int(b["builder"])
+	if bid >= 0:
+		var p := person(bid)
+		if not p.is_empty():
+			var m := bonus(p, "build") * _work_mult(p)
+			if m > 0.0:
+				return left / m
+	return left
+
+
 func missing(cost: Dictionary) -> Dictionary:
 	var out := {}
 	for r in cost:
