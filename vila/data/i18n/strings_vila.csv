@@ -105,7 +105,6 @@ GOAL_short,Acabando {r}: construa mais um {b},Running out of {r}: build another 
 GOAL_beds,Sem cama livre: melhore a barraca ou faça outra,No free bed: upgrade the tent or build another
 GOAL_storage,A torre pede {n} {r} e só cabem {cap}: melhore o depósito,The tower needs {n} {r} but only {cap} fit: upgrade storage
 GOAL_space,Pouco chão livre: limpe entulho ou suba a torre,Little free ground: clear rubble or raise the tower
-GOAL_done,Fim do protótipo. Obrigado por testar!,End of the prototype. Thanks for testing!
 DO_idle,Sem nada pra fazer,Nothing to do
 DO_sleep,Dormindo,Sleeping
 DO_to_bed,Indo dormir,Going to bed
@@ -171,3 +170,92 @@ HINT_gate,Gente na estrada! Clique no selo para escolher quem entra.,People on t
 HINT_tower_ready,A torre já pode subir. Clique em Torre.,The tower can go up now. Click Tower.
 HINT_space,Falta chão. Clique num entulho dentro da área para mandar limpar.,Out of ground. Click rubble inside the area to have it cleared.
 HINT_short,"Está acabando comida ou água. A meta diz o que construir.","Food or water is running out. The goal tells you what to build."
+RES_pecas,peças,parts
+RD_pecas,"Peças saem da oficina (gasta sucata e energia). Para prédios grandes, a torre 4 e a 5. O mercador também vende.","Parts come from the workshop (uses scrap and power). For big buildings and towers 4 and 5. The merchant sells them too."
+B_painel,Painel solar,Solar panel
+B_cozinha,Cozinha,Kitchen
+B_estufa,Estufa,Greenhouse
+B_carroca,Carroça,Cart
+B_oficina_1,Oficina,Workshop
+B_oficina_2,Oficina grande,Big workshop
+B_galinheiro_1,Galinheiro,Coop
+B_galinheiro_2,Galinheiro grande,Big coop
+B_deposito_4,Armazém,Warehouse
+B_ela,Ela,Her
+BD_praca,"O mercador para aqui, três vezes por dia.","The merchant stops here, three times a day."
+BD_oficina,Transforma sucata em peças. Gasta energia.,Turns scrap into parts. Uses power.
+BD_gerador,Dá energia para oficina e estufa.,Powers the workshop and greenhouse.
+BD_painel,"Energia sem barulho, do sol.","Quiet power, from the sun."
+BD_galinheiro,Comida sem gastar água.,Food without using water.
+BD_cozinha,Toda comida rende 30% mais.,All food goes 30% further.
+BD_estufa,"Muita comida, com energia.","Lots of food, with power."
+UI_POWER,Energia,Power
+UI_POWER_LINE,Energia: {out} de {use},Power: {out} of {use}
+UI_POWER_USE,Gasta {n} de energia,Uses {n} power
+UI_POWER_OUT,Dá {n} de energia,Gives {n} power
+UI_POWER_LOW,"Falta energia: anda mais devagar","Short on power: runs slower"
+UI_INPUT,Usa {n} {r} por vez,Uses {n} {r} each time
+UI_NO_INPUT,Parado: falta {r},Stopped: no {r}
+RD_energia,"Energia vem do gerador e do painel. Oficina e estufa gastam. Faltando, elas andam mais devagar.","Power comes from generators and panels. Workshop and greenhouse use it. When short, they run slower."
+GOAL_power,Falta energia: construa um gerador ou painel,Short on power: build a generator or panel
+GOAL_journey,Ela está vindo. Chega em {t},She is on her way. Arrives in {t}
+GOAL_journey_soon,Ela está chegando,She is almost here
+GOAL_done,"Ela chegou. A vila é de vocês.","She's here. The village is yours."
+UI_MERCHANT,Mercador,Merchant
+UI_MERCHANT_BADGE,Mercador na praça,Merchant in the square
+UI_MERCHANT_LEAVES,Vai embora em {t},Leaves in {t}
+UI_MERCHANT_AWAY,"O mercador passa às {h}.","The merchant comes by at {h}."
+UI_MERCHANT_NEED,Construa a praça para o mercador parar.,Build the square so the merchant stops.
+UI_SELL,Vender,Sell
+UI_SELL_LOT,{n} {r} por {p} sucata,{n} {r} for {p} scrap
+UI_BUY,Comprar,Buy
+UI_SOLD,Vendido,Sold
+UI_REQUEST,"Pedido: {n} {r}, paga {p} sucata","Request: {n} {r}, pays {p} scrap"
+UI_DELIVER,Entregar,Deliver
+UI_AUTO_SELL,Vender a sobra quando eu não estiver,Sell surplus while I'm away
+UI_MERCHANT_SOLD,"O mercador vendeu a sobra: +{p} sucata","The merchant sold the surplus: +{p} scrap"
+UI_MERCHANT_HERE,O mercador chegou na praça,The merchant is in the square
+UI_NEEDS_GROUP,Só com gente no portão,Only with people at the gate
+OF_pecas_lote,10 peças,10 parts
+OF_madeira_lote,30 de madeira,30 wood
+OF_agua_lote,20 de água,20 water
+OF_comida_lote,25 de comida,25 food
+OF_sementes,Sementes boas,Good seeds
+OF_carrinho,Carrinho de mão,Wheelbarrow
+OF_rumor,Rumor na estrada,Word on the road
+OFD_pecas_lote,Para quando a oficina não dá conta.,For when the workshop can't keep up.
+OFD_madeira_lote,Tábuas de uma casa caída.,Boards from a fallen house.
+OFD_agua_lote,Galões limpos.,Clean jugs.
+OFD_comida_lote,Feijão e farinha.,Beans and flour.
+OFD_sementes,Toda comida rende 15% mais. Para sempre.,All food goes 15% further. For good.
+OFD_carrinho,Todo mundo anda 20% mais rápido carregando.,Everyone moves 20% faster.
+OFD_rumor,Manda o grupo do portão embora e chama outro.,Sends the gate group away and calls another.
+UI_RADIO,Rádio,Radio
+UI_RADIO_LOG,Caderno do rádio,Radio notebook
+UI_RADIO_EMPTY,Nada ainda. Só chiado.,Nothing yet. Only static.
+UI_RADIO_NEW,{n} novas,{n} new
+P_lia,Lia,Lia
+P_teo,Téo,Téo
+P_caio,Caio,Caio
+P_nina,Nina,Nina
+P_rosa,Dona Rosa,Ms. Rosa
+P_marta,Marta,Marta
+P_velho,O velho das seis,The six o'clock man
+P_bento,Bento,Bento
+P_dora,Dora,Dora
+P_ela,Ela,Her
+PB_lia,"Vi a horta lá de cima do morro. Água eu acho, pode deixar.","Saw your garden from up the hill. Water I can find, leave it to me."
+PB_teo,"Ouvi uma serra. Faz tempo que não ouvia uma serra.","I heard a saw. Been a long time since I heard a saw."
+PB_caio,"Tanto ferro jogado por aí. Eu sei onde tem mais.","So much metal lying around. I know where there's more."
+PB_nina,"Corri a estrada toda. Tem água boa aqui, né?","I ran the whole road. You've got good water here, right?"
+PB_rosa,"Cheiro de panela no fogo. Me dá uma colher que eu resolvo.","Smell of a pot on the fire. Give me a spoon and I'll handle it."
+PB_marta,"Uma oficina! Deixa eu ver esse gerador.","A workshop! Let me look at that generator."
+PB_velho,"Toda tarde, às seis, eu falava no rádio. Vocês escutavam?","Every evening at six I talked on the radio. Were you listening?"
+PB_bento,"Vocês constroem rápido. Eu construo mais rápido.","You build fast. I build faster."
+PB_dora,"As galinhas me chamaram. Brincadeira. Foi o rádio.","The chickens called me. Kidding. It was the radio."
+PB_ela,"Demorou, mas eu cheguei.","It took a while, but I'm here."
+PAS_mecanico,Mecânica,Mechanic
+PASD_mecanico,Oficina rende mais,Workshop works faster
+UI_TOWER_ELA,"A torre está pronta. Agora é esperar ela.","The tower is done. Now we wait for her."
+VEND_knock,(Alguém no portão. Botas gastas e uma mochila.),(Someone at the gate. Worn boots and a backpack.)
+VEND_light,(As luzes da vila acendem uma por uma.),(The village lights come on one by one.)

@@ -12,8 +12,12 @@ signal person_joined(id: int)
 signal group_arrived                               # um grupo de 3 chegou ao portão
 signal harvested(id: int, res: String, amount: int) # alguém entregou no depósito (para o "+N")
 signal site_started(id: int)                       # obra nova, melhoria ou torre começou (som de martelo)
+signal merchant_arrived                            # o mercador chegou à praça
+signal merchant_left(sold: Dictionary)             # foi embora (o que vendeu sozinho, se a venda automática estava ligada)
+signal radio(line: Dictionary)                     # uma fala do rádio chegou: {id, speaker, text_key, cue, kind}
+signal ela_arrived                                 # ela entrou pelo portão (o final)
 
-const RES: Array[String] = ["comida", "agua", "madeira", "sucata"]
+const RES: Array[String] = ["comida", "agua", "madeira", "sucata", "pecas"]
 const T_GROUND := 0
 const T_TREE := 1
 const T_RUBBLE := 2
@@ -43,6 +47,16 @@ var _astar: AStarGrid2D
 var _rng := RandomNumberGenerator.new()
 var _group_ready_t: float = -1.0
 var _story_done: Dictionary = {}
+var tower_t: Dictionary = {}       # nível da torre -> quando chegou (o rádio conta os dias a partir daí)
+var perks: Dictionary = {}         # melhorias compradas do mercador: id -> quantas
+var merchant: Dictionary = {}      # visita atual: {key, until, prices, offers, bought, request}; vazio = longe
+var auto_sell: bool = true         # o mercador vende a sobra sozinho quando ninguém está olhando
+var radio_heard: Array = []        # ids das falas do rádio já ouvidas, em ordem (o caderno do rádio)
+var ela_t: float = -1.0            # quando ela chegou (fim); -1 = ainda não
+var _merchant_key: int = -1
+var _lines: Array = []             # falas do rádio e da viagem com a hora em que tocam (refeito quando a torre sobe)
+var _lines_dirty: bool = true
+var _m_power: Dictionary = {}
 var _rethink_acc: float = 0.0
 var _m_cap: Dictionary = {}
 var _m_urg: Dictionary = {}
@@ -73,6 +87,7 @@ func setup(balance: Dictionary, now_unix: float, tz_bias: int = 0) -> void:
 	_rebuild_astar()
 	var hatch: Dictionary = _first("hatch")
 	_add_person("Joaquim", 0, [], _door(hatch), "joaquim")
+	tower_t = {1: t}
 
 
 func _v(a: Array) -> Vector2i:
@@ -230,6 +245,7 @@ func _invalidate() -> void:
 	_m_cap.clear()
 	_m_urg.clear()
 	_m_beds = -1
+	_m_power.clear()
 	_id_index.clear()
 
 
@@ -514,7 +530,8 @@ func _rebuild_astar() -> void:
 		for x in w:
 			var c := Vector2i(x, y)
 			var k := terrain[_i(c)]
-			if occ[_i(c)] >= 0 or k == T_TREE or k == T_RUBBLE:
+			var o := occ[_i(c)]
+			if (o >= 0 and not bool(def(String(by_id(o).get("type", ""))).get("open", false))) or k == T_TREE or k == T_RUBBLE:
 				_astar.set_point_solid(c, true)
 
 
@@ -554,8 +571,46 @@ func bonus(p: Dictionary, job: String) -> float:
 
 
 func _speed(p: Dictionary) -> float:
-	var s: float = float(bal["people"]["speed_tiles_s"]) * bonus(p, "walk")
+	var s: float = float(bal["people"]["speed_tiles_s"]) * bonus(p, "walk") * (1.0 + perk_bonus("carrinho"))
 	return s * (float(bal["people"]["hungry_speed"]) if (p["hungry"] or p["thirsty"]) else 1.0)
+
+
+## Energia: oferta dos geradores e painéis prontos contra o gasto dos prédios elétricos prontos.
+func power() -> Dictionary:
+	if not _m_power.is_empty():
+		return _m_power
+	var out := 0.0
+	var use := 0.0
+	for b in buildings:
+		if not _working(b):
+			continue
+		var d := def(String(b["type"]))
+		out += float(d.get("power_out", 0))
+		use += float(d.get("power_use", 0))
+	_m_power = {"out": out, "use": use}
+	return _m_power
+
+
+## Quanto os prédios elétricos rendem (1 = energia sobrando; menos = falta, todos andam mais devagar).
+func power_frac() -> float:
+	var pw := power()
+	if float(pw["use"]) <= 0.0:
+		return 1.0
+	return clampf(float(pw["out"]) / float(pw["use"]), 0.0, 1.0)
+
+
+## Melhoria comprada do mercador (soma por quantas foram compradas).
+func perk_bonus(id: String) -> float:
+	return float(bal["merchant"]["perks"].get(id, 0.0)) * float(perks.get(id, 0))
+
+
+## Comida rende mais com cozinha pronta e com as sementes do mercador.
+func food_mult() -> float:
+	var m := 1.0 + perk_bonus("sementes")
+	for b in buildings:
+		if _working(b):
+			m += float(def(String(b["type"])).get("food_bonus", 0.0))
+	return m
 
 
 func _work_mult(p: Dictionary) -> float:
@@ -642,6 +697,13 @@ func _pick_job(p: Dictionary) -> Dictionary:
 				continue
 			var lv := level_def(b)
 			if (b["workers"] as Array).size() >= int(lv.get("slots", 0)):
+				continue
+			var inp: Dictionary = lv.get("input", {})
+			var short_inp := false
+			for r in inp:
+				if float(stock[r]) < float(inp[r]) * 2.0:
+					short_inp = true
+			if short_inp or (float(def(String(b["type"])).get("power_use", 0)) > 0.0 and power_frac() <= 0.0):
 				continue
 			var rate: float = 1.0 / float(lv["rate_s"])
 			var v: float = u * rate * bonus(p, res)
@@ -866,6 +928,7 @@ func advance(seconds: float) -> void:
 				t += jump - 0.01
 				left -= jump - 0.01
 				_regrow()
+				_radio_step()
 				continue
 		var dt := minf(step, left)
 		_step(dt)
@@ -893,6 +956,8 @@ func _step(dt: float) -> void:
 	_needs(dt, night)
 	_regrow()
 	_arrivals()
+	_merchant_step()
+	_radio_step()
 	_rethink_acc += dt
 	# Offline o passo é longo: repensar a cada passo pesa e não muda quase nada no resultado.
 	var rethink_s: float = float(bal["people"]["rethink_s"])
@@ -959,24 +1024,291 @@ func _regrow() -> void:
 
 
 func _arrivals() -> void:
-	if tower < int(bal["arrivals"]["story_tower"]) or not gate_group.is_empty() or beds_free() <= 0:
+	if tower < int(bal["arrivals"]["story_tower"]) or beds_free() <= 0:
 		return
-	var story: String = String(bal["arrivals"]["story_first"])
-	if not _story_done.has(story):
+	# Pessoas da história (vozes do rádio): chegam sozinhas, fora do sorteio, quando a condição fecha.
+	for sid in bal.get("story_order", []):
+		var story := String(sid)
+		if _story_done.has(story) or not _story_ready(story):
+			continue
 		_story_done[story] = true
 		var sd: Dictionary = bal["story_people"][story]
 		var from := _v(bal["arrivals"]["walk_in_from"])
 		var p := _add_person(tr_name(story), int(sd["look"]), sd["passives"], from, story)
 		person_joined.emit(int(p["id"]))
-		_group_ready_t = t + float(bal["arrivals"]["first_group_delay_s"])
+		if _group_ready_t < 0.0 or _group_ready_t < t + float(bal["arrivals"]["first_group_delay_s"]):
+			_group_ready_t = t + float(bal["arrivals"]["first_group_delay_s"])
 		changed.emit()
 		return
-	if gate_group.is_empty() and _group_ready_t >= 0.0 and t >= _group_ready_t:
+	if not gate_group.is_empty():
+		return
+	if _group_ready_t >= 0.0 and t >= _group_ready_t:
 		_make_group()
 		group_arrived.emit()
 		changed.emit()
 	elif _group_ready_t < 0.0:
 		_group_ready_t = t + float(bal["arrivals"]["first_group_delay_s"])
+
+
+## A condição de uma pessoa da história (balance.json, story_people): torre, prédios, níveis, estoque, gente.
+func _story_ready(story: String) -> bool:
+	var sd: Dictionary = bal["story_people"].get(story, {})
+	if sd.is_empty() or tower < int(sd.get("tower", 99)):
+		return false
+	var mc: Dictionary = sd.get("min_count", {})
+	for tp in mc:
+		if _count(String(tp)) < int(mc[tp]):
+			return false
+	var ml: Dictionary = sd.get("min_level", {})
+	for tp in ml:
+		var ok := false
+		for b in buildings:
+			if String(b["type"]) == String(tp) and int(b["level"]) >= int(ml[tp]) and _working(b):
+				ok = true
+		if not ok:
+			return false
+	var ms: Dictionary = sd.get("min_stock", {})
+	for r in ms:
+		if float(stock[r]) < float(ms[r]):
+			return false
+	if people.size() < int(sd.get("min_people", 0)):
+		return false
+	if int(stats["built"]) < int(sd.get("min_built", 0)):
+		return false
+	return true
+
+
+# ================================================================ rádio e viagem
+## As falas do rádio (data/radio.json) contam a partir de quando cada nível da torre chegou:
+## chegada e reação na hora, programas no dia/hora marcados. Na torre 5 ela diz que vem; a viagem
+## (data/journey.json) anda em dias encurtados (ending.journey_day_scale) e termina com ela no portão.
+func _load_lines() -> void:
+	_lines_dirty = false
+	_lines = []
+	var rd: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/radio.json"))
+	if rd is Dictionary:
+		for l in (rd as Dictionary)["lines"]:
+			var lv := int(l["level"])
+			if not tower_t.has(lv):
+				continue
+			var t0 := float(tower_t[lv])
+			var due := t0
+			if String(l["kind"]) == "reaction":
+				due = t0 + 4.0
+			elif l["hour"] != null:
+				due = day_start(t0) + int(l["day_offset"]) * 86400.0 + float(l["hour"]) * 3600.0
+				while due < t0:
+					due += 86400.0
+			_lines.append({"id": String(l["id"]), "speaker": String(l["speaker"]), "text_key": String(l["text_key"]),
+					"cue": String(l["cue"]), "kind": String(l["kind"]), "due": due})
+	var last5 := tower_max()
+	if tower_t.has(last5):
+		var jd: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/journey.json"))
+		if jd is Dictionary:
+			var sc: float = float(bal["ending"]["journey_day_scale"])
+			var base := float(tower_t[last5])
+			var prev := base
+			for l in (jd as Dictionary)["travel"]:
+				var day := day_start(base + int(l["day_offset"]) * 86400.0 * sc)
+				var due := day + float(l["hour"]) * 3600.0
+				while due <= prev:
+					due += 86400.0 * sc
+				prev = due
+				_lines.append({"id": String(l["id"]), "speaker": "ela", "text_key": String(l["text_key"]),
+						"cue": String(l["cue"]), "kind": "journey", "due": due})
+			var arr: Dictionary = (jd as Dictionary)["arrival"]
+			_lines.append({"id": "arrival", "speaker": "ela", "text_key": String(arr["text_key"]), "cue": String(arr["cue"]),
+					"kind": "arrival_ela", "due": prev + float(bal["ending"].get("arrival_after_h", 3.0)) * 3600.0})
+	_lines.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return float(a["due"]) < float(b["due"]))
+
+
+func _radio_step() -> void:
+	if _lines_dirty:
+		_load_lines()
+	for l in _lines:
+		if float(l["due"]) > t:
+			return
+		if radio_heard.has(l["id"]):
+			continue
+		radio_heard.append(l["id"])
+		if String(l["kind"]) == "arrival_ela":
+			_ela_arrives()
+		radio.emit(l)
+
+
+func _ela_arrives() -> void:
+	if ela_t >= 0.0:
+		return
+	ela_t = t
+	var from := _v(bal["arrivals"]["walk_in_from"])
+	var p := _add_person(tr_name("ela"), int(bal["ending"].get("look", 6)), [], from, "ela")
+	person_joined.emit(int(p["id"]))
+	ela_arrived.emit()
+	changed.emit()
+
+
+## Fala já ouvida (ou ainda não) pelo id, para o caderno do rádio.
+func line(id: String) -> Dictionary:
+	if _lines_dirty:
+		_load_lines()
+	for l in _lines:
+		if String(l["id"]) == id:
+			return l
+	return {}
+
+
+## Quanto falta para ela chegar (segundos), -1 se a viagem não começou ou se ela já chegou.
+func journey_left() -> float:
+	if ela_t >= 0.0 or not tower_t.has(tower_max()):
+		return -1.0
+	var l := line("arrival")
+	return maxf(0.0, float(l.get("due", t)) - t)
+
+
+# ================================================================ mercador
+## Começo do dia local (meia-noite) do instante `at`.
+func day_start(at: float) -> float:
+	return at - fposmod(at + float(tz_bias_s), 86400.0)
+
+
+## O mercador vem à praça em horas fixas (a partir da torre 3, com a praça pronta) e fica um tempo.
+func _merchant_step() -> void:
+	if not merchant.is_empty():
+		if t >= float(merchant["until"]):
+			_merchant_leave()
+		return
+	var md: Dictionary = bal["merchant"]
+	if tower < int(md["tower"]) or _count("praca") == 0 or is_night():
+		return
+	var d0 := day_start(t)
+	var hours: Array = md["hours"]
+	for i in hours.size():
+		var start := d0 + float(hours[i]) * 3600.0
+		var key := int(d0 / 86400.0) * 10 + i
+		if t >= start and t < start + float(md["stay_s"]) and key != _merchant_key:
+			_merchant_key = key
+			_merchant_arrive(start + float(md["stay_s"]))
+			return
+
+
+func _merchant_arrive(until: float) -> void:
+	var md: Dictionary = bal["merchant"]
+	var prices := {}
+	for r in md["price"]:
+		prices[r] = float(md["price"][r]) * (1.0 + _rng.randf_range(-1.0, 1.0) * float(md["price_spread"]))
+	var pool: Array = []
+	for id in md["offers"]:
+		var o: Dictionary = md["offers"][id]
+		if o.has("perk") and int(perks.get(String(o["perk"]), 0)) >= int(o.get("max", 1)):
+			continue
+		pool.append(String(id))
+	var offers: Array = []
+	for k in mini(3, pool.size()):
+		var i := _rng.randi_range(0, pool.size() - 1)
+		offers.append(pool[i])
+		pool.remove_at(i)
+	var req := {}
+	if _rng.randf() < float(md["request_chance"]):
+		var keys: Array = md["request"].keys()
+		var r := String(keys[_rng.randi_range(0, keys.size() - 1)])
+		var rg: Array = md["request"][r]
+		var n := _rng.randi_range(int(rg[0]), int(rg[1]))
+		req = {"res": r, "n": n, "pay": int(ceil(n * float(prices.get(r, 1.0)) * float(md["request_pay_mult"])))}
+	merchant = {"until": until, "prices": prices, "offers": offers, "bought": [], "request": req}
+	merchant_arrived.emit()
+	changed.emit()
+
+
+func _merchant_leave() -> void:
+	var sold := {}
+	if auto_sell:
+		var above: float = float(bal["merchant"]["auto_sell_above"])
+		for r in merchant["prices"]:
+			var extra := int(floor(float(stock[r]) - cap(r) * above))
+			if extra > 0:
+				var got := _sell(r, extra)
+				if got > 0:
+					sold[r] = extra
+	merchant = {}
+	merchant_left.emit(sold)
+	changed.emit()
+
+
+func merchant_here() -> bool:
+	return not merchant.is_empty()
+
+
+## Preço de um lote (o mercador paga em sucata).
+func lot_price(res: String) -> int:
+	if merchant.is_empty():
+		return 0
+	return int(floor(float(merchant["prices"].get(res, 0.0)) * float(bal["merchant"]["lot"])))
+
+
+func _sell(res: String, n: int) -> int:
+	var got := int(floor(float(merchant["prices"].get(res, 0.0)) * n))
+	stock[res] = float(stock[res]) - n
+	stock["sucata"] = minf(cap("sucata"), float(stock["sucata"]) + got)
+	return got
+
+
+## Vende um lote de `res`. Devolve {ok, got}.
+func sell_lot(res: String) -> Dictionary:
+	var n: int = int(bal["merchant"]["lot"])
+	if merchant.is_empty() or not merchant["prices"].has(res):
+		return {"ok": false, "reason": "away"}
+	if float(stock[res]) < n:
+		return {"ok": false, "reason": "cost"}
+	if float(stock["sucata"]) >= cap("sucata"):
+		return {"ok": false, "reason": "full"}
+	var got := _sell(res, n)
+	changed.emit()
+	return {"ok": true, "got": got}
+
+
+func offer_def(id: String) -> Dictionary:
+	return bal["merchant"]["offers"].get(id, {})
+
+
+## Compra a oferta de índice `i` (cada uma só uma vez por visita).
+func buy_offer(i: int) -> Dictionary:
+	if merchant.is_empty() or i < 0 or i >= (merchant["offers"] as Array).size():
+		return {"ok": false, "reason": "away"}
+	if (merchant["bought"] as Array).has(i):
+		return {"ok": false, "reason": "sold"}
+	var id := String(merchant["offers"][i])
+	var o := offer_def(id)
+	if bool(o.get("needs_group", false)) and gate_group.is_empty():
+		return {"ok": false, "reason": "no_group"}
+	if not can_afford(o["cost"]):
+		return {"ok": false, "reason": "cost"}
+	_pay(o["cost"])
+	var gives: Dictionary = o.get("gives", {})
+	for r in gives:
+		stock[r] = minf(cap(r), float(stock[r]) + float(gives[r]))
+	if o.has("perk"):
+		perks[String(o["perk"])] = int(perks.get(String(o["perk"]), 0)) + 1
+	if id == "rumor":
+		_make_group()
+		group_arrived.emit()
+	(merchant["bought"] as Array).append(i)
+	_invalidate()
+	changed.emit()
+	return {"ok": true}
+
+
+## Entrega o pedido do mercador (paga o dobro, sem prazo nem castigo).
+func fulfill_request() -> Dictionary:
+	if merchant.is_empty() or (merchant["request"] as Dictionary).is_empty():
+		return {"ok": false, "reason": "away"}
+	var rq: Dictionary = merchant["request"]
+	if float(stock[String(rq["res"])]) < float(rq["n"]):
+		return {"ok": false, "reason": "cost"}
+	stock[String(rq["res"])] = float(stock[String(rq["res"])]) - float(rq["n"])
+	stock["sucata"] = minf(cap("sucata"), float(stock["sucata"]) + float(rq["pay"]))
+	merchant["request"] = {}
+	changed.emit()
+	return {"ok": true}
 
 
 ## Nome das pessoas da história vem do I18n na vista; aqui fica a chave.
@@ -1090,6 +1422,8 @@ func _finish(b: Dictionary) -> void:
 	var tp := String(b["type"])
 	if tp == "torre":
 		tower += 1
+		tower_t[tower] = t
+		_lines_dirty = true
 		b["state"] = "built"
 		_open_area(tower)
 		tower_up.emit(tower)
@@ -1118,14 +1452,35 @@ func _do_work(p: Dictionary, dt: float) -> void:
 			p["moving"] = false
 			p["facing"] = Vector2.UP
 			var lv := level_def(b)
+			var d := def(String(b["type"]))
 			var m := bonus(p, res) * _work_mult(p) * _prod_frac()
-			if res == "comida":
+			var wet := res == "comida" and not bool(lv.get("no_water", false))
+			if wet:
 				var need_w: float = float(bal["horta_water_per_food"])
 				if float(stock["agua"]) < need_w:
 					m *= float(bal["no_water_horta_speed"])
+			if float(d.get("power_use", 0)) > 0.0:
+				m *= power_frac()
 			var gain := dt * m / float(lv["rate_s"])
-			if res == "comida" and float(stock["agua"]) >= float(bal["horta_water_per_food"]) * gain:
+			if wet and float(stock["agua"]) >= float(bal["horta_water_per_food"]) * gain:
 				stock["agua"] = float(stock["agua"]) - float(bal["horta_water_per_food"]) * gain
+			# Matéria-prima (a oficina gasta sucata para fazer peças): faltando, anda bem devagar.
+			var inp: Dictionary = lv.get("input", {})
+			var has_inp := true
+			for r in inp:
+				if float(stock[r]) < float(inp[r]) * gain:
+					has_inp = false
+			if not has_inp:
+				# Sem matéria-prima: larga a vaga (vai catar sucata, por exemplo) e volta depois.
+				if float(p["carry"]) > 0.0:
+					_to_storage(p)
+				else:
+					_set_job(p, {"kind": "idle"})
+				return
+			for r in inp:
+				stock[r] = float(stock[r]) - float(inp[r]) * gain
+			if res == "comida":
+				gain *= food_mult()
 			p["carry_res"] = res
 			p["carry"] = float(p["carry"]) + gain
 			if float(p["carry"]) >= float(bal["people"]["carry"]):
@@ -1279,6 +1634,9 @@ func goal() -> Dictionary:
 				return {"kind": "more", "type": pair[1], "res": pair[0], "idle": idle}
 			if float(stock[pair[0]]) <= 3.0 and balance_per_min(pair[0]) < 0.0:
 				return {"kind": "short", "type": pair[1], "res": pair[0]}
+	var pw := power()
+	if float(pw["use"]) > float(pw["out"]):
+		return {"kind": "power", "out": float(pw["out"]), "use": float(pw["use"])}
 	if tower >= 2 and beds_free() <= 0 and _count_any("moradia") < 6:
 		return {"kind": "beds"}
 	# A próxima torre pede mais do que cabe: falta melhorar o depósito.
@@ -1297,6 +1655,8 @@ func goal() -> Dictionary:
 			return {"kind": "tower_wait", "level": tower + 1}
 		var nx := tower_next()
 		return {"kind": "tower", "level": tower + 1, "missing": missing(nx["cost"])}
+	if ela_t < 0.0:
+		return {"kind": "journey", "left_s": journey_left()}
 	return {"kind": "done"}
 
 
@@ -1339,7 +1699,8 @@ func to_dict() -> Dictionary:
 			"buildings": bs, "people": ps, "regrow": rg, "rubble": rb, "gate": gate_group,
 			"marked": marked.keys().map(func(c: Vector2i) -> Array: return [c.x, c.y]),
 			"stats": stats, "next_id": _next_id, "group_t": _group_ready_t, "story": _story_done.keys(),
-			"rng": _rng.state}
+			"rng": _rng.state, "tower_t": tower_t, "perks": perks, "merchant": merchant, "auto_sell": auto_sell,
+			"radio": radio_heard, "ela_t": ela_t, "merchant_key": _merchant_key}
 
 
 func from_dict(d: Dictionary, balance: Dictionary, tz_bias: int = 0) -> void:
@@ -1395,6 +1756,27 @@ func from_dict(d: Dictionary, balance: Dictionary, tz_bias: int = 0) -> void:
 	for s in d["story"]:
 		_story_done[String(s)] = true
 	_rng.state = int(d["rng"])
+	tower_t = {}
+	var tt: Dictionary = d.get("tower_t", {"1": start_t})
+	for k in tt:
+		tower_t[int(k)] = float(tt[k])
+	perks = {}
+	var pk: Dictionary = d.get("perks", {})
+	for k in pk:
+		perks[String(k)] = int(pk[k])
+	merchant = d.get("merchant", {})
+	if not merchant.is_empty():
+		var bought: Array = []
+		for i in merchant.get("bought", []):
+			bought.append(int(i))
+		merchant["bought"] = bought
+		merchant["until"] = float(merchant["until"])
+	auto_sell = bool(d.get("auto_sell", true))
+	radio_heard = (d.get("radio", []) as Array).duplicate()
+	ela_t = float(d.get("ela_t", -1.0))
+	_merchant_key = int(d.get("merchant_key", -1))
+	_lines_dirty = true
+	_invalidate()
 	_rebuild_astar()
 	# Quem estava carregando entrega no depósito ao voltar (não se perde nada).
 	for p in people:

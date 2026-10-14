@@ -1,0 +1,324 @@
+{
+ "lines": [
+  {
+   "id": "l1_arrival",
+   "level": 1,
+   "kind": "arrival",
+   "speaker": "ruido",
+   "day_offset": 0,
+   "hour": null,
+   "text_key": "radio.l1_arrival",
+   "cue": "static"
+  },
+  {
+   "id": "l1_reaction",
+   "level": 1,
+   "kind": "reaction",
+   "speaker": "ele",
+   "day_offset": 0,
+   "hour": null,
+   "text_key": "radio.l1_reaction",
+   "cue": "none"
+  },
+  {
+   "id": "l1_a1",
+   "level": 1,
+   "kind": "ambient",
+   "speaker": "ruido",
+   "day_offset": 0,
+   "hour": 15.0,
+   "text_key": "radio.l1_a1",
+   "cue": "tone"
+  },
+  {
+   "id": "l1_a2",
+   "level": 1,
+   "kind": "ambient",
+   "speaker": "ruido",
+   "day_offset": 1,
+   "hour": 3.5,
+   "text_key": "radio.l1_a2",
+   "cue": "static"
+  },
+  {
+   "id": "l1_a3",
+   "level": 1,
+   "kind": "ambient",
+   "speaker": "ruido",
+   "day_offset": 1,
+   "hour": 19.0,
+   "text_key": "radio.l1_a3",
+   "cue": "static"
+  },
+  {
+   "id": "l1_a4",
+   "level": 1,
+   "kind": "ambient",
+   "speaker": "ruido",
+   "day_offset": 2,
+   "hour": 6.5,
+   "text_key": "radio.l1_a4",
+   "cue": "static"
+  },
+  {
+   "id": "l2_arrival",
+   "level": 2,
+   "kind": "arrival",
+   "speaker": "sementes",
+   "day_offset": 0,
+   "hour": null,
+   "text_key": "radio.l2_arrival",
+   "cue": "static"
+  },
+  {
+   "id": "l2_reaction",
+   "level": 2,
+   "kind": "reaction",
+   "speaker": "ele",
+   "day_offset": 0,
+   "hour": null,
+   "text_key": "radio.l2_reaction",
+   "cue": "none"
+  },
+  {
+   "id": "l2_p1",
+   "level": 2,
+   "kind": "program",
+   "speaker": "sementes",
+   "day_offset": 1,
+   "hour": 7.0,
+   "text_key": "radio.l2_p1",
+   "cue": "static"
+  },
+  {
+   "id": "l2_p2",
+   "level": 2,
+   "kind": "program",
+   "speaker": "ruido",
+   "day_offset": 1,
+   "hour": 22.0,
+   "text_key": "radio.l2_p2",
+   "cue": "music_far"
+  },
+  {
+   "id": "l2_p3",
+   "level": 2,
+   "kind": "program",
+   "speaker": "sementes",
+   "day_offset": 2,
+   "hour": 17.5,
+   "text_key": "radio.l2_p3",
+   "cue": "static"
+  },
+  {
+   "id": "l2_p4",
+   "level": 2,
+   "kind": "program",
+   "speaker": "ruido",
+   "day_offset": 3,
+   "hour": 21.5,
+   "text_key": "radio.l2_p4",
+   "cue": "music_far"
+  },
+  {
+   "id": "l3_arrival",
+   "level": 3,
+   "kind": "arrival",
+   "speaker": "caravana",
+   "day_offset": 0,
+   "hour": null,
+   "text_key": "radio.l3_arrival",
+   "cue": "static"
+  },
+  {
+   "id": "l3_reaction",
+   "level": 3,
+   "kind": "reaction",
+   "speaker": "ele",
+   "day_offset": 0,
+   "hour": null,
+   "text_key": "radio.l3_reaction",
+   "cue": "none"
+  },
+  {
+   "id": "l3_n1",
+   "level": 3,
+   "kind": "program",
+   "speaker": "numeros",
+   "day_offset": 0,
+   "hour": 23.0,
+   "text_key": "radio.l3_n1",
+   "cue": "numbers"
+  },
+  {
+   "id": "l3_p1",
+   "level": 3,
+   "kind": "program",
+   "speaker": "caravana",
+   "day_offset": 1,
+   "hour": 12.0,
+   "text_key": "radio.l3_p1",
+   "cue": "static"
+  },
+  {
+   "id": "l3_n2",
+   "level": 3,
+   "kind": "program",
+   "speaker": "numeros",
+   "day_offset": 1,
+   "hour": 23.0,
+   "text_key": "radio.l3_n2",
+   "cue": "numbers"
+  },
+  {
+   "id": "l3_p2",
+   "level": 3,
+   "kind": "program",
+   "speaker": "caravana",
+   "day_offset": 2,
+   "hour": 12.0,
+   "text_key": "radio.l3_p2",
+   "cue": "static"
+  },
+  {
+   "id": "l4_arrival",
+   "level": 4,
+   "kind": "arrival",
+   "speaker": "velho",
+   "day_offset": 0,
+   "hour": null,
+   "text_key": "radio.l4_arrival",
+   "cue": "static"
+  },
+  {
+   "id": "l4_reaction",
+   "level": 4,
+   "kind": "reaction",
+   "speaker": "ele",
+   "day_offset": 0,
+   "hour": null,
+   "text_key": "radio.l4_reaction",
+   "cue": "none"
+  },
+  {
+   "id": "l4_m1",
+   "level": 4,
+   "kind": "program",
+   "speaker": "velho",
+   "day_offset": 0,
+   "hour": 18.0,
+   "text_key": "radio.l4_m1",
+   "cue": "music_18h"
+  },
+  {
+   "id": "l4_m2",
+   "level": 4,
+   "kind": "program",
+   "speaker": "velho",
+   "day_offset": 1,
+   "hour": 18.0,
+   "text_key": "radio.l4_m2",
+   "cue": "music_18h"
+  },
+  {
+   "id": "l4_m3",
+   "level": 4,
+   "kind": "program",
+   "speaker": "velho",
+   "day_offset": 2,
+   "hour": 18.0,
+   "text_key": "radio.l4_m3",
+   "cue": "music_18h"
+  },
+  {
+   "id": "l4_norte1",
+   "level": 4,
+   "kind": "program",
+   "speaker": "norte",
+   "day_offset": 3,
+   "hour": 20.5,
+   "text_key": "radio.l4_norte1",
+   "cue": "static"
+  },
+  {
+   "id": "l4_norte2",
+   "level": 4,
+   "kind": "program",
+   "speaker": "norte",
+   "day_offset": 4,
+   "hour": 22.0,
+   "text_key": "radio.l4_norte2",
+   "cue": "static"
+  },
+  {
+   "id": "l4_norte3",
+   "level": 4,
+   "kind": "program",
+   "speaker": "norte",
+   "day_offset": 5,
+   "hour": 21.0,
+   "text_key": "radio.l4_norte3",
+   "cue": "static"
+  },
+  {
+   "id": "l5_arrival",
+   "level": 5,
+   "kind": "arrival",
+   "speaker": "ela",
+   "day_offset": 0,
+   "hour": null,
+   "text_key": "radio.l5_arrival",
+   "cue": "voice_her"
+  },
+  {
+   "id": "l5_reaction",
+   "level": 5,
+   "kind": "reaction",
+   "speaker": "ele",
+   "day_offset": 0,
+   "hour": null,
+   "text_key": "radio.l5_reaction",
+   "cue": "none"
+  },
+  {
+   "id": "l5_velho",
+   "level": 5,
+   "kind": "program",
+   "speaker": "velho",
+   "day_offset": 1,
+   "hour": 18.0,
+   "text_key": "radio.l5_velho",
+   "cue": "music_18h"
+  },
+  {
+   "id": "l5_numeros",
+   "level": 5,
+   "kind": "program",
+   "speaker": "numeros",
+   "day_offset": 1,
+   "hour": 23.0,
+   "text_key": "radio.l5_numeros",
+   "cue": "numbers"
+  },
+  {
+   "id": "l5_sementes",
+   "level": 5,
+   "kind": "program",
+   "speaker": "sementes",
+   "day_offset": 2,
+   "hour": 7.0,
+   "text_key": "radio.l5_sementes",
+   "cue": "static"
+  },
+  {
+   "id": "l5_caravana",
+   "level": 5,
+   "kind": "program",
+   "speaker": "caravana",
+   "day_offset": 3,
+   "hour": 12.0,
+   "text_key": "radio.l5_caravana",
+   "cue": "static"
+  }
+ ]
+}
