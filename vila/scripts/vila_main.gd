@@ -245,6 +245,12 @@ func _open_test_card() -> void:
 		"radio": hud.show_radio()
 		"manage": hud.set_manage(true)
 		"ending": _show_ending()
+		var o:
+			# --open=b:deposito abre o cartão do primeiro prédio desse tipo.
+			if String(o).begins_with("b:"):
+				var fb := sim._first(String(o).trim_prefix("b:"))
+				if not fb.is_empty():
+					hud.show_building(int(fb["id"]))
 	# Capturas: mouse parado num ponto (--hover=x,y em pixels lógicos), para ver a explicação.
 	if Game.args.has("hover"):
 		var hv := String(Game.args["hover"]).split(",")

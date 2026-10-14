@@ -670,7 +670,7 @@ func _card_res() -> void:
 		return
 	_header(r, I18n.t("RES_" + r))
 	var v := int(floor(float(sim.stock[r])))
-	_card_box.add_child(_row([_icon_rect("check"), _label(fmt("UI_RES_HAVE", {"n": v, "cap": int(sim.cap(r))}))]))
+	_card_box.add_child(_wrap_row("check", fmt("UI_RES_HAVE", {"n": v, "cap": int(sim.cap(r))})))
 	var fl := sim.flow_per_min(r)
 	_card_box.add_child(_row([_icon_rect("seta"), _label(fmt("UI_RES_IN", {"n": "%.1f" % float(fl["prod"])}), C_GOOD)]))
 	if float(fl["use"]) > 0.0:
@@ -788,20 +788,27 @@ func _card_building() -> void:
 		for pid in ws:
 			names.append(pname(sim.person(int(pid))))
 		_card_box.add_child(_row([_icon_rect("pessoa"), _label(fmt("UI_WORKERS", {"a": ws.size(), "b": lv["slots"]}) + ((" " + ", ".join(names)) if not names.is_empty() else ""))]))
-		_card_box.add_child(_row([_icon_rect(String(d["res"])), _label(fmt("UI_RATE", {"n": "%.1f" % (60.0 / float(lv["rate_s"]))}))]))
+		_card_box.add_child(_wrap_row(String(d["res"]), fmt("UI_RATE", {"n": "%.1f" % (60.0 / float(lv["rate_s"])), "r": I18n.t("RES_" + String(d["res"]))})))
 	if d.has("power_use"):
 		var low := sim.power_frac() < 0.999
-		_card_box.add_child(_row([_icon_rect("energia"), _label(fmt("UI_POWER_USE", {"n": d["power_use"]}) + ((" · " + I18n.t("UI_POWER_LOW")) if low else ""), C_WARN if low else C_TEXT)]))
+		var pw := sim.power()
+		_card_box.add_child(_row([_icon_rect("energia"), _label(fmt("UI_POWER_USE", {"n": d["power_use"]}))]))
+		_card_box.add_child(_wrap(fmt("UI_POWER_TOTAL", {"out": int(pw["out"]), "use": int(pw["use"])}), C_MUTED))
+		if low:
+			_card_box.add_child(_wrap_row("alerta", I18n.t("UI_POWER_LOW"), C_WARN))
 	if d.has("power_out"):
 		_card_box.add_child(_row([_icon_rect("energia"), _label(fmt("UI_POWER_OUT", {"n": d["power_out"]}), C_GOOD)]))
 	var inp: Dictionary = lv.get("input", {})
 	for r in inp:
 		var short := float(sim.stock[r]) < float(inp[r])
-		_card_box.add_child(_row([_icon_rect(r), _label(fmt("UI_NO_INPUT", {"r": I18n.t("RES_" + r)}) if short else fmt("UI_INPUT", {"n": inp[r], "r": I18n.t("RES_" + r)}), C_WARN if short else C_TEXT)]))
-	if lv.has("beds") or tp == "hatch":
-		_card_box.add_child(_row([_icon_rect("cama"), _label(fmt("UI_BEDS", {"n": int(lv.get("beds", d.get("beds", 0)))}))]))
-	if lv.has("cap") or tp == "hatch":
-		_card_box.add_child(_row([_icon_rect("check"), _label(fmt("UI_CAP", {"n": int(lv.get("cap", sim.bal["storage"]["hatch_cap"]))}))]))
+		_card_box.add_child(_wrap_row(r, fmt("UI_NO_INPUT", {"r": I18n.t("RES_" + r)}) if short else fmt("UI_INPUT", {"n": inp[r], "r": I18n.t("RES_" + r)}), C_WARN if short else C_TEXT))
+	var beds := int(lv.get("beds", d.get("beds", 0)))
+	if beds > 0:
+		_card_box.add_child(_wrap_row("cama", fmt("UI_BEDS", {"n": beds, "used": sim.people.size(), "total": sim.beds_total()})))
+	if tp == "hatch":
+		_card_box.add_child(_wrap_row("check", fmt("UI_CAP", {"n": int(sim.bal["storage"]["hatch_cap"]), "list": _res_list()})))
+	elif lv.has("cap"):
+		_card_box.add_child(_wrap_row("check", fmt("UI_CAP_ADD", {"n": int(lv["cap"]), "list": _res_list(), "total": int(sim.cap("comida"))})))
 	var nl: int = int(b["level"]) + 1
 	var levels: Array = d.get("levels", [])
 	if nl <= levels.size():
@@ -812,11 +819,11 @@ func _card_building() -> void:
 		else:
 			var gain := ""
 			if nd.has("beds"):
-				gain = " · " + fmt("UI_BEDS", {"n": nd["beds"]})
+				gain = ": " + fmt("UI_GAIN_BEDS", {"n": nd["beds"]})
 			elif nd.has("cap"):
-				gain = " · " + fmt("UI_CAP", {"n": nd["cap"]})
+				gain = ": " + fmt("UI_GAIN_CAP", {"n": nd["cap"]})
 			elif nd.has("rate_s"):
-				gain = " · " + fmt("UI_RATE", {"n": "%.1f" % (60.0 / float(nd["rate_s"]))})
+				gain = ": " + fmt("UI_GAIN_RATE", {"n": "%.1f" % (60.0 / float(nd["rate_s"]))})
 			_card_box.add_child(_wrap(fmt("UI_UPGRADE_TO", {"b": bname(tp, nl)}) + gain, C_MUTED))
 			_card_box.add_child(_row([_cost_row(nd["cost"]), _icon_rect("relogio"), _label(fmt_time(float(nd["time_s"])))]))
 			var up := Button.new()
@@ -829,6 +836,23 @@ func _card_building() -> void:
 					toast(I18n.t("UI_MISSING").format({"list": ""}))
 				_rebuild_card())
 			_card_box.add_child(up)
+
+
+## Ícone + texto que quebra linha (frases longas dos cartões).
+func _wrap_row(ic: String, text: String, col: Color = C_TEXT) -> HBoxContainer:
+	var w := _wrap(text, col, 130.0)
+	w.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var ir := _icon_rect(ic)
+	ir.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	return _row([ir, w])
+
+
+## "comida, água, madeira, sucata, peças"
+func _res_list() -> String:
+	var a: Array[String] = []
+	for r in VilaSim.RES:
+		a.append(I18n.t("RES_" + r))
+	return ", ".join(a)
 
 
 func _progress_lines(b: Dictionary) -> void:

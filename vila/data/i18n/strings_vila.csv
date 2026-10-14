@@ -54,13 +54,13 @@ UI_CLEAR_LEFT,Ainda tem {n} de sucata,{n} scrap left
 UI_CLEAR_MARKED,Marcado: alguém livre vem limpar,Marked: someone free will clear it
 UI_CLEAR_TOWER,A torre aumenta a área da vila quando sobe,The tower widens the village area when it rises
 UI_LEVEL,Nível {n},Level {n}
-UI_WORKERS,Trabalham: {a}/{b},Workers: {a}/{b}
+UI_WORKERS,"Trabalhando aqui: {a} de {b} vagas","Working here: {a} of {b} spots"
 UI_BUILDING,Em obra,Under construction
 UI_UPGRADING,Melhorando,Upgrading
 UI_WAITING_BUILDER,Esperando alguém livre,Waiting for someone free
-UI_BEDS,{n} camas,{n} beds
-UI_CAP,Guarda {n} de cada,Stores {n} of each
-UI_RATE,{n}/min por pessoa,{n}/min per person
+UI_BEDS,"Camas aqui: {n}. A vila toda tem {total} camas para {used} pessoas","Beds here: {n}. The whole village has {total} beds for {used} people"
+UI_CAP,"Guarda até {n} de cada recurso: {list}","Holds up to {n} of each resource: {list}"
+UI_RATE,"Cada pessoa aqui faz {n} de {r} por minuto","Each person here makes {n} {r} per minute"
 UI_PLACE,Clique para pôr · botão direito cancela,Click to place · right click cancels
 UI_NO_SPACE,Não cabe aqui,Doesn't fit here
 UI_OUTSIDE,Fora da área da vila: suba a torre para crescer,Outside the village area: raise the tower to grow
@@ -106,7 +106,7 @@ GOAL_more,{n} sem trabalho: construa mais {b},{n} idle: build another {b}
 GOAL_short,Acabando {r}: construa mais um {b},Running out of {r}: build another {b}
 GOAL_beds,Sem cama livre: melhore a barraca ou faça outra,No free bed: upgrade the tent or build another
 GOAL_storage,A torre pede {n} {r} e só cabem {cap}: melhore o depósito,The tower needs {n} {r} but only {cap} fit: upgrade storage
-GOAL_space,Pouco chão livre: limpe entulho ou suba a torre,Little free ground: clear rubble or raise the tower
+GOAL_space,"Pouco chão livre: limpe entulho, corte árvores ou suba a torre","Little free ground: clear rubble, cut trees or raise the tower"
 DO_idle,Sem nada pra fazer,Nothing to do
 DO_sleep,Dormindo,Sleeping
 DO_to_bed,Indo dormir,Going to bed
@@ -145,9 +145,9 @@ RAR_comum,comum,common
 RAR_rara,rara,rare
 RAR_excelente,excelente,excellent
 TIP_ZOOM,Roda do mouse: zoom · arrastar: mover,Mouse wheel: zoom · drag: move
-UI_RES_HAVE,Tem {n} · cabem {cap},Have {n} · room for {cap}
-UI_RES_IN,Entra {n} por minuto,{n} in per minute
-UI_RES_OUT,Sai {n} por minuto,{n} out per minute
+UI_RES_HAVE,"Você tem {n}. Cabem no máximo {cap} (depósitos aumentam)","You have {n}. Room for {cap} at most (storehouses add more)"
+UI_RES_IN,"Chega {n} por minuto","{n} comes in per minute"
+UI_RES_OUT,"A vila gasta {n} por minuto","The village uses {n} per minute"
 RD_comida,"Cada pessoa come. Hortas fazem comida, mas bebem um pouco de água.","Everyone eats. Gardens make food but drink some water."
 RD_agua,Cada pessoa bebe. O barril e o poço juntam água.,Everyone drinks. Barrels and wells collect water.
 RD_madeira,Quase toda obra pede madeira. Cortam das árvores em volta.,Almost every build needs wood. They cut it from the trees around.
@@ -170,7 +170,7 @@ TUT_zoom,Use a roda do mouse para afastar e aproximar.,Use the mouse wheel to zo
 TUT_end,Ele trabalha sozinho. Pode ir fazer suas coisas que a vila continua.,He works on his own. Go do your things; the village keeps going.
 HINT_gate,Gente na estrada! Clique no selo para escolher quem entra.,People on the road! Click the badge to pick who comes in.
 HINT_tower_ready,A torre já pode subir. Clique em Torre.,The tower can go up now. Click Tower.
-HINT_space,Falta chão. Clique num entulho dentro da área para mandar limpar.,Out of ground. Click rubble inside the area to have it cleared.
+HINT_space,"Falta chão. Clique num entulho ou numa árvore dentro da área para mandar limpar.","Out of ground. Click rubble or a tree inside the area to have it cleared."
 HINT_short,"Está acabando comida ou água. A meta diz o que construir.","Food or water is running out. The goal tells you what to build."
 RES_pecas,peças,parts
 RD_pecas,"Peças saem da oficina (gasta sucata e energia). Para prédios grandes, a torre 4 e a 5. O mercador também vende.","Parts come from the workshop (uses scrap and power). For big buildings and towers 4 and 5. The merchant sells them too."
@@ -193,11 +193,11 @@ BD_cozinha,Toda comida rende 30% mais.,All food goes 30% further.
 BD_estufa,"Muita comida, com energia.","Lots of food, with power."
 UI_POWER,Energia,Power
 UI_POWER_LINE,"Energia: gera {out}, gasta {use}","Power: makes {out}, uses {use}"
-UI_POWER_USE,Gasta {n} de energia,Uses {n} power
-UI_POWER_OUT,Dá {n} de energia,Gives {n} power
-UI_POWER_LOW,"Falta energia: anda mais devagar","Short on power: runs slower"
-UI_INPUT,Usa {n} {r} por vez,Uses {n} {r} each time
-UI_NO_INPUT,Parado: falta {r},Stopped: no {r}
+UI_POWER_USE,"Consome {n} de energia","Uses {n} power"
+UI_POWER_OUT,"Gera {n} de energia para a vila","Makes {n} power for the village"
+UI_POWER_LOW,"A vila tem menos energia do que gasta: trabalha mais devagar","The village has less power than it uses: works slower"
+UI_INPUT,"Cada vez que produz, gasta {n} de {r}","Each time it makes something, it uses {n} {r}"
+UI_NO_INPUT,"Parado: falta {r} para produzir","Stopped: needs {r} to make anything"
 RD_energia,"Energia vem do gerador e do painel. Oficina e estufa gastam. Faltando, elas andam mais devagar.","Power comes from generators and panels. Workshop and greenhouse use it. When short, they run slower."
 GOAL_power,Falta energia: construa um gerador ou painel,Short on power: build a generator or panel
 GOAL_journey,Ela está vindo. Chega em {t},She is on her way. Arrives in {t}
@@ -281,3 +281,8 @@ UI_CUT_MARKED,Marcada: alguém livre vem cortar,Marked: someone free will cut it
 UI_SITE_WHO,{b}: {name} vai construir,{b}: {name} will build it
 UI_SITE_NEXT,"{b}: quem terminar o que está fazendo vem construir","{b}: whoever finishes their task will build it"
 UI_SITE_NIGHT,{b}: a obra começa de manhã (de noite todo mundo dorme),{b}: building starts in the morning (everyone sleeps at night)
+UI_CAP_ADD,"Soma {n} ao espaço de cada recurso ({list}). Hoje cabe {total} de cada","Adds {n} room for each resource ({list}). Right now {total} of each fits"
+UI_GAIN_BEDS,"fica com {n} camas","goes to {n} beds"
+UI_GAIN_CAP,"soma {n} de espaço em cada recurso","adds {n} room for each resource"
+UI_GAIN_RATE,"cada pessoa faz {n} por minuto","each person makes {n} per minute"
+UI_POWER_TOTAL,"A vila gera {out} e gasta {use} de energia","The village makes {out} and uses {use} power"

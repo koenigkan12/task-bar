@@ -58,6 +58,15 @@ static func play(sim: VilaSim) -> void:
 			if d < bd and not sim.marked.has(c):
 				bd = d
 				best = c
+		# Sem entulho na área: manda cortar a árvore mais perto do centro.
+		if best.x < 0:
+			for i in sim.terrain.size():
+				var tc := Vector2i(i % sim.w, i / sim.w)
+				if sim.terrain[i] == VilaSim.T_TREE and sim.in_zone(tc) and not sim.marked.has(tc):
+					var td := Vector2(tc).distance_to(sim.center())
+					if td < bd:
+						bd = td
+						best = tc
 		if best.x >= 0:
 			sim.toggle_mark(best)
 	if sim.tower >= 2 and sim.beds_free() <= 0:

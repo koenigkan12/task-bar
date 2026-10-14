@@ -1702,7 +1702,11 @@ func goal() -> Dictionary:
 	if tower >= tower_max() and String(tower_building()["state"]) == "built" and ela_t < 0.0:
 		return {"kind": "journey", "left_s": journey_left()}
 	if tower >= 2 and beds_free() <= 0 and _count_any("moradia") < 6:
-		return {"kind": "beds"}
+		# Só pede cama quando dá para fazer: melhorar uma barraca ou ter chão para outra.
+		if _can_add_beds():
+			return {"kind": "beds"}
+		if _free_build_cells() < 6:
+			return {"kind": "space"}
 	if _free_build_cells() < 6 and tower < tower_max() and String(tower_building()["state"]) == "built":
 		var nx0 := tower_next()
 		if not can_afford(nx0["cost"]):
@@ -1716,6 +1720,14 @@ func goal() -> Dictionary:
 	if ela_t < 0.0:
 		return {"kind": "journey", "left_s": journey_left()}
 	return {"kind": "done"}
+
+
+func _can_add_beds() -> bool:
+	for b in buildings:
+		if String(b["type"]) == "moradia" and String(b["state"]) == "built" and unlocked("moradia", int(b["level"]) + 1):
+			return true
+	var fp := _fp("moradia")
+	return _free_build_cells() >= fp.x * fp.y
 
 
 ## Quantas células livres de construção restam (para avisar que falta chão).
