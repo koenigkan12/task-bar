@@ -514,6 +514,12 @@ func _process(delta: float) -> void:
 			_toast.visible = false
 
 
+## Só troca a dica se o texto mudou (trocar fecha e reabre a dica com o mouse parado em cima).
+func _set_tip(c: Control, text: String) -> void:
+	if c.tooltip_text != text:
+		c.tooltip_text = text
+
+
 func refresh() -> void:
 	for r in VilaSim.RES:
 		var v := int(floor(float(sim.stock[r])))
@@ -524,15 +530,17 @@ func refresh() -> void:
 		var full := v >= cap
 		l.add_theme_color_override("font_color", C_WARN if low else (C_AMBER if full else C_TEXT))
 		(_res_warn[r] as Control).visible = low
-		var bpm := sim.balance_per_min(r)
-		l.get_parent().tooltip_text = I18n.t("TIP_RES", {"r": I18n.t("RES_" + r).capitalize(), "v": v, "cap": cap, "bpm": "%+.1f" % bpm}) + ((" · " + I18n.t("UI_FULL")) if full else "")
+		# Dica sem números que mudam a toda hora: trocar o texto fechava e reabria a dica.
+		var rtip := I18n.t("TIP_RES", {"r": I18n.t("RES_" + r).capitalize(), "cap": cap}) + ((" · " + I18n.t("UI_FULL")) if full else "")
+		if (l.get_parent() as Control).tooltip_text != rtip:
+			(l.get_parent() as Control).tooltip_text = rtip
 	(_res_chips["pecas"] as Control).visible = sim.tower >= 3 or float(sim.stock["pecas"]) > 0.0
 	var pw := sim.power()
 	_power_chip.visible = float(pw["out"]) > 0.0 or float(pw["use"]) > 0.0
 	_power_label.text = "%d/%d" % [int(pw["out"]), int(pw["use"])]
 	var pshort := float(pw["use"]) > float(pw["out"])
 	_power_label.add_theme_color_override("font_color", C_WARN if pshort else C_TEXT)
-	_power_chip.tooltip_text = fmt("UI_POWER_LINE", {"out": int(pw["out"]), "use": int(pw["use"])}) + ((" · " + I18n.t("UI_POWER_LOW")) if pshort else "")
+	_set_tip(_power_chip, fmt("UI_POWER_LINE", {"out": int(pw["out"]), "use": int(pw["use"])}) + ((" · " + I18n.t("UI_POWER_LOW")) if pshort else ""))
 	_radio_btn.text = str(radio_unread) if radio_unread > 0 else ""
 	_merchant_btn.visible = sim.merchant_here()
 	var lx := 154.0 if _manage.visible else 2.0
@@ -549,19 +557,23 @@ func refresh() -> void:
 	var p_len := fposmod(nt - nf, 24.0) if is_n else fposmod(nf - nt, 24.0)
 	var into := fposmod(hr - p_start, 24.0)
 	_clock_icon.set_state(into / p_len, is_n)
-	var left_s := (p_len - into) / 24.0 * float(sim.bal["night"]["cycle_s"])
 	_clock_label.text = "%s %02d:%02d" % [fmt("UI_DAY", {"n": sim.day_number()}), int(sim.display_hour()), int(fposmod(sim.display_hour() * 60.0, 60.0))]
-	var dh := sim.display_hour()
-	var ctip := fmt("TIP_CLOCK_NIGHT" if is_n else "TIP_CLOCK_DAY", {"h": "%02d:%02d" % [int(dh), int(fposmod(dh * 60.0, 60.0))], "t": fmt_time(left_s)}) + "\n" + I18n.t("TIP_CLOCK")
-	_clock_icon.tooltip_text = ctip
-	_clock_label.tooltip_text = ctip
-	_goal_btn.text = _goal_text()
-	_goal_btn.tooltip_text = _goal_btn.text
+	# Dica só em horas do jogo e fixa durante o período: texto que muda a cada atualização fazia
+	# a dica fechar e abrir com o mouse parado em cima.
+	var tb: Dictionary = sim.bal["time"]
+	var ctip := fmt("TIP_CLOCK_NIGHT" if is_n else "TIP_CLOCK_DAY", {"h": "%02d:00" % int(tb.get("show_day_from_h", 6) if is_n else tb.get("show_night_from_h", 18))}) + "\n" + I18n.t("TIP_CLOCK")
+	if _clock_icon.tooltip_text != ctip:
+		_clock_icon.tooltip_text = ctip
+		_clock_label.tooltip_text = ctip
+	var gt := _goal_text()
+	if _goal_btn.text != gt:
+		_goal_btn.text = gt
+		_goal_btn.tooltip_text = gt
 	var nb: Dictionary = sim.bal["night"]
 	_night_btn.visible = sim.is_night() or sim.work_tonight
 	_night_btn.text = I18n.t("UI_NIGHT_ON") if sim.work_tonight else I18n.t("UI_NIGHT_OFF")
 	_night_btn.add_theme_color_override("font_color", C_WARN if sim.work_tonight else C_TEXT)
-	_night_btn.tooltip_text = fmt("TIP_NIGHT", {"pen": int(round(float(nb["tired_penalty"]) * 100.0)), "rest": int(nb["rest_nights_per_tired"])})
+	_set_tip(_night_btn, fmt("TIP_NIGHT", {"pen": int(round(float(nb["tired_penalty"]) * 100.0)), "rest": int(nb["rest_nights_per_tired"])}))
 	_gate_btn.visible = not sim.gate_group.is_empty()
 	_gate_btn.text = fmt("UI_GATE_BADGE", {"n": sim.gate_group.size()})
 	_gate_btn.size = Vector2(10, 14)

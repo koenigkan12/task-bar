@@ -380,8 +380,10 @@ func _update_hover() -> void:
 		if tip != "":
 			_tip_t += get_process_delta_time()
 			if _tip_text != tip:   # o cartão é refeito a cada 0,2 s: compara o texto, não o nó
+				# Dica já aberta só troca o texto; esconder e esperar de novo fazia ela piscar.
+				if _tip_text == "" or _tip_t < 0.25:
+					_tip_t = 0.0
 				_tip_text = tip
-				_tip_t = 0.0
 			hud.show_tip(tip if _tip_t >= 0.25 else "", mp)
 			world.hover_cell = Vector2i(-1, -1)
 			return
