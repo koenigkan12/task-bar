@@ -13,6 +13,7 @@ var _wind_target: float = 0.5
 var _wind_t: float = 0.0
 var _leaves: CPUParticles2D
 var _dust: CPUParticles2D
+var _streaks: CPUParticles2D        # riscos de vento: só aparecem na rajada, pra o balanço ter motivo
 var _flies: CPUParticles2D
 var _fly_layer: CanvasLayer
 var _smokes: Array = []             # {p: CPUParticles2D, base: Vector2}
@@ -49,6 +50,19 @@ func setup(world_size: Vector2) -> void:
 	_dust.scale_amount_max = 1.0
 	_dust.color_ramp = _fade(Color(0.82, 0.7, 0.6, 0.55), 0.2, 0.6)
 	add_child(_dust)
+	_streaks = _emitter(24, 1.4)
+	_streaks.texture = _line_tex(9)
+	_streaks.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+	_streaks.emission_rect_extents = world_size / 2.0
+	_streaks.position = world_size / 2.0
+	_streaks.direction = Vector2(1, 0)
+	_streaks.spread = 3.0
+	_streaks.gravity = Vector2.ZERO
+	_streaks.initial_velocity_min = 45.0
+	_streaks.initial_velocity_max = 70.0
+	_streaks.color_ramp = _fade(Color(0.92, 0.9, 0.86, 0.6), 0.2, 0.7)
+	_streaks.emitting = false
+	add_child(_streaks)
 	# Vaga-lumes numa camada própria: o escuro da noite (CanvasModulate) não apaga a luz deles.
 	_fly_layer = CanvasLayer.new()
 	_fly_layer.layer = 1
@@ -76,6 +90,12 @@ func _emitter(amount: int, life: float) -> CPUParticles2D:
 	p.local_coords = false
 	p.texture = null
 	return p
+
+
+func _line_tex(w: int) -> ImageTexture:
+	var img := Image.create(w, 1, false, Image.FORMAT_RGBA8)
+	img.fill(Color.WHITE)
+	return ImageTexture.create_from_image(img)
 
 
 func _fade(c: Color, fade_in: float, fade_out: float) -> Gradient:
@@ -173,12 +193,17 @@ func update_fx(delta: float, sim: VilaSim, night_k: float) -> void:
 	_wind_t -= delta
 	if _wind_t <= 0.0:
 		_wind_t = randf_range(5.0, 14.0)
-		_wind_target = randf_range(0.1, 1.0) if randf() < 0.8 else 0.0
+		# Quase sempre brisa; de vez em quando uma rajada curta (que aparece nos riscos de vento).
+		var gust := randf() < 0.2
+		_wind_target = randf_range(0.7, 1.0) if gust else randf_range(0.0, 0.35)
+		if gust:
+			_wind_t = randf_range(3.0, 5.0)
 	wind = move_toward(wind, _wind_target, delta * 0.25)
 	tree_mat.set_shader_parameter("wind", wind)
 	_leaves.gravity = Vector2(6.0 + wind * 26.0, 7.0)
 	_leaves.speed_scale = 0.7 + 0.6 * wind
 	_dust.emitting = wind > 0.65 and night_k < 0.5
+	_streaks.emitting = wind > 0.55
 	_dust.gravity = Vector2(wind * 20.0, 0)
 	_flies.emitting = night_k > 0.55
 	# Prédio desmontado leva o nó junto: confere antes de pôr numa variável tipada (dava erro).

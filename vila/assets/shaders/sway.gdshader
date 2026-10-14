@@ -10,6 +10,6 @@ void vertex() {
 	float phase = MODEL_MATRIX[3].x * 0.071 + MODEL_MATRIX[3].y * 0.037;
 	// Frequência fixa: se ela dependesse do vento, cada mudança de vento pulava a fase
 	// (TIME grande vezes a diferença) e as árvores tremiam como num terremoto.
-	float s = sin(TIME * 1.4 + phase) * (0.6 + wind * 0.5) + wind * 0.6;
+	float s = sin(TIME * 1.2 + phase) * (0.5 + wind * 0.3) + wind * 0.5;
 	VERTEX.x += round(s * k * k);
 }
