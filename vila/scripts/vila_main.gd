@@ -292,6 +292,8 @@ func _process(delta: float) -> void:
 		_update_hover()
 		var hk: String = hud._card_kind
 		world.hl_res = hk.trim_prefix("res:") if hud.card_open() and hk.begins_with("res:") else ""
+		# Pessoa selecionada = cartão dela aberto; fechou o cartão, solta a seleção.
+		world.selected = hud._card_id if hud.card_open() and hk == "person" else -1
 	if _shot_t >= 0.0:
 		_shot_t -= delta
 		if _shot_t < 0.0:
@@ -442,6 +444,9 @@ func _unhandled_input(ev: InputEvent) -> void:
 		elif mb.pressed and mb.button_index == MOUSE_BUTTON_WHEEL_DOWN:
 			_set_zoom(_zoom_i - 1, mb.position)
 		elif mb.button_index == MOUSE_BUTTON_RIGHT and mb.pressed:
+			if _placing == "" and world.selected >= 0 and not hud.mouse_over_ui(mb.position):
+				_order(world.selected, mb.position)
+				return
 			_stop_placing()
 			hud.close_card()
 		elif mb.button_index == MOUSE_BUTTON_LEFT or mb.button_index == MOUSE_BUTTON_MIDDLE:
@@ -464,6 +469,23 @@ func _unhandled_input(ev: InputEvent) -> void:
 	elif ev is InputEventKey and ev.pressed and (ev as InputEventKey).keycode == KEY_ESCAPE:
 		_stop_placing()
 		hud.close_card()
+
+
+## Clique direito com alguém selecionado: manda a pessoa para o prédio, obra, árvore, entulho ou chão.
+## Um anel marca o lugar; se não der, o motivo aparece ali do lado.
+func _order(pid: int, screen: Vector2) -> void:
+	var wp := _screen_to_world(screen)
+	var c := world.cell_at(wp)
+	var b := world.building_at_px(wp)
+	if not b.is_empty():
+		c = Vector2i(b["cell"])
+	var r := sim.order(pid, c)
+	var why := String(r.get("reason", ""))
+	var txt := ""
+	if why != "":
+		txt = hud.fmt("ORD_" + why, {"r": I18n.t("RES_" + String(r.get("res", "")))})
+	world.order_mark(wp, bool(r["ok"]), txt)
+	hud._rebuild_card()
 
 
 func _click(screen: Vector2) -> void:
@@ -503,7 +525,9 @@ func _click(screen: Vector2) -> void:
 	if pid >= 0:
 		hud.show_person(pid)
 		return
-	var b := sim.building_at(c)
+	var b := world.building_at_px(wp)
+	if b.is_empty():
+		b = sim.building_at(c)
 	if not b.is_empty():
 		hud.show_building(int(b["id"]))
 		return

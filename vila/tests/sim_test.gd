@@ -180,5 +180,63 @@ func _init() -> void:
 	night.advance(float(bal["night"]["cycle_s"]) * 4.5 / 24.0)   # até perto das 4h, ainda noite
 	var pb: Dictionary = night.buildings[night.buildings.size() - 1]
 	_check(String(pb["state"]) == "site" and float(pb["progress"]) == 0.0, "obra não anda de noite")
+	_test_orders()
 	print("FALHAS: ", fails)
 	quit(1 if fails > 0 else 0)
+
+
+## Clique direito: mandar alguém trabalhar num prédio, cortar uma árvore, ir até um lugar.
+func _test_orders() -> void:
+	var sim := VilaSim.new()
+	var start := 1760000000.0 - fposmod(1760000000.0, 86400.0) + 7.0 * 3600.0
+	sim.setup(_bal(), start, 0)
+	sim.set_cycle_hour(10.0)
+	for r in VilaSim.RES:
+		sim.stock[r] = 0.0
+	sim.stock["madeira"] = 50.0
+	sim.stock["sucata"] = 50.0
+	var cell := Vector2i(-1, -1)
+	for y in sim.h:
+		for x in sim.w:
+			if cell.x < 0 and sim.can_place("poco", Vector2i(x, y)):
+				cell = Vector2i(x, y)
+	var r: Dictionary = sim.build("poco", cell)
+	_check(bool(r["ok"]), "ordens: poço posto")
+	var poco := sim.building_at(cell)
+	sim._finish(poco)
+	var jo: Dictionary = sim.people[0]
+	sim._set_job(jo, {"kind": "idle"})
+	var o := sim.order(int(jo["id"]), cell)
+	_check(bool(o["ok"]) and String(jo["job"]["kind"]) == "work" and bool(jo["job"]["manual"]), "ordens: clique direito no poço manda trabalhar lá")
+	sim.marked[Vector2i(0, 0)] = true   # ordem automática que antes roubava a pessoa
+	sim.advance(60.0)
+	_check(String(jo["job"].get("kind", "")) == "work" and int(jo["job"].get("b", -1)) == int(poco["id"]), "ordens: continua no poço depois de 1 min")
+	sim.marked.clear()
+	var tree := Vector2i(-1, -1)
+	var bd := 1e9
+	for y in sim.h:
+		for x in sim.w:
+			var c := Vector2i(x, y)
+			if sim.terrain_at(c) == VilaSim.T_TREE and sim._reachable_neighbor(c):
+				var d := Vector2(c).distance_squared_to(Vector2(jo["pos"]))
+				if d < bd:
+					bd = d
+					tree = c
+	sim.stock["madeira"] = 0.0
+	o = sim.order(int(jo["id"]), tree)
+	_check(bool(o["ok"]) and String(jo["job"]["kind"]) == "forage" and jo["target_cell"] == tree, "ordens: clique direito na árvore manda cortar aquela árvore")
+	sim.advance(40.0)
+	_check(sim.terrain_at(tree) != VilaSim.T_TREE, "ordens: a árvore foi cortada")
+	var ground := Vector2i(-1, -1)
+	for y in sim.h:
+		for x in sim.w:
+			var g := Vector2i(x, y)
+			if ground.x < 0 and sim.terrain_at(g) == VilaSim.T_GROUND and sim.building_at(g).is_empty() and not sim._astar.is_point_solid(g):
+				ground = g
+	o = sim.order(int(jo["id"]), ground)
+	_check(bool(o["ok"]) and String(jo["job"]["kind"]) == "move", "ordens: clique direito no chão só move")
+	sim.advance(30.0)
+	_check(Vector2(jo["pos"]).distance_to(Vector2(ground)) < 0.6 or String(jo["job"].get("kind", "")) != "move", "ordens: chegou onde clicou")
+	sim.set_cycle_hour(23.0)
+	o = sim.order(int(jo["id"]), cell)
+	_check(not bool(o["ok"]) and String(o["reason"]) == "night", "ordens: de noite diz que todo mundo dorme")

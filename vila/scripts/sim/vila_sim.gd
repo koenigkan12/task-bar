@@ -1090,13 +1090,16 @@ func _set_job(p: Dictionary, job: Dictionary) -> void:
 			_go(p, _door(b2))
 			p["phase"] = "to_build"
 		"forage":
-			var c := _nearest_forage(String(job["res"]), p["pos"])
+			var c: Vector2i = job["cell"] if job.has("cell") else _nearest_forage(String(job["res"]), p["pos"])
 			p["target_cell"] = c
 			_go(p, _free_neighbor(c, p["pos"]))
 			p["phase"] = "to_forage"
 		"sleep":
 			_go(p, _bed_door(p))
 			p["phase"] = "to_bed"
+		"move":
+			_go(p, job["cell"])
+			p["phase"] = "to_spot"
 		_:
 			p["phase"] = "idle"
 
@@ -1640,7 +1643,7 @@ func _person_step(p: Dictionary, dt: float, night: bool, rethink: bool) -> void:
 		if full:
 			_set_job(p, {"kind": "idle"})
 			return
-		if not bool(job.get("clear", false)) and _has_order():
+		if not bool(job.get("clear", false)) and not bool(job.get("manual", false)) and _has_order():
 			var nj := _pick_job(p)
 			if String(nj["kind"]) == "build" or bool(nj.get("clear", false)):
 				_set_job(p, nj)
@@ -1655,6 +1658,89 @@ func _person_step(p: Dictionary, dt: float, night: bool, rethink: bool) -> void:
 			_do_work(p, dt)
 		"forage":
 			_do_forage(p, dt)
+		"move":
+			# Foi até onde o jogador clicou: espera um pouco ali e depois volta a decidir sozinho.
+			if String(p["phase"]) == "to_spot":
+				if _walk(p, dt):
+					p["phase"] = "hold"
+					p["work_t"] = 0.0
+			else:
+				p["moving"] = false
+				p["work_t"] = float(p["work_t"]) + dt
+				if float(p["work_t"]) >= float(bal["people"].get("move_hold_s", 10.0)):
+					_set_job(p, {"kind": "idle"})
+
+
+## Ordem do jogador (clique direito com a pessoa selecionada): trabalhar no prédio, construir a obra,
+## cortar a árvore / catar o entulho, ou só ir até a célula. Devolve {ok, kind, reason, res}.
+## Se o prédio estiver cheio, troca alguém que foi por conta própria (nunca quem o jogador mandou).
+func order(pid: int, c: Vector2i) -> Dictionary:
+	var p := person(pid)
+	if p.is_empty():
+		return {"ok": false, "reason": "gone"}
+	if is_night() and not work_tonight:
+		return {"ok": false, "reason": "night"}
+	# Carga na mão vai para o estoque na hora: senão a madeira que levava viraria água no poço.
+	if float(p["carry"]) > 0.0:
+		_deliver(p)
+	var b := building_at(c)
+	if not b.is_empty():
+		var bid := int(b["id"])
+		if String(b["state"]) != "built":
+			if int(b["builder"]) != pid:
+				var old := person(int(b["builder"]))
+				if not old.is_empty():
+					_set_job(old, {"kind": "idle"})
+				_set_job(p, {"kind": "build", "b": bid, "manual": true})
+			else:
+				p["job"]["manual"] = true
+			return {"ok": true, "kind": "build"}
+		var d := def(String(b["type"]))
+		var lv := level_def(b)
+		var res := String(d.get("res", ""))
+		if res == "" or int(lv.get("slots", 0)) <= 0:
+			_set_job(p, {"kind": "move", "cell": _door(b), "manual": true})
+			return {"ok": true, "kind": "move", "reason": "no_work"}
+		if (b["workers"] as Array).has(pid):
+			p["job"]["manual"] = true
+			return {"ok": true, "kind": "work"}
+		if float(d.get("power_use", 0)) > 0.0 and power_frac() <= 0.0:
+			return {"ok": false, "reason": "power"}
+		var inp: Dictionary = lv.get("input", {})
+		for r in inp:
+			if float(stock[r]) < float(inp[r]):
+				return {"ok": false, "reason": "input", "res": r}
+		if float(stock[res]) >= cap(res) - 0.01:
+			return {"ok": false, "reason": "store_full", "res": res}
+		var ws: Array = b["workers"]
+		if ws.size() >= int(lv["slots"]):
+			var swap := {}
+			for w in ws:
+				var q := person(int(w))
+				if not q.is_empty() and not bool(q["job"].get("manual", false)):
+					swap = q
+					break
+			if swap.is_empty():
+				return {"ok": false, "reason": "full"}
+			_set_job(swap, {"kind": "idle"})
+		_set_job(p, {"kind": "work", "b": bid, "res": res, "manual": true})
+		return {"ok": true, "kind": "work"}
+	var k := terrain_at(c)
+	if k == T_TREE or k == T_RUBBLE:
+		var fres := "madeira" if k == T_TREE else "sucata"
+		if not _reachable_neighbor(c):
+			return {"ok": false, "reason": "blocked"}
+		if float(stock[fres]) >= cap(fres) - 0.01:
+			return {"ok": false, "reason": "store_full", "res": fres}
+		for q in people:
+			if q != p and q["target_cell"] == c:
+				_set_job(q, {"kind": "idle"})
+		_set_job(p, {"kind": "forage", "res": fres, "cell": c, "manual": true})
+		return {"ok": true, "kind": "forage", "res": fres}
+	if not _inside(c) or _astar.is_point_solid(c):
+		return {"ok": false, "reason": "blocked"}
+	_set_job(p, {"kind": "move", "cell": c, "manual": true})
+	return {"ok": true, "kind": "move"}
 
 
 ## Tem obra esperando alguém ou coisa marcada pelo jogador?
@@ -1765,7 +1851,8 @@ func _do_work(p: Dictionary, dt: float) -> void:
 					_set_job(p, {"kind": "idle"})
 					return
 				# Repensa: pode haver algo mais urgente (obra nova, outro recurso faltando).
-				var nj := _pick_job(p)
+				# Quem o jogador mandou para cá continua aqui.
+				var nj: Dictionary = p["job"] if bool(p["job"].get("manual", false)) else _pick_job(p)
 				if String(nj.get("kind", "")) != "work" or int(nj.get("b", -1)) != int(b["id"]):
 					if String(nj.get("kind", "")) != "idle":
 						_set_job(p, nj)
@@ -1830,8 +1917,12 @@ func _do_forage(p: Dictionary, dt: float) -> void:
 		"to_store":
 			if _walk(p, dt):
 				_deliver(p)
-				_set_job(p, {"kind": "idle"})
-				p["phase"] = "idle"
+				# Mandado pelo jogador: segue coletando o mesmo recurso (a árvore ou entulho mais perto).
+				if bool(p["job"].get("manual", false)) and _has_forage(res) and float(stock[res]) < cap(res) - 0.01:
+					_set_job(p, {"kind": "forage", "res": res, "manual": true})
+				else:
+					_set_job(p, {"kind": "idle"})
+					p["phase"] = "idle"
 
 
 func _to_storage(p: Dictionary) -> void:
@@ -1902,6 +1993,8 @@ func doing(p: Dictionary) -> String:
 		return ("carry:" if String(p["phase"]) == "to_store" else "work:") + String(b2.get("type", ""))
 	if k == "forage":
 		return ("carry:" if String(p["phase"]) == "to_store" else "forage:") + String(j["res"])
+	if k == "move":
+		return "move"
 	return "idle"
 
 

@@ -313,3 +313,14 @@ TIP_CLOCK_NIGHT,"Noite: amanhece às {h}.","Night: dawn at {h}."
 UI_SRC_NONE,Ninguém produz agora,Nobody makes this right now
 UI_SRC_HAND,Catando à mão,Gathering by hand
 TIP_SRC_HAND,"{n} pessoa(s) catando à mão agora.","{n} person(s) gathering by hand right now."
+DO_move,Indo até lá,Heading over
+UI_ORDER_HINT,Botão direito: mandar,Right-click: send
+TIP_ORDER_HINT,"Com a pessoa selecionada, clique com o botão direito num prédio, obra, árvore ou entulho para ela trabalhar ali, ou no chão para só ir até lá.","With this person selected, right-click a building, site, tree or rubble to send them to work there, or the ground to just walk there."
+ORD_night,De noite todo mundo dorme,Everyone sleeps at night
+ORD_power,Sem energia,No power
+ORD_input,Falta {r},Missing {r}
+ORD_store_full,Sem lugar pra {r},No room for {r}
+ORD_full,Sem vaga,No free slot
+ORD_blocked,Não dá pra chegar,Can't get there
+ORD_no_work,Aqui não tem trabalho,No work here
+ORD_gone,,

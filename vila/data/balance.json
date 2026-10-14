@@ -76,7 +76,8 @@
   "eat_every_s": 240,
   "drink_every_s": 200,
   "hungry_speed": 0.5,
-  "rethink_s": 4
+  "rethink_s": 4,
+  "move_hold_s": 10
  },
  "forage": {
   "madeira": {

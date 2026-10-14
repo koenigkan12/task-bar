@@ -126,6 +126,37 @@ func person_at(world: Vector2) -> int:
 	return best
 
 
+## Prédio pelo desenho, não só pelo chão que ocupa: o telhado que passa da base também conta
+## (antes o clique no alto do ferro-velho ou da serraria caía no vazio). O da frente ganha.
+func building_at_px(world: Vector2) -> Dictionary:
+	var best := {}
+	var by := -1e9
+	for b in sim.buildings:
+		var n: Dictionary = _bnodes.get(int(b["id"]), {})
+		if n.is_empty():
+			continue
+		var fp := sim._fp(String(b["type"]))
+		var bottom := float(Vector2i(b["cell"]).y + fp.y) * TILE
+		var h := float(fp.y) * TILE
+		var sp: Sprite2D = n["sprite"]
+		if sp.texture != null and sp.visible:
+			h = maxf(h, float(sp.texture.get_height()))
+		var r := Rect2(float(Vector2i(b["cell"]).x) * TILE, bottom - h, float(fp.x) * TILE, h)
+		if r.has_point(world) and bottom > by:
+			by = bottom
+			best = b
+	return best
+
+
+## Marcador de onde o jogador mandou alguém (anel que abre e some) e, se não deu, o motivo ali do lado.
+var _orders: Array[Dictionary] = []   # {pos, t, ok, text}
+var selected := -1                     # pessoa selecionada (cartão aberto): anel nos pés
+
+
+func order_mark(world: Vector2, ok: bool, text: String = "") -> void:
+	_orders.append({"pos": world, "t": 0.0, "ok": ok, "text": text})
+
+
 func _person_world(p: Dictionary) -> Vector2:
 	return Vector2(p["pos"]) * TILE + Vector2(8, 13)
 
@@ -484,6 +515,9 @@ func _process(delta: float) -> void:
 	if sim == null:
 		return
 	_anim_t += delta
+	for o in _orders:
+		o["t"] = float(o["t"]) + delta
+	_orders = _orders.filter(func(o: Dictionary) -> bool: return float(o["t"]) < (2.2 if String(o["text"]) != "" else 0.6))
 	_sync_merchant()
 	_sync_acc += delta
 	if _sync_acc >= 0.25:
@@ -567,6 +601,24 @@ func _draw_zone() -> void:
 var _timer_font: Font
 
 
+func _draw_orders() -> void:
+	if _timer_font == null:
+		_timer_font = load("res://assets/fonts/DotGothic16-Regular.ttf")
+	for o in _orders:
+		var t: float = o["t"]
+		var col := Color(0.55, 0.95, 0.7) if bool(o["ok"]) else Color(1.0, 0.45, 0.4)
+		if t < 0.6:
+			var k := t / 0.6
+			_overlay.draw_arc(o["pos"], 2.0 + 6.0 * k, 0.0, TAU, 16, Color(col, 1.0 - k), 1.0)
+		var txt := String(o["text"])
+		if txt != "":
+			var a := clampf((2.2 - t) / 0.4, 0.0, 1.0)
+			var wdt := _timer_font.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 8).x
+			var at := (Vector2(o["pos"]) + Vector2(6, -10)).round()
+			_overlay.draw_rect(Rect2(at + Vector2(0, -7), Vector2(wdt + 4, 10)), Color(0.05, 0.04, 0.06, 0.85 * a))
+			_overlay.draw_string(_timer_font, at + Vector2(2, 1), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(col, a))
+
+
 ## Tempo restante (contagem regressiva, 2:35) logo à direita da barra. `left_mid` é o ponto do meio da
 ## borda esquerda do texto. No zoom de longe o texto cresce para continuar legível.
 func _timer_text(left_mid: Vector2, sec: float, col: Color) -> void:
@@ -586,6 +638,13 @@ func _timer_text(left_mid: Vector2, sec: float, col: Color) -> void:
 
 
 func _draw_overlay() -> void:
+	_draw_orders()
+	var sp := sim.person(selected) if selected >= 0 else {}
+	if not sp.is_empty():
+		var feet := _person_world(sp) + Vector2(0, 2)
+		_overlay.draw_set_transform(feet, 0.0, Vector2(1.0, 0.5))
+		_overlay.draw_arc(Vector2.ZERO, 7.0, 0.0, TAU, 20, Color(0.55, 0.95, 0.7, 0.75 + 0.25 * sin(_anim_t * 5.0)), 1.5)
+		_overlay.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	# Recurso clicado na barra de cima: contorno piscando nos prédios que produzem e em quem está nele.
 	if hl_res != "":
 		var hc := Color(1.0, 0.85, 0.4, 0.55 + 0.45 * sin(_anim_t * 6.0))

@@ -1192,6 +1192,10 @@ func _card_person() -> void:
 	var box := VBoxContainer.new()
 	_passive_lines(p["passives"], box, 138.0)
 	_card_box.add_child(box)
+	var hint := _row([_icon_rect("seta"), _label(I18n.t("UI_ORDER_HINT"), C_MUTED)])
+	hint.tooltip_text = I18n.t("TIP_ORDER_HINT")
+	hint.mouse_filter = Control.MOUSE_FILTER_PASS
+	_card_box.add_child(hint)
 
 
 func _doing_text(p: Dictionary) -> String:
@@ -1210,6 +1214,8 @@ func _doing_text(p: Dictionary) -> String:
 			return I18n.t("DO_sleep")
 		"to_bed":
 			return I18n.t("DO_to_bed")
+		"move":
+			return I18n.t("DO_move")
 	return I18n.t("DO_idle")
 
 
