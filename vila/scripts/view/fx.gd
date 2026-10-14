@@ -14,7 +14,7 @@ var _wind_t: float = 0.0
 var _leaves: CPUParticles2D
 var _dust: CPUParticles2D
 var _streaks: CPUParticles2D        # riscos de vento: só aparecem na rajada, pra o balanço ter motivo
-var _flies: CPUParticles2D
+var _flies: VilaFireflies
 var _fly_layer: CanvasLayer
 var _smokes: Array = []             # {p: CPUParticles2D, base: Vector2}
 var _sparks: Array = []             # {p: CPUParticles2D, b: id}
@@ -68,18 +68,8 @@ func setup(world_size: Vector2) -> void:
 	_fly_layer.layer = 1
 	_fly_layer.follow_viewport_enabled = true
 	add_child(_fly_layer)
-	_flies = _emitter(18, 5.0)
-	_flies.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
-	_flies.emission_rect_extents = world_size / 2.0
-	_flies.position = world_size / 2.0
-	_flies.gravity = Vector2(0, -1.5)
-	_flies.spread = 180.0
-	_flies.initial_velocity_min = 1.0
-	_flies.initial_velocity_max = 4.0
-	_flies.scale_amount_min = 1.0
-	_flies.scale_amount_max = 1.0
-	_flies.color_ramp = _pulse(Color(0.85, 1.0, 0.45))
-	_flies.emitting = false
+	_flies = VilaFireflies.new()
+	_flies.setup(world_size)
 	_fly_layer.add_child(_flies)
 
 
@@ -104,16 +94,6 @@ func _fade(c: Color, fade_in: float, fade_out: float) -> Gradient:
 	g.set_color(1, Color(c, 0.0))
 	g.add_point(fade_in, c)
 	g.add_point(fade_out, c)
-	return g
-
-
-func _pulse(c: Color) -> Gradient:
-	var g := Gradient.new()
-	g.set_color(0, Color(c, 0.0))
-	g.set_color(1, Color(c, 0.0))
-	g.add_point(0.25, c)
-	g.add_point(0.4, Color(c, 0.3))
-	g.add_point(0.6, c)
 	return g
 
 
@@ -205,7 +185,7 @@ func update_fx(delta: float, sim: VilaSim, night_k: float) -> void:
 	_dust.emitting = wind > 0.65 and night_k < 0.5
 	_streaks.emitting = wind > 0.55
 	_dust.gravity = Vector2(wind * 20.0, 0)
-	_flies.emitting = night_k > 0.55
+	_flies.level = clampf((night_k - 0.4) / 0.4, 0.0, 1.0)
 	# Prédio desmontado leva o nó junto: confere antes de pôr numa variável tipada (dava erro).
 	_smokes = _smokes.filter(func(e: Dictionary) -> bool: return is_instance_valid(e["p"]))
 	for e in _smokes:
