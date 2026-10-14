@@ -476,13 +476,16 @@ func _process(delta: float) -> void:
 	_overlay.queue_redraw()
 
 
-## Cor do dia pela hora local: manhã fria, dia neutro levemente arroxeado, fim de tarde quente, noite azul.
+## Cor do dia pela hora local: dia claro e quente, fim de tarde dourado, noite bem escura e azul
+## (aí as luzes quentes da fogueira e das janelas se destacam). Acima de 1 clareia o chão.
 func _update_light() -> void:
 	var hr := sim.local_hour()
+	var night := Color(0.19, 0.21, 0.42)
+	var day := Color(1.3, 1.2, 1.0)
 	var keys := [
-		[0.0, Color(0.30, 0.30, 0.52)], [4.0, Color(0.32, 0.32, 0.55)], [5.2, Color(0.70, 0.62, 0.78)],
-		[6.5, Color(0.96, 0.93, 1.0)], [17.0, Color(0.96, 0.93, 1.0)], [19.0, Color(0.92, 0.70, 0.66)],
-		[20.5, Color(0.55, 0.45, 0.66)], [22.0, Color(0.32, 0.32, 0.55)], [24.0, Color(0.30, 0.30, 0.52)]]
+		[0.0, night], [4.0, night], [5.2, Color(0.62, 0.55, 0.74)],
+		[6.5, day], [17.0, day], [19.0, Color(1.08, 0.80, 0.62)],
+		[20.5, Color(0.48, 0.38, 0.58)], [22.0, night], [24.0, night]]
 	var col: Color = keys[0][1]
 	for i in keys.size() - 1:
 		var a: float = keys[i][0]
@@ -491,7 +494,7 @@ func _update_light() -> void:
 			col = (keys[i][1] as Color).lerp(keys[i + 1][1], (hr - a) / maxf(0.001, z - a))
 			break
 	_modulate.color = col
-	_night_k = clampf(1.0 - (col.v - 0.5) / 0.46, 0.0, 1.0)
+	_night_k = clampf(1.0 - (minf(col.v, 1.0) - 0.36) / 0.6, 0.0, 1.0)
 	var flick := 0.92 + 0.08 * sin(_anim_t * 11.0) * sin(_anim_t * 3.7)
 	for e in _lights:
 		var lo: Variant = e["light"]   # sem tipo: o prédio pode ter sido refeito e a luz liberada
@@ -499,7 +502,7 @@ func _update_light() -> void:
 			continue
 		var l := lo as PointLight2D
 		var k := _night_k if not bool(e["always"]) else 0.25 + 0.75 * _night_k
-		l.energy = float(e["base"]) * k * flick
+		l.energy = float(e["base"]) * 1.5 * k * flick
 	_lights = _lights.filter(func(e: Dictionary) -> bool: return is_instance_valid(e["light"]))
 
 
