@@ -614,22 +614,31 @@ func show_rubble(cell: Vector2i) -> void:
 
 func _card_rubble() -> void:
 	_clear_card()
-	if sim.terrain_at(_rubble_cell) != VilaSim.T_RUBBLE:
+	var tree := sim.terrain_at(_rubble_cell) == VilaSim.T_TREE
+	if sim.terrain_at(_rubble_cell) != VilaSim.T_RUBBLE and not tree:
 		close_card()
 		return
-	_header("sucata", I18n.t("B_entulho"), I18n.t("BD_entulho"))
-	_card_box.add_child(_row([_icon_rect("sucata"), _label(fmt("UI_CLEAR_LEFT", {"n": int(sim.rubble.get(_rubble_cell, 0))}))]))
+	if tree:
+		_header("madeira", I18n.t("B_arvore"), I18n.t("BD_arvore"))
+		_card_box.add_child(_row([_icon_rect("madeira"), _label(fmt("UI_CUT_GIVES", {"n": int(sim.bal["forage"]["madeira"]["yield"])}))]))
+	else:
+		_header("sucata", I18n.t("B_entulho"), I18n.t("BD_entulho"))
+		_card_box.add_child(_row([_icon_rect("sucata"), _label(fmt("UI_CLEAR_LEFT", {"n": int(sim.rubble.get(_rubble_cell, 0))}))]))
 	var on := sim.marked.has(_rubble_cell)
 	if on:
-		_card_box.add_child(_row([_icon_rect("check"), _label(I18n.t("UI_CLEAR_MARKED"), C_GOOD)]))
+		_card_box.add_child(_row([_icon_rect("check"), _label(I18n.t("UI_CUT_MARKED" if tree else "UI_CLEAR_MARKED"), C_GOOD)]))
 	var b := Button.new()
-	b.text = I18n.t("UI_UNCLEAR" if on else "UI_CLEAR")
+	if tree:
+		b.text = I18n.t("UI_UNCUT" if on else "UI_CUT")
+	else:
+		b.text = I18n.t("UI_UNCLEAR" if on else "UI_CLEAR")
 	b.icon = icon("martelo")
 	b.pressed.connect(func() -> void:
 		sim.toggle_mark(_rubble_cell)
 		_rebuild_card())
 	_card_box.add_child(b)
-	_card_box.add_child(_wrap(I18n.t("UI_CLEAR_TOWER"), C_MUTED))
+	if not tree:
+		_card_box.add_child(_wrap(I18n.t("UI_CLEAR_TOWER"), C_MUTED))
 
 
 func show_person(id: int) -> void:

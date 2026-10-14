@@ -196,8 +196,9 @@ func _open_area(level: int) -> void:
 
 
 ## Marca (ou desmarca) um entulho para limpar primeiro. Quem cata sucata vai nos marcados antes.
+## Vale para entulho (limpar) e para árvore (cortar). Marcado vira ordem: alguém livre vai lá primeiro.
 func toggle_mark(cell: Vector2i) -> bool:
-	if terrain_at(cell) != T_RUBBLE:
+	if terrain_at(cell) != T_RUBBLE and terrain_at(cell) != T_TREE:
 		return false
 	if marked.has(cell):
 		marked.erase(cell)
@@ -682,12 +683,12 @@ func _pick_job(p: Dictionary) -> Dictionary:
 		return {"kind": "build", "b": int(sites[0]["id"])}
 	var best := {}
 	var best_v := 0.0
-	# Entulho marcado pelo jogador: limpar vale a pena mesmo com sucata sobrando (é o espaço que importa).
-	if not marked.is_empty() and _has_forage("sucata", true):
-		var assigned := _assigned_to("sucata", p)
-		if assigned < maxi(1, people.size() / 2):
-			best = {"kind": "forage", "res": "sucata", "clear": true}
-			best_v = 0.6 * float(bal["forage"]["sucata"]["yield"]) / (float(bal["forage"]["sucata"]["work_s"]) + 8.0) / 3.0
+	# Entulho ou árvore marcados pelo jogador são ordem: vão na frente de tudo menos obra
+	# (até metade da vila ao mesmo tempo, para o resto não parar).
+	if not marked.is_empty():
+		for mres in ["sucata", "madeira"]:
+			if _has_forage(mres, true) and _assigned_to(mres, p) < maxi(1, people.size() / 2):
+				return {"kind": "forage", "res": mres, "clear": true}
 	for res in RES:
 		var u := urgency(res) / (1.0 + float(_assigned_to(res, p)))
 		if u <= 0.0:
@@ -743,9 +744,9 @@ func _nearest_forage(res: String, from: Vector2) -> Vector2i:
 	for q in people:
 		if q["target_cell"] != Vector2i(-1, -1):
 			taken[q["target_cell"]] = true
-	if res == "sucata":
+	if true:
 		for c0 in marked:
-			if taken.has(c0) or terrain[_i(c0)] != T_RUBBLE or not _reachable_neighbor(c0):
+			if taken.has(c0) or terrain[_i(c0)] != kind or not _reachable_neighbor(c0):
 				continue
 			var d0 := from.distance_squared_to(Vector2(c0))
 			if d0 < bd:
@@ -770,12 +771,12 @@ func _has_forage(res: String, only_marked: bool = false) -> bool:
 	for q in people:
 		if q["target_cell"] != Vector2i(-1, -1):
 			taken[q["target_cell"]] = true
-	if res == "sucata":
-		for c0 in marked:
-			if not taken.has(c0) and terrain[_i(c0)] == T_RUBBLE and _reachable_neighbor(c0):
-				return true
-		if only_marked:
-			return false
+	var kind := T_TREE if res == "madeira" else T_RUBBLE
+	for c0 in marked:
+		if not taken.has(c0) and terrain[_i(c0)] == kind and _reachable_neighbor(c0):
+			return true
+	if only_marked:
+		return false
 	for c in _forage_cells(T_TREE if res == "madeira" else T_RUBBLE):
 		if not taken.has(c) and _reachable_neighbor(c):
 			return true
@@ -1388,6 +1389,19 @@ func _person_step(p: Dictionary, dt: float, night: bool, rethink: bool) -> void:
 		else:
 			_wander(p, dt)
 		return
+	# Trabalhando há tempo: obra nova, ordem do jogador ou depósito cheio fazem largar e repensar
+	# (antes a pessoa ficava parada no poço até encher a carga, sem nada mudar na tela).
+	if rethink and (kind == "work" or kind == "forage") and String(p["phase"]) in ["working", "foraging", "to_work", "to_forage"]:
+		var res := String(job.get("res", ""))
+		var full := res != "" and float(stock[res]) >= cap(res) - 0.01
+		if full:
+			_set_job(p, {"kind": "idle"})
+			return
+		if not bool(job.get("clear", false)) and _has_order():
+			var nj := _pick_job(p)
+			if String(nj["kind"]) == "build" or bool(nj.get("clear", false)):
+				_set_job(p, nj)
+				return
 	match kind:
 		"sleep":
 			if _walk(p, dt):
@@ -1398,6 +1412,18 @@ func _person_step(p: Dictionary, dt: float, night: bool, rethink: bool) -> void:
 			_do_work(p, dt)
 		"forage":
 			_do_forage(p, dt)
+
+
+## Tem obra esperando alguém ou coisa marcada pelo jogador?
+func _has_order() -> bool:
+	for b in buildings:
+		if String(b["state"]) != "built" and int(b["builder"]) < 0:
+			return true
+	if not marked.is_empty():
+		for mres in ["sucata", "madeira"]:
+			if _has_forage(mres, true):
+				return true
+	return false
 
 
 func _wander(p: Dictionary, dt: float) -> void:
@@ -1487,7 +1513,7 @@ func _do_work(p: Dictionary, dt: float) -> void:
 				gain *= food_mult()
 			p["carry_res"] = res
 			p["carry"] = float(p["carry"]) + gain
-			if float(p["carry"]) >= float(bal["people"]["carry"]):
+			if float(p["carry"]) >= work_trip(b) - 1e-6:
 				_to_storage(p)
 		"to_store":
 			if _walk(p, dt):
@@ -1503,6 +1529,16 @@ func _do_work(p: Dictionary, dt: float) -> void:
 						return
 				_go(p, _door(b))
 				p["phase"] = "to_work"
+
+
+## Quanto a pessoa junta antes de levar ao depósito: prédio lento leva 1 por vez (assim ela vai e
+## volta e dá para ver que está trabalhando); prédio rápido enche a carga inteira.
+func work_trip(b: Dictionary) -> float:
+	var lv := level_def(b)
+	var cmax: float = float(bal["people"]["carry"])
+	if offline:
+		return cmax   # ninguém está olhando: carga cheia, menos caminhada para simular
+	return clampf(floor(cmax * 12.0 / maxf(1.0, float(lv.get("rate_s", 10.0)))), 1.0, cmax)
 
 
 func _do_forage(p: Dictionary, dt: float) -> void:
@@ -1527,7 +1563,11 @@ func _do_forage(p: Dictionary, dt: float) -> void:
 				if res == "madeira":
 					terrain[_i(c)] = T_STUMP
 					_fdirty = true
-					regrow[c] = t + float(f["regrow_s"])
+					# Árvore que o jogador mandou cortar não volta (ele quer o chão).
+					if marked.has(c):
+						marked.erase(c)
+					else:
+						regrow[c] = t + float(f["regrow_s"])
 					_astar.set_point_solid(c, false)
 				else:
 					var left: int = int(rubble.get(c, 0)) - int(y)

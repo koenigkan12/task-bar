@@ -522,6 +522,44 @@ func _draw_overlay() -> void:
 		var r := clampf(float(b["progress"]) / maxf(0.001, float(b["total"])), 0.0, 1.0)
 		_overlay.draw_rect(Rect2(top + Vector2(2, 0), Vector2(wpx, 4)), Color(0.05, 0.04, 0.06, 0.9))
 		_overlay.draw_rect(Rect2(top + Vector2(3, 1), Vector2((wpx - 2.0) * r, 2)), Color(1.0, 0.75, 0.3) if int(b["builder"]) >= 0 else Color(0.55, 0.5, 0.55))
+	# Barrinha em cima de quem está trabalhando: quanto falta para levar a carga (ou derrubar a árvore,
+	# ou terminar a obra), com o ícone do que está fazendo.
+	var icons := tex("icons")
+	var carry_max: float = float(sim.bal["people"]["carry"])
+	for p in sim.people:
+		if p["asleep"]:
+			continue
+		var ph := String(p["phase"])
+		var job: Dictionary = p["job"]
+		var frac := -1.0
+		var ic := -1
+		match ph:
+			"working":
+				var wb := sim.by_id(int(job.get("b", -1)))
+				frac = float(p["carry"]) / (sim.work_trip(wb) if not wb.is_empty() else carry_max)
+				ic = _res_icon(String(job.get("res", "")))
+			"foraging":
+				var fd: Dictionary = sim.bal["forage"].get(String(job.get("res", "")), {})
+				frac = float(p["work_t"]) / maxf(0.001, float(fd.get("work_s", 1.0)))
+				ic = _res_icon(String(job.get("res", "")))
+			"building":
+				var bb := sim.by_id(int(job.get("b", -1)))
+				if not bb.is_empty():
+					frac = float(bb["progress"]) / maxf(0.001, float(bb["total"]))
+				ic = 8
+		if frac < 0.0:
+			continue
+		var at := _person_world(p) + Vector2(-6, -24)
+		_overlay.draw_rect(Rect2(at, Vector2(12, 3)), Color(0.05, 0.04, 0.06, 0.85))
+		_overlay.draw_rect(Rect2(at + Vector2(1, 1), Vector2(10.0 * clampf(frac, 0.0, 1.0), 1)), Color(0.55, 0.95, 0.7))
+		if icons != null and ic >= 0:
+			_overlay.draw_texture_rect_region(icons, Rect2(at + Vector2(13, -3), Vector2(8, 8)), Rect2(ic * 8, 0, 8, 8))
+	# Obra esperando alguém livre: ampulheta (relógio) piscando em cima.
+	for b in sim.buildings:
+		if String(b["state"]) != "built" and int(b["builder"]) < 0 and icons != null and int(_anim_t * 2.0) % 2 == 0:
+			var fpw := sim._fp(String(b["type"]))
+			var pos := Vector2(Vector2i(b["cell"])) * TILE + Vector2(fpw.x * TILE / 2.0 - 4.0, -15)
+			_overlay.draw_texture_rect_region(icons, Rect2(pos, Vector2(8, 8)), Rect2(6 * 8, 0, 8, 8))
 	# Fantasma de posicionamento
 	if ghost_type != "" and ghost_cell.x >= 0:
 		var fp2 := sim._fp(ghost_type)
@@ -546,7 +584,8 @@ func _draw_overlay() -> void:
 		var r1 := Rect2(Vector2(c) * TILE, Vector2(TILE, TILE))
 		_draw_brackets(r1, Color(1.0, 0.75, 0.3, 0.9))
 		if mk != null:
-			_overlay.draw_texture_rect_region(mk, Rect2(r1.position + Vector2(4, -6), Vector2(8, 8)), Rect2(8 * 8, 0, 8, 8))
+			var mi := 2 if sim.terrain_at(c) == VilaSim.T_TREE else 8   # madeira na árvore, martelo no entulho
+			_overlay.draw_texture_rect_region(mk, Rect2(r1.position + Vector2(4, -6), Vector2(8, 8)), Rect2(mi * 8, 0, 8, 8))
 	if ghost_type == "" and hover_cell.x >= 0:
 		var sel := tex("selecao")
 		var bh := sim.building_at(hover_cell)
@@ -556,6 +595,12 @@ func _draw_overlay() -> void:
 			_draw_brackets(r0)
 		elif sel != null:
 			_overlay.draw_texture(sel, Vector2(hover_cell) * TILE, Color(1, 1, 1, 0.55))
+
+
+func _res_icon(res: String) -> int:
+	if res == "pecas":
+		return 16
+	return VilaSim.RES.find(res)
 
 
 func _draw_brackets(r: Rect2, c: Color = Color(1, 1, 1, 0.7)) -> void:

@@ -82,6 +82,22 @@ func _init() -> void:
 	_check(Time.get_ticks_msec() - t1 < 10000, "offline de 72 h em menos de 10 s")
 	for r in VilaSim.RES:
 		_check(float(sim2.stock[r]) <= sim2.cap(r) + 0.01, "offline respeita o depósito (%s)" % r)
+	# Mandar cortar uma árvore: alguém vai lá e ela não volta.
+	var cut := VilaSim.new()
+	cut.setup(bal, start, 0)
+	var tree := Vector2i(-1, -1)
+	var bd := 1e9
+	for c in cut._forage_cells(VilaSim.T_TREE):
+		var dd := Vector2(c).distance_to(cut.center())
+		if dd < bd and cut._reachable_neighbor(c):
+			bd = dd
+			tree = c
+	_check(cut.toggle_mark(tree), "dá para marcar uma árvore")
+	var waited := 0.0
+	while waited < 600.0 and cut.terrain_at(tree) == VilaSim.T_TREE:
+		cut.advance(5.0)
+		waited += 5.0
+	_check(cut.terrain_at(tree) == VilaSim.T_STUMP and not cut.regrow.has(tree), "a árvore marcada é cortada em %ds e não volta" % int(waited))
 	# A noite para tudo.
 	var night := VilaSim.new()
 	night.setup(bal, start - 7.0 * 3600.0 + 23.0 * 3600.0, 0)

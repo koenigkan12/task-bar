@@ -373,6 +373,9 @@ func _update_hover() -> void:
 	if sim.terrain_at(c) == VilaSim.T_RUBBLE:
 		hud.show_tip(I18n.t("B_entulho") + " · " + I18n.t("UI_CLEAR"), mp)
 		return
+	if sim.terrain_at(c) == VilaSim.T_TREE:
+		hud.show_tip(I18n.t("B_arvore") + " · " + I18n.t("UI_CUT"), mp)
+		return
 	var b := sim.building_at(c)
 	if not b.is_empty():
 		var t := hud.bname(String(b["type"]), int(b["level"]))
@@ -424,9 +427,22 @@ func _click(screen: Vector2) -> void:
 	var wp := _screen_to_world(screen)
 	var c := world.cell_at(wp)
 	if _placing != "":
+		var tp := _placing
 		var r := sim.build(_placing, c)
 		if bool(r["ok"]):
 			_stop_placing()
+			# Diz o que acontece agora: quem vai construir, ou que está esperando alguém livre.
+			var who := ""
+			for p in sim.people:
+				if String(p["job"].get("kind", "")) == "idle" and not p["asleep"]:
+					who = hud.pname(p)
+					break
+			if sim.is_night():
+				hud.toast(hud.fmt("UI_SITE_NIGHT", {"b": hud.bname(tp)}))
+			elif who != "":
+				hud.toast(hud.fmt("UI_SITE_WHO", {"b": hud.bname(tp), "name": who}))
+			else:
+				hud.toast(hud.fmt("UI_SITE_NEXT", {"b": hud.bname(tp)}))
 		elif String(r["reason"]) == "place":
 			hud.toast(I18n.t("UI_NO_SPACE"))
 		else:
@@ -453,7 +469,7 @@ func _click(screen: Vector2) -> void:
 		hud.close_card()
 		return
 	var k := sim.terrain_at(c)
-	if k == VilaSim.T_RUBBLE:
+	if k == VilaSim.T_RUBBLE or k == VilaSim.T_TREE:
 		hud.show_rubble(c)
 	elif k == VilaSim.T_GROUND or k == VilaSim.T_STUMP:
 		hud.show_build_menu()

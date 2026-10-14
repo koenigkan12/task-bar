@@ -49,7 +49,7 @@ UI_UPGRADE_TO,Melhorar para {b},Upgrade to {b}
 UI_CLEAR,Limpar primeiro,Clear first
 UI_UNCLEAR,Desmarcar,Unmark
 UI_CLEAR_LEFT,Ainda tem {n} de sucata,{n} scrap left
-UI_CLEAR_MARKED,Marcado: alguém vem limpar,Marked: someone will clear it
+UI_CLEAR_MARKED,Marcado: alguém livre vem limpar,Marked: someone free will clear it
 UI_CLEAR_TOWER,A torre aumenta a área da vila quando sobe,The tower widens the village area when it rises
 UI_LEVEL,Nível {n},Level {n}
 UI_WORKERS,Trabalham: {a}/{b},Workers: {a}/{b}
@@ -270,3 +270,12 @@ UI_MANAGE_SITES,Obras,Building sites
 UI_MANAGE_NONE,Nenhuma obra agora,No building going on
 UI_MANAGE_PEOPLE,Pessoas,People
 UI_CATCHING_UP,Vendo o que aconteceu enquanto você esteve fora... {p}%,Seeing what happened while you were away... {p}%
+B_arvore,Árvore,Tree
+BD_arvore,"Rende madeira. Mandando cortar, o chão fica livre (ela não volta).","Gives wood. If you order it cut, the ground stays clear (it won't grow back)."
+UI_CUT,Mandar cortar,Order to cut
+UI_UNCUT,Não cortar,Don't cut
+UI_CUT_GIVES,Rende {n} de madeira,Gives {n} wood
+UI_CUT_MARKED,Marcada: alguém livre vem cortar,Marked: someone free will cut it
+UI_SITE_WHO,{b}: {name} vai construir,{b}: {name} will build it
+UI_SITE_NEXT,"{b}: quem terminar o que está fazendo vem construir","{b}: whoever finishes their task will build it"
+UI_SITE_NIGHT,{b}: a obra começa de manhã (de noite todo mundo dorme),{b}: building starts in the morning (everyone sleeps at night)
