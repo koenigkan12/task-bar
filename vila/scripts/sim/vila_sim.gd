@@ -571,6 +571,38 @@ func cancel(id: int) -> Dictionary:
 	return {"ok": true}
 
 
+## Dá para desmontar? Só prédio pronto, que não seja fixo (bunker, torre, estrada).
+func can_demolish(b: Dictionary) -> bool:
+	if b.is_empty() or String(b["state"]) != "built":
+		return false
+	var tp := String(b["type"])
+	if bool(def(tp).get("fixed", false)) or tp == "torre" or tp == "hatch" or tp == "gate":
+		return false
+	return not (tp == "praca" and merchant_here())
+
+
+## Desmonta um prédio pronto: devolve parte do que custou (balance "demolish_refund") e libera o chão.
+## Quem trabalhava nele fica livre. É a saída quando o chão acaba.
+func demolish(id: int) -> Dictionary:
+	var b := by_id(id)
+	if not can_demolish(b):
+		return {"ok": false}
+	var f := float(bal["demolish_refund"])
+	var cost: Dictionary = level_def(b, 1)["cost"]
+	for r in cost:
+		stock[r] = minf(cap(r), float(stock[r]) + floorf(float(cost[r]) * f))
+	for p in people:
+		var j: Dictionary = p["job"]
+		if int(j.get("b", -1)) == id:
+			_set_job(p, {"kind": "idle"})
+	_mark(b, false)
+	buildings.erase(b)
+	_invalidate()
+	_rebuild_astar()
+	changed.emit()
+	return {"ok": true}
+
+
 ## Escolhe um dos 3 do portão (índice) ou ninguém (-1).
 func choose(index: int) -> void:
 	if gate_group.is_empty():
@@ -1786,7 +1818,8 @@ func goal() -> Dictionary:
 	if tower < tower_max() and String(tower_building()["state"]) == "built":
 		var mt: Dictionary = missing(tower_next()["cost"])
 		if mt.has("pecas") and _count_any("oficina") == 0 and unlocked("oficina"):
-			return {"kind": "build", "type": "oficina"}
+			# Sem lugar onde ela caiba: primeiro abrir chão.
+			return {"kind": "build", "type": "oficina"} if has_spot("oficina") else {"kind": "space"}
 	if tower >= 2 and beds_free() <= 0 and _count_any("moradia") < 6:
 		# Só pede cama quando dá para fazer: melhorar uma barraca ou ter chão para outra.
 		if _can_add_beds():
@@ -1806,6 +1839,15 @@ func goal() -> Dictionary:
 	if ela_t < 0.0:
 		return {"kind": "journey", "left_s": journey_left()}
 	return {"kind": "done"}
+
+
+## Existe algum lugar na área onde esse prédio caberia agora?
+func has_spot(type: String) -> bool:
+	for i in terrain.size():
+		var c := Vector2i(i % w, i / w)
+		if occ[i] < 0 and in_zone(c) and can_place(type, c):
+			return true
+	return false
 
 
 func _can_add_beds() -> bool:

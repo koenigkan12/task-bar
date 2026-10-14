@@ -106,7 +106,7 @@ GOAL_more,{n} sem trabalho: construa mais {b},{n} idle: build another {b}
 GOAL_short,Acabando {r}: construa mais um {b},Running out of {r}: build another {b}
 GOAL_beds,Sem cama livre: melhore a barraca ou faça outra,No free bed: upgrade the tent or build another
 GOAL_storage,A torre pede {n} {r} e só cabem {cap}: melhore o depósito,The tower needs {n} {r} but only {cap} fit: upgrade storage
-GOAL_space,"Pouco chão livre: limpe entulho, corte árvores ou suba a torre","Little free ground: clear rubble, cut trees or raise the tower"
+GOAL_space,"Pouco chão livre: limpe entulho, corte árvores ou desmonte algo","Little free ground: clear rubble, cut trees or take something down"
 DO_idle,Sem nada pra fazer,Nothing to do
 DO_sleep,Dormindo,Sleeping
 DO_to_bed,Indo dormir,Going to bed
@@ -286,3 +286,7 @@ UI_GAIN_BEDS,"fica com {n} camas","goes to {n} beds"
 UI_GAIN_CAP,"soma {n} de espaço em cada recurso","adds {n} room for each resource"
 UI_GAIN_RATE,"cada pessoa faz {n} por minuto","each person makes {n} per minute"
 UI_POWER_TOTAL,"A vila gera {out} e gasta {use} de energia","The village makes {out} and uses {use} power"
+UI_DEMOLISH,Desmontar,Take down
+UI_DEMOLISH_Q,Desmontar este prédio?,Take this building down?
+UI_DEMOLISH_TEXT,"Volta metade do que ele custou e o chão fica livre. Quem trabalhava aqui fica livre também.","You get half its cost back and the ground is freed. Whoever worked here is freed too."
+UI_DEMOLISHED,{b} desmontado,{b} taken down

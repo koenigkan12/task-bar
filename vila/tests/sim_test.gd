@@ -63,6 +63,12 @@ func _init() -> void:
 	_check(t_group > 0.0, "chega um grupo de 3 no portão")
 	_check(sim.people.size() >= 3, "pelo menos 3 pessoas em 3 h")
 	_check(min_stock >= -0.001, "estoque nunca negativo (min %.2f)" % min_stock)
+	# Desmontar: libera o chão, devolve metade e não deixa mexer no bunker nem na torre.
+	var pc: Dictionary = sim._first("poco")
+	var cell0: Vector2i = pc["cell"]
+	var n_b: int = sim.buildings.size()
+	_check(bool(sim.demolish(int(pc["id"]))["ok"]) and sim.buildings.size() == n_b - 1 and sim.building_at(cell0).is_empty(), "desmontar tira o prédio e libera o chão")
+	_check(not bool(sim.demolish(int(sim._first("hatch")["id"]))["ok"]) and not bool(sim.demolish(int(sim.tower_building()["id"]))["ok"]), "bunker e torre não desmontam")
 	# Save e load
 	var d := sim.to_dict()
 	var txt := JSON.stringify(d)

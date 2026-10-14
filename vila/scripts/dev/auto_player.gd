@@ -25,13 +25,19 @@ static func play(sim: VilaSim) -> void:
 		_try(sim, "fogueira")
 	if not sim.gate_group.is_empty() and sim.beds_free() > 0:
 		sim.choose(0)
+	# Torre 3: a oficina (peças) vem antes de mais hortas, senão o chão acaba e a torre trava.
+	if sim.tower >= 3 and sim._count_any("oficina") == 0 and sim.unlocked("oficina") and spot(sim, "oficina").x >= 0:
+		_try(sim, "oficina")
 	var g := sim.goal()
 	match String(g["kind"]):
 		"build", "more", "short":
 			_try(sim, String(g["type"]))
 			return
 		"power":
-			_try(sim, "painel" if sim.unlocked("painel") and sim.can_afford(sim.def("painel")["levels"][0]["cost"]) else "gerador")
+			var pt := "painel" if sim.unlocked("painel") and sim.can_afford(sim.def("painel")["levels"][0]["cost"]) else "gerador"
+			if spot(sim, pt).x < 0:
+				_free_one(sim)
+			_try(sim, pt)
 			return
 		"tower":
 			if sim.can_afford(sim.tower_next()["cost"]):
@@ -50,7 +56,7 @@ static func play(sim: VilaSim) -> void:
 					_try(sim, "deposito")
 			return
 	# Pouco chão: marca o entulho mais perto do centro.
-	if sim._free_build_cells() < 10 and sim.marked.size() < 2:
+	if (sim._free_build_cells() < 10 or String(g["kind"]) == "space") and sim.marked.size() < 2:
 		var best := Vector2i(-1, -1)
 		var bd := 1e9
 		for c in sim.rubble:
@@ -69,6 +75,9 @@ static func play(sim: VilaSim) -> void:
 						best = tc
 		if best.x >= 0:
 			sim.toggle_mark(best)
+		# Nada para limpar e a meta é chão: desmonta a horta ou o barril mais simples (sobra pelo menos 2).
+		elif String(g["kind"]) == "space" and sim.marked.is_empty() and sim._count_any("oficina") == 0:
+			_free_one(sim)
 	if sim.tower >= 2 and sim.beds_free() <= 0:
 		var up := false
 		for b in sim.buildings:
@@ -108,3 +117,13 @@ static func play(sim: VilaSim) -> void:
 			if String(offers[i]) in ["pecas_lote", "sementes", "carrinho"] and not (sim.merchant["bought"] as Array).has(i):
 				sim.buy_offer(i)
 		sim.fulfill_request()
+
+
+## Sem chão: desmonta a horta ou o barril mais simples (sobram pelo menos 2 de cada).
+static func _free_one(sim: VilaSim) -> void:
+	for tp in ["poco", "horta"]:
+		if sim._count_any(tp) > 2:
+			for b in sim.buildings:
+				if String(b["type"]) == tp and int(b["level"]) == 1 and sim.can_demolish(b):
+					sim.demolish(int(b["id"]))
+					return

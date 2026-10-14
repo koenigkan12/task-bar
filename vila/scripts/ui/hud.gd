@@ -820,6 +820,20 @@ func _card_building() -> void:
 		_card_box.add_child(_wrap_row("check", fmt("UI_CAP", {"n": int(sim.bal["storage"]["hatch_cap"]), "list": _res_list()})))
 	elif lv.has("cap"):
 		_card_box.add_child(_wrap_row("check", fmt("UI_CAP_ADD", {"n": int(lv["cap"]), "list": _res_list(), "total": int(sim.cap("comida"))})))
+	if sim.can_demolish(b):
+		var dm := Button.new()
+		dm.text = I18n.t("UI_DEMOLISH")
+		dm.theme_type_variation = "FlatButton"
+		dm.tooltip_text = I18n.t("UI_DEMOLISH_TEXT")
+		dm.size_flags_horizontal = Control.SIZE_SHRINK_END
+		var bid := int(b["id"])
+		var nm := title
+		dm.pressed.connect(func() -> void:
+			ConfirmBox.ask(self, "UI_DEMOLISH_Q", "UI_DEMOLISH_TEXT", "UI_DEMOLISH", func() -> void:
+				if bool(sim.demolish(bid)["ok"]):
+					toast(fmt("UI_DEMOLISHED", {"b": nm}))
+					close_card()))
+		_card_box.add_child(dm)
 	var nl: int = int(b["level"]) + 1
 	var levels: Array = d.get("levels", [])
 	if nl <= levels.size():
