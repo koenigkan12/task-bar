@@ -360,7 +360,22 @@ func is_night() -> bool:
 	return hour >= a or hour < z
 
 
-## Hora da vila (0 a 24). Não é o relógio do PC: um dia da vila dura balance "night.cycle_s".
+## Hora mostrada no relógio (0 a 24), no padrão dos jogos: dia das 6h às 19h (com o entardecer
+## no fim) e noite das 19h às 6h. A duração real de cada período não muda: o dia ocupa os mesmos
+## 75% do ciclo e a noite os 25%; só as horas da noite passam mais rápido no relógio.
+func display_hour() -> float:
+	var h := local_hour()
+	var tb: Dictionary = bal["time"]
+	var a: float = float(tb["night_from_h"])
+	var z: float = float(tb["night_to_h"])
+	var d0: float = float(tb.get("show_day_from_h", 6))
+	var n0: float = float(tb.get("show_night_from_h", 19))
+	if not is_night():
+		return d0 + fposmod(h - z, 24.0) / fposmod(a - z, 24.0) * (n0 - d0)
+	return fposmod(n0 + fposmod(h - a, 24.0) / fposmod(z - a, 24.0) * fposmod(d0 - n0, 24.0), 24.0)
+
+
+## Hora interna da vila (0 a 24). Não é o relógio do PC: um dia da vila dura balance "night.cycle_s".
 func local_hour() -> float:
 	return fposmod((t - cycle_t0) / float(bal["night"]["cycle_s"]) * 24.0, 24.0)
 

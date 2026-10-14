@@ -45,6 +45,8 @@
   "offline_min_s": 120,
   "night_from_h": 22,
   "night_to_h": 4,
+  "show_day_from_h": 6,
+  "show_night_from_h": 19,
   "save_every_s": 30
  },
  "start": {

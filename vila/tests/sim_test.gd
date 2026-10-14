@@ -142,6 +142,21 @@ func _init() -> void:
 	_check(lim.limit("horta") == 3 and not lim.at_limit("horta"), "torre 2 libera a 3ª horta")
 	lim.build("fogueira", AutoPlayer.spot(lim, "fogueira"))
 	_check(lim.at_limit("fogueira") and lim.limit("fogueira") == 1, "fogueira só uma")
+	# Relógio mostrado no padrão dos jogos: dia das 6h às 19h, noite das 19h às 6h; 21h é noite.
+	var clk := VilaSim.new()
+	clk.setup(bal, start, 0)
+	var dark_ok := true
+	var prev := -1.0
+	var jumps := 0
+	for i in 480:
+		clk.t += cyc / 480.0
+		var dh := clk.display_hour()
+		if (dh >= 19.0 or dh < 6.0) != clk.is_night() and absf(dh - 19.0) > 0.05 and absf(dh - 6.0) > 0.05:
+			dark_ok = false
+		if prev >= 0.0 and fposmod(dh - prev, 24.0) > 0.5:
+			jumps += 1
+		prev = dh
+	_check(dark_ok and jumps == 0, "relógio: noite das 19h às 6h, sem pulos (%d)" % jumps)
 	# A noite para tudo.
 	var night := VilaSim.new()
 	night.setup(bal, start, 0)
