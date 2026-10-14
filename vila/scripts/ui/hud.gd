@@ -433,6 +433,8 @@ func _goal_text() -> String:
 			return fmt("GOAL_more", {"n": g["idle"], "b": bname(g["type"])})
 		"short":
 			return fmt("GOAL_short", {"r": I18n.t("RES_" + String(g["res"])), "b": bname(g["type"])})
+		"improve":
+			return fmt("GOAL_improve", {"b": bname(g["type"]), "r": I18n.t("RES_" + String(g["res"]))})
 		"beds":
 			return I18n.t("GOAL_beds")
 		"space":
@@ -462,6 +464,8 @@ func _on_goal() -> void:
 	match String(g["kind"]):
 		"build", "more", "short":
 			build_chosen.emit(String(g["type"]))
+		"improve":
+			show_building(int(g["id"]))
 		"beds":
 			show_building(int(sim._first("moradia").get("id", -1)))
 		"space":
@@ -1119,13 +1123,25 @@ func _card_build() -> void:
 		btn.text = bname(type)
 		btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		btn.custom_minimum_size = Vector2(62, 12)
-		btn.disabled = not sim.can_afford(lv["cost"]) or (tut_only != "" and tut_only != type)
+		var full := sim.at_limit(type)
+		btn.disabled = full or not sim.can_afford(lv["cost"]) or (tut_only != "" and tut_only != type)
 		btn.tooltip_text = I18n.t("BD_" + type)
 		build_btns[type] = btn
 		btn.pressed.connect(func() -> void:
 			close_card()
 			build_chosen.emit(type))
-		var row := _row([btn, _cost_row(lv["cost"]), _icon_rect("relogio"), _label(fmt_time(float(lv["time_s"])), C_MUTED)])
+		var parts: Array = [btn]
+		# Limite estilo Clash: "2/3" do lado do nome; a explicação fica na dica.
+		var lim := sim.limit(type)
+		if lim >= 0:
+			var ll := _label("%d/%d" % [sim._count_any(type), lim], C_WARN if full else C_MUTED)
+			ll.tooltip_text = _limit_tip(type)
+			ll.mouse_filter = Control.MOUSE_FILTER_PASS
+			parts.append(ll)
+			if full:
+				btn.tooltip_text = _limit_tip(type) + "\n" + btn.tooltip_text
+		parts.append_array([_cost_row(lv["cost"]), _icon_rect("relogio"), _label(fmt_time(float(lv["time_s"])), C_MUTED)])
+		var row := _row(parts)
 		row.tooltip_text = btn.tooltip_text
 		row.mouse_filter = Control.MOUSE_FILTER_PASS
 		_card_box.add_child(row)
@@ -1135,6 +1151,16 @@ func _card_build() -> void:
 		lrow.tooltip_text = I18n.t("BD_" + type)
 		lrow.mouse_filter = Control.MOUSE_FILTER_PASS
 		_card_box.add_child(lrow)
+
+
+## Por que o prédio tem limite e quando libera mais.
+func _limit_tip(type: String) -> String:
+	var l: Variant = sim.def(type).get("limit", -1)
+	if l is Dictionary and sim.tower < sim.tower_max():
+		return fmt("TIP_LIMIT_TOWER", {"n": sim.limit(type), "t": sim.tower + 1})
+	if l is Dictionary:
+		return fmt("TIP_LIMIT_MAX", {"n": sim.limit(type)})
+	return I18n.t("TIP_LIMIT_ONE")
 
 
 # ================================================================ rádio

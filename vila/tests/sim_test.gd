@@ -129,6 +129,19 @@ func _init() -> void:
 		cut.advance(5.0)
 		waited += 5.0
 	_check(cut.terrain_at(tree) == VilaSim.T_STUMP and not cut.regrow.has(tree), "a árvore marcada é cortada em %ds e não volta" % int(waited))
+	# Limite estilo Clash: 2 hortas na torre 1, +1 por nível; fogueira só uma.
+	var lim := VilaSim.new()
+	lim.setup(bal, start, 0)
+	for r in VilaSim.RES:
+		lim.stock[r] = 200.0
+	for i in 4:
+		lim.build("horta", AutoPlayer.spot(lim, "horta"))
+	_check(lim._count_any("horta") == 2, "torre 1 deixa ter só 2 hortas")
+	_check(String(lim.build("horta", AutoPlayer.spot(lim, "horta"))["reason"]) == "limit", "a 3ª horta é recusada pelo limite")
+	lim.tower = 2
+	_check(lim.limit("horta") == 3 and not lim.at_limit("horta"), "torre 2 libera a 3ª horta")
+	lim.build("fogueira", AutoPlayer.spot(lim, "fogueira"))
+	_check(lim.at_limit("fogueira") and lim.limit("fogueira") == 1, "fogueira só uma")
 	# A noite para tudo.
 	var night := VilaSim.new()
 	night.setup(bal, start, 0)

@@ -33,6 +33,9 @@ static func play(sim: VilaSim) -> void:
 		"build", "more", "short":
 			_try(sim, String(g["type"]))
 			return
+		"improve":
+			sim.upgrade(int(g["id"]))
+			return
 		"power":
 			var pt := "painel" if sim.unlocked("painel") and sim.can_afford(sim.def("painel")["levels"][0]["cost"]) else "gerador"
 			if spot(sim, pt).x < 0:

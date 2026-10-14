@@ -302,3 +302,7 @@ UI_NIGHT_ON_TOAST,"Todo mundo trabalha esta noite. Amanhã vão estar cansados."
 UI_NIGHT_OFF_TOAST,Todo mundo vai descansar esta noite.,Everyone rests tonight.
 TIP_NIGHT,"De noite a vila descansa. Virar a noite põe todo mundo para trabalhar só nesta noite, mas cada noite virada tira {pen}% da produção até descansarem {rest} noites.","At night the village rests. An all-nighter puts everyone to work for this night only, but each one costs {pen}% output until they rest {rest} nights."
 TIP_TIRED,"Cansado ({t} noites viradas): produz {n}% a menos e anda mais devagar. Faltam {left} noites de descanso.","Tired ({t} all-nighters): makes {n}% less and walks slower. {left} nights of rest to go."
+GOAL_improve,"Falta {r}: melhore um {b}","Short on {r}: upgrade a {b}"
+TIP_LIMIT_TOWER,"Dá para ter até {n} agora. A torre no nível {t} libera mais um.","You can have up to {n} now. Tower level {t} allows one more."
+TIP_LIMIT_MAX,"Dá para ter até {n}. Melhore os que já existem.","You can have up to {n}. Upgrade the ones you have."
+TIP_LIMIT_ONE,"Só dá para ter um.","You can only have one."

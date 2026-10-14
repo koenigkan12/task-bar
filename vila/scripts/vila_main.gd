@@ -479,6 +479,9 @@ func _click(screen: Vector2) -> void:
 				hud.toast(hud.fmt("UI_SITE_WHO", {"b": hud.bname(tp), "name": who}))
 			else:
 				hud.toast(hud.fmt("UI_SITE_NEXT", {"b": hud.bname(tp)}))
+		elif String(r["reason"]) == "limit":
+			hud.toast(hud._limit_tip(tp))
+			_stop_placing()
 		elif String(r["reason"]) == "place":
 			var why := sim.place_reason(tp, c)
 			hud.toast(I18n.t("UI_PLACE_" + why) if why != "" else I18n.t("UI_NO_SPACE"))

@@ -162,7 +162,7 @@
     2,
     2
    ],
-   "tower": 1,
+   "tower": 1, "limit": {"base": 2, "per_tower": 1},
    "res": "agua",
    "levels": [
     {
@@ -191,7 +191,7 @@
     2,
     2
    ],
-   "tower": 1,
+   "tower": 1, "limit": {"base": 2, "per_tower": 1},
    "res": "comida",
    "levels": [
     {
@@ -228,7 +228,7 @@
     2,
     2
    ],
-   "tower": 1,
+   "tower": 1, "limit": {"base": 2, "per_tower": 1},
    "storage": true,
    "levels": [
     {
@@ -273,7 +273,7 @@
     1,
     1
    ],
-   "tower": 1,
+   "tower": 1, "limit": 1,
    "levels": [
     {
      "cost": {
@@ -326,7 +326,7 @@
     3,
     3
    ],
-   "tower": 3,
+   "tower": 3, "limit": 1,
    "open": true,
    "levels": [
     {
@@ -343,7 +343,7 @@
     3,
     2
    ],
-   "tower": 3,
+   "tower": 3, "limit": 1,
    "res": "pecas",
    "power_use": 2,
    "levels": [

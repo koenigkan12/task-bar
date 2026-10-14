@@ -458,6 +458,20 @@ func unlocked(type: String, level: int = 1) -> bool:
 	return tower >= need
 
 
+## Quantos desse prédio a vila pode ter agora (como o Clash): -1 é sem limite.
+## No balance.json, "limit" é um número fixo ou {"base", "per_tower"}, que cresce a cada nível da torre.
+func limit(type: String) -> int:
+	var l: Variant = def(type).get("limit", -1)
+	if l is Dictionary:
+		return int(l["base"]) + int(l.get("per_tower", 0)) * (tower - 1)
+	return int(l)
+
+
+func at_limit(type: String) -> bool:
+	var l := limit(type)
+	return l >= 0 and _count_any(type) >= l
+
+
 func can_afford(cost: Dictionary) -> bool:
 	for r in cost:
 		if float(stock.get(r, 0.0)) + 1e-6 < float(cost[r]):
@@ -550,6 +564,8 @@ func tower_max() -> int:
 func build(type: String, cell: Vector2i) -> Dictionary:
 	if not unlocked(type):
 		return {"ok": false, "reason": "locked"}
+	if at_limit(type):
+		return {"ok": false, "reason": "limit"}
 	var lv: Dictionary = (def(type)["levels"] as Array)[0]
 	if not can_afford(lv["cost"]):
 		return {"ok": false, "reason": "cost"}
@@ -1881,10 +1897,22 @@ func goal() -> Dictionary:
 			idle += 1
 	if not is_night():
 		for pair in [["comida", "horta"], ["agua", "poco"]]:
+			var want := ""
 			if idle > 0 and urgency(pair[0]) > 0.6:
+				want = "more"
+			elif float(stock[pair[0]]) <= 3.0 and balance_per_min(pair[0]) < 0.0:
+				want = "short"
+			if want == "":
+				continue
+			# No limite: melhorar um que já existe; se nem isso der, a torre é que libera mais.
+			if at_limit(pair[1]):
+				var ub := _upgradable(pair[1])
+				if not ub.is_empty():
+					return {"kind": "improve", "type": pair[1], "id": int(ub["id"]), "res": pair[0]}
+				continue
+			if want == "more":
 				return {"kind": "more", "type": pair[1], "res": pair[0], "idle": idle}
-			if float(stock[pair[0]]) <= 3.0 and balance_per_min(pair[0]) < 0.0:
-				return {"kind": "short", "type": pair[1], "res": pair[0]}
+			return {"kind": "short", "type": pair[1], "res": pair[0]}
 	var pw := power()
 	if float(pw["use"]) > float(pw["out"]):
 		return {"kind": "power", "out": float(pw["out"]), "use": float(pw["use"])}
@@ -1924,6 +1952,16 @@ func goal() -> Dictionary:
 	if ela_t < 0.0:
 		return {"kind": "journey", "left_s": journey_left()}
 	return {"kind": "done"}
+
+
+## O prédio desse tipo, pronto, de nível mais baixo que a torre já deixa melhorar ({} se nenhum).
+func _upgradable(type: String) -> Dictionary:
+	var best := {}
+	for b in buildings:
+		if String(b["type"]) == type and _working(b) and unlocked(type, int(b["level"]) + 1):
+			if best.is_empty() or int(b["level"]) < int(best["level"]):
+				best = b
+	return best
 
 
 ## Existe algum lugar na área onde esse prédio caberia agora?
