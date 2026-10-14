@@ -1,7 +1,9 @@
 class_name StatusHud
 extends Control
 ## Faixa de status sempre visível, de uma linha só:
-## "[rosto] Dia 3 | [raio] 2/3 | [sucata] 12 sucata | [estrela] Gotejador".
+## Linha 1: "[rosto] (maçã) 80 (gota) 90 (lua) 70 | Dia 3 | [raio] 2/3". Linha 2: "[sucata] 12 sucata | [estrela] Gotejador".
+## Os três medidores redondos (comida, água, sono) ficam sempre visíveis ao lado do rosto, com a porcentagem;
+## o aro e o número ficam amarelos abaixo de 50% e vermelhos abaixo de 10%.
 ## O rosto tem moldura (normal, âmbar, vermelha piscando) = a pior das necessidades; clicar abre o cartão dele.
 ## O raio mostra quanta energia ele usa do que tem; vermelho e piscando quando falta; clicar abre o gerador.
 ## Meta pronta: "[check] Comprar Gotejador". Sem barra de progresso: o que falta fica só no hover
@@ -20,17 +22,23 @@ const TIP_W: int = 150
 const FACE: Rect2 = Rect2(10, 2, 12, 12)   # rosto no quadro do homem parado
 const FRAME: int = 14                       # lado do retrato com a moldura
 const BLINK_S: float = 0.5
+## A linha de baixo (sucata e meta) começa à direita da escotilha e da antena, que ficam clicáveis logo abaixo da faixa.
+const ROW2_X: int = 72
+const NEEDS: Array[String] = ["food", "water", "sleep"]
 
 var steps: FirstSteps
 
 var _col: VBoxContainer
 var _row1: HBoxContainer
+var _row2: HBoxContainer
 var _face: TextureRect
+var _needs_box: HBoxContainer
+var _gauges: Dictionary = {}   # need -> NeedGauge
+var _pcts: Dictionary = {}     # need -> Label
 var _day: Label
 var _pow_box: HBoxContainer
 var _pow_icon: TextureRect
 var _pow: Label
-var _sep_pow: ColorRect
 var _need_state: String = "ok"
 var _power_state: String = "ok"
 var _blink: float = 0.0
@@ -45,6 +53,8 @@ var _tip: PanelContainer
 var _tip_label: Label
 var _row_w: float = 0.0
 var _row_h: float = 10.0
+var _row2_w: float = 0.0
+var _row2_h: float = 10.0
 var _goal_x: float = 0.0
 var _ready_state: bool = false
 var _tip_text: String = ""
@@ -86,6 +96,24 @@ func _build() -> void:
 	_face.custom_minimum_size = Vector2(FRAME, FRAME)
 	_face.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_row1.add_child(_face)
+	_needs_box = HBoxContainer.new()
+	_needs_box.add_theme_constant_override("separation", 3)
+	_needs_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_row1.add_child(_needs_box)
+	for n in NEEDS:
+		var one := HBoxContainer.new()
+		one.add_theme_constant_override("separation", 1)
+		one.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var g := NeedGauge.new()
+		g.need = n
+		one.add_child(g)
+		var l := _label()
+		l.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		one.add_child(l)
+		_needs_box.add_child(one)
+		_gauges[n] = g
+		_pcts[n] = l
+	_row1.add_child(_new_sep())
 	_day = _label()
 	_row1.add_child(_day)
 	_row1.add_child(_new_sep())
@@ -97,18 +125,24 @@ func _build() -> void:
 	_pow = _label()
 	_pow_box.add_child(_pow)
 	_row1.add_child(_pow_box)
-	_sep_pow = _new_sep()
-	_row1.add_child(_sep_pow)
+	_row2 = HBoxContainer.new()
+	_row2.add_theme_constant_override("separation", 2)
+	_row2.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_col.add_child(_row2)
+	var indent := Control.new()
+	indent.custom_minimum_size = Vector2(ROW2_X - 4, 0)
+	indent.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_row2.add_child(indent)
 	_scrap_icon = _icon("sucata")
-	_row1.add_child(_scrap_icon)
+	_row2.add_child(_scrap_icon)
 	_scrap = _label()
-	_row1.add_child(_scrap)
+	_row2.add_child(_scrap)
 	_sep = _new_sep()
-	_row1.add_child(_sep)
+	_row2.add_child(_sep)
 	_goal_icon = _icon("estrela")
-	_row1.add_child(_goal_icon)
+	_row2.add_child(_goal_icon)
 	_goal = _label()
-	_row1.add_child(_goal)
+	_row2.add_child(_goal)
 	_tut = _label()
 	_tut.add_theme_color_override("font_color", UiTheme.AMBER3)
 	_col.add_child(_tut)
@@ -203,6 +237,14 @@ func _refresh_vitals(game: Node) -> void:
 		ScreenUtil.tr_key("hud.energy.bike") if String(tiers.get("energia", "bicicleta")) == "bicicleta" else "",
 		ScreenUtil.tr_key("hud.energy.click")])
 	_need_state = String(game.call("worst_need_state"))
+	for n: String in NEEDS:
+		var st: String = String(game.call("need_state", n))
+		var g: NeedGauge = _gauges[n]
+		g.level = float(game.call("need_level", n))
+		g.state = st
+		var pl: Label = _pcts[n]
+		pl.text = str(int(roundf(g.level * 100.0)))
+		pl.add_theme_color_override("font_color", {"ok": UiTheme.PAPER, "warn": UiTheme.AMBER3, "bad": UiTheme.TOMATO}[st])
 	if _need_state == "bad" and is_visible_in_tree():
 		game.call("ack_warning")
 
@@ -218,17 +260,19 @@ func _join(lines: Array) -> String:
 func _layout() -> void:
 	_row_h = _row1.get_combined_minimum_size().y
 	_row_w = 2.0 + _row1.get_combined_minimum_size().x + 4.0
+	_row2_h = _row2.get_combined_minimum_size().y
+	_row2_w = 2.0 + _row2.get_combined_minimum_size().x + 4.0
 	# posição da meta na linha (calculada pelos mínimos: o contêiner só se ajeita no quadro seguinte)
-	_goal_x = _x_of(_goal_icon) - 3.0
-	custom_minimum_size = Vector2(_row_w, _col.get_combined_minimum_size().y)
+	_goal_x = _x_of(_goal_icon, _row2) - 3.0
+	custom_minimum_size = Vector2(maxf(_row_w, _row2_w), _col.get_combined_minimum_size().y)
 	size = custom_minimum_size
 	queue_redraw()
 
 
 ## Posição x (no HUD) de um filho da linha, somando os mínimos dos que vêm antes: o contêiner só se ajeita no quadro seguinte.
-func _x_of(node: Control) -> float:
+func _x_of(node: Control, row: HBoxContainer = null) -> float:
 	var x: float = 2.0
-	for c: Node in _row1.get_children():
+	for c: Node in (row if row != null else _row1).get_children():
 		var ctl := c as Control
 		if ctl == null or not ctl.visible:
 			continue
@@ -251,12 +295,14 @@ func _draw() -> void:
 	if _need_state == "bad" and fmod(_blink, BLINK_S * 2.0) >= BLINK_S:
 		frame = UiTheme.CONC1
 	draw_rect(Rect2(2.5, 0.5, FRAME - 1.0, _row_h - 1.0), frame, false, 1.0)
-	var y: float = _row_h + 1.0
+	var y2: float = _row_h + 1.0
+	draw_rect(Rect2(ROW2_X - 2, y2, _row2_w - ROW2_X + 2, _row2_h), back)
+	var y: float = y2 + _row2_h + 1.0
 	if _tut.visible:
 		var t: Vector2 = _tut.get_combined_minimum_size()
 		draw_rect(Rect2(1, y, t.x + 3.0, t.y), back)
 	if _tut_key == "tut.4" and _goal_icon.visible and fmod(_pulse, 0.8) < 0.5:
-		draw_rect(Rect2(_goal_x - 2.0, 0, _row_w - _goal_x + 1.0, _row_h), UiTheme.AMBER3, false, 1.0)
+		draw_rect(Rect2(_goal_x - 2.0, y2, _row2_w - _goal_x + 1.0, _row2_h), UiTheme.AMBER3, false, 1.0)
 
 
 func _process(delta: float) -> void:
@@ -271,15 +317,19 @@ func _process(delta: float) -> void:
 
 ## Só a linha de cima recebe clique; o resto deixa passar (a escotilha fica clicável).
 func _has_point(point: Vector2) -> bool:
-	return point.y >= 0.0 and point.y < _row_h and point.x >= 0.0 and point.x < _row_w
+	if point.y < 0.0 or point.x < 0.0:
+		return false
+	if point.y < _row_h:
+		return point.x < _row_w
+	return point.y < _row_h + 1.0 + _row2_h and point.x >= ROW2_X - 2 and point.x < _row2_w
 
 
 func _gui_input(event: InputEvent) -> void:
 	var mm := event as InputEventMouseMotion
 	if mm != null:
-		if _in_energy(mm.position.x) and _tip_pow != "":
+		if mm.position.y < _row_h and _in_energy(mm.position.x) and _tip_pow != "":
 			_show_tip(_tip_pow)
-		elif _tip_text != "" and mm.position.x >= _goal_x:
+		elif mm.position.y >= _row_h and _tip_text != "" and mm.position.x >= _goal_x:
 			_show_tip(_tip_text)
 		else:
 			_hide_tip()
@@ -287,12 +337,12 @@ func _gui_input(event: InputEvent) -> void:
 	var mb := event as InputEventMouseButton
 	if mb == null or not mb.pressed or mb.button_index != MOUSE_BUTTON_LEFT:
 		return
-	if _in_energy(mb.position.x):
+	if mb.position.y >= _row_h:
+		clicked.emit()   # sucata e meta: abre o Construir
+	elif _in_energy(mb.position.x):
 		energy_clicked.emit()
-	elif mb.position.x < _x_of(_pow_box) - 3.0:
-		man_clicked.emit()   # retrato e dia
 	else:
-		clicked.emit()
+		man_clicked.emit()   # retrato, medidores e dia
 	accept_event()
 
 

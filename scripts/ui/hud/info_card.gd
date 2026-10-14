@@ -13,7 +13,6 @@ const W: int = 92
 const W_MAN: int = 124
 const GAUGE: int = 14          # diâmetro do medidor redondo
 const NEEDS: Array[String] = ["food", "water", "sleep"]
-const NEED_COL: Dictionary = {"food": Color("e0852e"), "water": Color("4f9fe0"), "sleep": Color("9a78e0")}
 const REFRESH_S: float = 0.25
 const SQ_MAX: int = 8
 
@@ -277,7 +276,7 @@ func _need_row(r: Dictionary) -> Control:
 	var gauge := NeedGauge.new()
 	gauge.level = float(r["pct"]) / 100.0
 	gauge.state = st
-	gauge.color = NEED_COL[n]
+	gauge.need = n
 	h.add_child(gauge)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 0)

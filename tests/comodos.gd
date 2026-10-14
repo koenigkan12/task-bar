@@ -107,7 +107,7 @@ func _run() -> void:
 	await _shot("1_oficina")
 
 	print("== barra de cima sem a linha de progresso")
-	_check(hud.get("_row2") == null and hud.get("_bar") == null, "sem barra de progresso na barra de cima")
+	_check(hud.get("_bar") == null, "sem barra de progresso na barra de cima")
 
 	print("== botão X")
 	var close_btn: Button = handle.get("_close_btn")

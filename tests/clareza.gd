@@ -189,7 +189,7 @@ func _run() -> void:
 	# antena
 	card.close()
 	var ar: Rect2 = bunker.rect_of({"kind": "antenna"})
-	var ant := Vector2(ar.get_center().x, ar.end.y - 3.0)   # a ponta de cima fica sob a barra de status
+	var ant := Vector2(ar.get_center().x, ar.position.y + ar.size.y * 0.75)   # a ponta de cima fica sob a barra de status
 	await _click(ant)
 	_check(card.is_open() and card.kind == "antenna", "clique na antena abre o cartão")
 	await _shot("8_cartao_antena")

@@ -94,7 +94,7 @@ func _run() -> void:
 	_check(tut.visible and not tut.text.contains("\n"), "tutorial de uma linha: '%s'" % tut.text)
 	# clicar na barra de cima abre a gaveta em Construir
 	var drawer: Node = main.get("_drawer")
-	await _click(hud.global_position + Vector2(float(hud.get("_goal_x")) + 6.0, 5.0))
+	await _click(hud.global_position + Vector2(float(hud.get("_goal_x")) + 6.0, float(hud.get("_row_h")) + 6.0))
 	await _frames(5)
 	_check(drawer.is_open() and drawer.current_tab() == "build", "clique na meta da barra abre Construir")
 	drawer.close()
