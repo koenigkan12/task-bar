@@ -308,3 +308,5 @@ TIP_LIMIT_MAX,"Dá para ter até {n}. Melhore os que já existem.","You can have
 TIP_LIMIT_ONE,"Só dá para ter um.","You can only have one."
 TIP_NO_SPOT_TOWER,"Não cabe em lugar nenhum agora. Desmonte algo, limpe entulho ou suba a torre: o nível {t} abre mais chão.","It doesn't fit anywhere right now. Demolish something, clear rubble or raise the tower: level {t} opens more ground."
 TIP_NO_SPOT,"Não cabe em lugar nenhum agora. Desmonte algo ou limpe entulho.","It doesn't fit anywhere right now. Demolish something or clear rubble."
+TIP_CLOCK_DAY,"{h} · a noite chega em {t}","{h} · night falls in {t}"
+TIP_CLOCK_NIGHT,"{h} · amanhece em {t}","{h} · dawn in {t}"

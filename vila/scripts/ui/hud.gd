@@ -43,7 +43,7 @@ var quiet: bool = false          # tutorial rodando: o rádio só anota, sem bal
 var _res_warn: Dictionary = {}
 var _people_label: Label
 var _clock_label: Label
-var _clock_icon: TextureRect
+var _clock_icon: PeriodDial
 var _goal_btn: Button
 var _gate_btn: Button
 var _card: PanelContainer
@@ -324,7 +324,9 @@ func _build_top() -> void:
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	h.add_child(spacer)
-	_clock_icon = _icon_rect("sol")
+	_clock_icon = PeriodDial.new()
+	_clock_icon.sun = icon("sol")
+	_clock_icon.moon = icon("lua")
 	_clock_label = _label("")
 	for c: Control in [_clock_icon, _clock_label]:
 		c.mouse_filter = Control.MOUSE_FILTER_PASS
@@ -539,8 +541,19 @@ func refresh() -> void:
 	_merchant_btn.size = Vector2.ZERO
 	_people_label.text = "%d/%d" % [sim.people.size(), sim.beds_total()]
 	var hr := sim.local_hour()
-	_clock_label.text = "%s %02d:%02d" % [fmt("UI_DAY", {"n": sim.day_number()}), int(hr), int(fposmod(hr * 60.0, 60.0))]
-	_clock_icon.texture = icon("lua" if sim.is_night() else "sol")
+	# Círculo que enche durante o período (dia ou noite); o horário e quanto falta vão na dica.
+	var nf: float = float(sim.bal["time"]["night_from_h"])
+	var nt: float = float(sim.bal["time"]["night_to_h"])
+	var is_n := sim.is_night()
+	var p_start := nf if is_n else nt
+	var p_len := fposmod(nt - nf, 24.0) if is_n else fposmod(nf - nt, 24.0)
+	var into := fposmod(hr - p_start, 24.0)
+	_clock_icon.set_state(into / p_len, is_n)
+	var left_s := (p_len - into) / 24.0 * float(sim.bal["night"]["cycle_s"])
+	_clock_label.text = fmt("UI_DAY", {"n": sim.day_number()})
+	var ctip := fmt("TIP_CLOCK_NIGHT" if is_n else "TIP_CLOCK_DAY", {"h": "%02d:%02d" % [int(hr), int(fposmod(hr * 60.0, 60.0))], "t": fmt_time(left_s)}) + "\n" + I18n.t("TIP_CLOCK")
+	_clock_icon.tooltip_text = ctip
+	_clock_label.tooltip_text = ctip
 	_goal_btn.text = _goal_text()
 	_goal_btn.tooltip_text = _goal_btn.text
 	var nb: Dictionary = sim.bal["night"]
