@@ -87,6 +87,25 @@ func _initialize() -> void:
 	await process_frame
 	await process_frame
 	_check(not hud.card_open(), "um clique no X fecha o cartão")
+	# Cartão de prédio parado: as atualizações não podem trocar os nós nem mudar o tamanho (piscava).
+	var mv2 := InputEventMouseMotion.new()
+	mv2.position = Vector2(5, 120)
+	mv2.global_position = mv2.position
+	Input.parse_input_event(mv2)
+	hud.show_building(int(sim._first("moradia")["id"]))
+	for i in 4:
+		await process_frame
+	var box0: Node = hud._card_box
+	var size0: Vector2 = hud._card.size
+	var same := true
+	for i in 12:
+		hud.refresh()
+		await process_frame
+		if hud._card.size != size0 or hud._card_box != box0:
+			same = false
+	_check(same, "cartão de prédio parado não pisca nem muda de tamanho (%s)" % str(size0))
+	var btm: Control = box0.get_child(box0.get_child_count() - 1)
+	_check(hud._card.get_global_rect().encloses(btm.get_global_rect()), "o último botão do cartão cabe dentro dele")
 	for i in 30:
 		await process_frame
 	print("FALHAS: ", fails)

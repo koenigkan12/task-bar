@@ -61,6 +61,7 @@ var tower_btn: Button
 var goal_btn: Button
 ## Botões do menu Construir por tipo (o tutorial aponta para eles).
 var build_btns: Dictionary = {}
+var _offscreen := false   # o cartão está sendo montado fora da tela (_rebuild_card)
 ## Tutorial: só este tipo fica liberado no menu Construir ("" = todos).
 var tut_only: String = ""
 
@@ -762,7 +763,8 @@ func _header(ic: String, title: String, sub: String = "") -> void:
 
 
 func _place_card() -> void:
-	_card.size = Vector2.ZERO
+	if _offscreen:
+		return
 	await get_tree().process_frame
 	if not is_instance_valid(_card):
 		return
@@ -775,9 +777,56 @@ func _place_card() -> void:
 		_card.position = Vector2(W - s.x - 2.0, 17)
 
 
+## Refaz o cartão fora da tela e só troca se mudou alguma coisa. Antes ele era refeito no lugar a
+## cada 0,2 s: no quadro da troca os nós novos ainda não tinham tamanho e o cartão encolhia e
+## crescia (piscava), às vezes cortando o último botão.
 func _rebuild_card() -> void:
 	if not _card.visible:
 		return
+	var old_box := _card_box
+	var old_btns := build_btns.duplicate()
+	_card_box = VBoxContainer.new()
+	_card_box.add_theme_constant_override("separation", 2)
+	_offscreen = true
+	_build_card_kind()
+	_offscreen = false
+	if _sig(_card_box) == _sig(old_box):
+		_card_box.free()
+		_card_box = old_box
+		build_btns = old_btns
+		return
+	_card.remove_child(old_box)
+	old_box.queue_free()
+	_card.add_child(_card_box)
+	_place_card()
+
+
+## Uma "impressão" do que o cartão mostra: textos, cores, ícones, botões travados, barras.
+func _sig(n: Node) -> String:
+	var parts: PackedStringArray = [n.get_class()]
+	if n is Label:
+		parts.append((n as Label).text)
+	if n is Button:
+		parts.append((n as Button).text + str((n as Button).disabled))
+	if n is Control:
+		var c := n as Control
+		parts.append(c.tooltip_text + str(c.visible) + str(c.custom_minimum_size))
+		if c.has_theme_color_override("font_color"):
+			parts.append(str(c.get_theme_color("font_color")))
+	if n is Range:
+		parts.append(str(roundf((n as Range).value * 100.0)))
+	if n is TextureRect and (n as TextureRect).texture != null:
+		var tx: Texture2D = (n as TextureRect).texture
+		# Os ícones são AtlasTexture novas a cada chamada: compara o recorte, não o objeto.
+		parts.append(str((tx as AtlasTexture).region) + str((tx as AtlasTexture).atlas.get_instance_id()) if tx is AtlasTexture else str(tx.get_instance_id()))
+	if n is CanvasItem:
+		parts.append(str((n as CanvasItem).modulate))
+	for ch in n.get_children():
+		parts.append(_sig(ch))
+	return "(" + "|".join(parts) + ")"
+
+
+func _build_card_kind() -> void:
 	match _card_kind:
 		"building":
 			_card_building()
@@ -798,9 +847,6 @@ func _rebuild_card() -> void:
 		_:
 			if _card_kind.begins_with("res:"):
 				_card_res()
-			else:
-				return
-	_place_card()
 
 
 func _card_building() -> void:
@@ -1124,7 +1170,8 @@ func _card_build() -> void:
 		btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		btn.custom_minimum_size = Vector2(62, 12)
 		var full := sim.at_limit(type)
-		btn.disabled = full or not sim.can_afford(lv["cost"]) or (tut_only != "" and tut_only != type)
+		var no_spot := not full and not sim.has_spot(type)
+		btn.disabled = full or no_spot or not sim.can_afford(lv["cost"]) or (tut_only != "" and tut_only != type)
 		btn.tooltip_text = I18n.t("BD_" + type)
 		build_btns[type] = btn
 		btn.pressed.connect(func() -> void:
@@ -1140,6 +1187,14 @@ func _card_build() -> void:
 			parts.append(ll)
 			if full:
 				btn.tooltip_text = _limit_tip(type) + "\n" + btn.tooltip_text
+		# Não cabe em lugar nenhum: diz na hora, em vez de deixar o jogador procurar.
+		if no_spot:
+			var nt := _no_spot_tip()
+			var ic := _icon_rect("alerta")
+			ic.tooltip_text = nt
+			ic.mouse_filter = Control.MOUSE_FILTER_PASS
+			parts.append(ic)
+			btn.tooltip_text = nt + "\n" + btn.tooltip_text
 		parts.append_array([_cost_row(lv["cost"]), _icon_rect("relogio"), _label(fmt_time(float(lv["time_s"])), C_MUTED)])
 		var row := _row(parts)
 		row.tooltip_text = btn.tooltip_text
@@ -1151,6 +1206,12 @@ func _card_build() -> void:
 		lrow.tooltip_text = I18n.t("BD_" + type)
 		lrow.mouse_filter = Control.MOUSE_FILTER_PASS
 		_card_box.add_child(lrow)
+
+
+func _no_spot_tip() -> String:
+	if sim.tower < sim.tower_max():
+		return fmt("TIP_NO_SPOT_TOWER", {"t": sim.tower + 1})
+	return I18n.t("TIP_NO_SPOT")
 
 
 ## Por que o prédio tem limite e quando libera mais.

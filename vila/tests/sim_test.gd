@@ -31,7 +31,7 @@ func _init() -> void:
 	_check(sim._count_any("moradia") == 1 and sim.beds_total() == 1, "começa com uma barraca de uma cama")
 	var free0 := sim._free_build_cells()
 	print("chão livre no começo: ", free0)
-	_check(free0 >= 14 and free0 <= 60, "clareira pequena no começo (14 a 60 células livres)")
+	_check(free0 >= 60 and free0 <= 110, "clareira do começo cabe o que a torre 1 libera (60 a 110 células livres)")
 	_check(not sim.is_night(), "começa de dia")
 	var t_tower2 := -1.0
 	var t_ari := -1.0
