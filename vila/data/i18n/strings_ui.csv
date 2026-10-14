@@ -71,10 +71,11 @@ opt.on,Ligado,On
 opt.off,Desligado,Off
 tray.show,Mostrar,Show
 tray.collapse,Recolher,Collapse
-tray.reset,Resetar posição,Reset position
+tray.reset,Resetar posição e tamanho,Reset position and size
 tray.on_top,Sempre por cima,Always on top
 tray.quit,Sair,Quit
 opt.quit,Fechar o jogo,Close the game
 opt.quit.btn,Sair,Quit
 opt.quit.help,Salva sozinho antes de fechar.,Saves by itself before closing.
 opt.reduce_flicker.help,As luzes deixam de piscar.,Lights stop flickering.
+ending.credits,Obrigado por esperar com Joaquim.,Thanks for waiting with Joaquim.

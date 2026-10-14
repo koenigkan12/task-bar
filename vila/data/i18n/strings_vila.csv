@@ -190,7 +190,7 @@ BD_galinheiro,Comida sem gastar água.,Food without using water.
 BD_cozinha,Toda comida rende 30% mais.,All food goes 30% further.
 BD_estufa,"Muita comida, com energia.","Lots of food, with power."
 UI_POWER,Energia,Power
-UI_POWER_LINE,Energia: {out} de {use},Power: {out} of {use}
+UI_POWER_LINE,"Energia: gera {out}, gasta {use}","Power: makes {out}, uses {use}"
 UI_POWER_USE,Gasta {n} de energia,Uses {n} power
 UI_POWER_OUT,Dá {n} de energia,Gives {n} power
 UI_POWER_LOW,"Falta energia: anda mais devagar","Short on power: runs slower"
@@ -233,7 +233,7 @@ OFD_rumor,Manda o grupo do portão embora e chama outro.,Sends the gate group aw
 UI_RADIO,Rádio,Radio
 UI_RADIO_LOG,Caderno do rádio,Radio notebook
 UI_RADIO_EMPTY,Nada ainda. Só chiado.,Nothing yet. Only static.
-UI_RADIO_NEW,{n} novas,{n} new
+UI_RADIO_NEW,Falas novas no rádio: {n},New radio lines: {n}
 P_lia,Lia,Lia
 P_teo,Téo,Téo
 P_caio,Caio,Caio
@@ -259,3 +259,14 @@ PASD_mecanico,Oficina rende mais,Workshop works faster
 UI_TOWER_ELA,"A torre está pronta. Agora é esperar ela.","The tower is done. Now we wait for her."
 VEND_knock,(Alguém no portão. Botas gastas e uma mochila.),(Someone at the gate. Worn boots and a backpack.)
 VEND_light,(As luzes da vila acendem uma por uma.),(The village lights come on one by one.)
+TIP_PEOPLE,Pessoas na vila / camas,People in the village / beds
+TIP_CLOCK,"Hora na vila, a mesma do seu relógio. De noite todo mundo dorme.","Village time, same as your clock. At night everyone sleeps."
+TIP_BUILD,Escolher um prédio para construir,Pick a building to build
+TIP_TOWER,"A torre do rádio: subir de nível libera prédios, chão e gente nova","The radio tower: each level unlocks buildings, ground and new people"
+TIP_RES,"{r}: {v} de {cap} · {bpm} por minuto. Clique para ver de onde vem.","{r}: {v} of {cap} · {bpm} per minute. Click to see where it comes from."
+TIP_RESIZE,Puxe a borda da janela para mudar o tamanho,Drag the window edge to resize
+UI_MANAGE_RES,Recursos (por minuto),Resources (per minute)
+UI_MANAGE_SITES,Obras,Building sites
+UI_MANAGE_NONE,Nenhuma obra agora,No building going on
+UI_MANAGE_PEOPLE,Pessoas,People
+UI_CATCHING_UP,Vendo o que aconteceu enquanto você esteve fora... {p}%,Seeing what happened while you were away... {p}%

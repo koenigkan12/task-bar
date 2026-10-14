@@ -15,6 +15,9 @@ var _layer: CanvasLayer
 var _title: TitleScreen
 var _options: OptionsScreen
 var _tut: VilaTutorial
+var _ending: EndingScreen
+var _pending_welcome: Dictionary = {}
+var _catch_label: Label
 var _tut_layer: CanvasLayer
 var _zoom_i: int = 1
 var _press_pos: Vector2 = Vector2(-1, -1)
@@ -35,9 +38,15 @@ func _ready() -> void:
 	add_child(_layer)
 	Game.sim_replaced.connect(_bind_sim)
 	AudioManager.set_station(true)
+	WindowService.layout_changed.connect(func(_l: Vector2i, _s: int) -> void: _clamp_cam())
+	Game.arrival_started.connect(func() -> void:
+		get_tree().create_timer(6.0).timeout.connect(_show_ending))
 	Game.welcome_back.connect(func(s: Dictionary) -> void:
 		if hud != null:
-			hud.show_welcome(s))
+			hud.show_welcome(s)
+		else:
+			_pending_welcome = s)
+	Game.catch_up_progress.connect(_on_catch_up)
 	var args: Dictionary = Game.args
 	_shot = String(args.get("shot", ""))
 	_bind_sim()
@@ -85,6 +94,19 @@ func _make_hud() -> void:
 		if not b.is_empty() and String(b["type"]) != "torre":
 			hud.toast(hud.fmt("UI_DONE", {"b": hud.bname(String(b["type"]), int(b["level"]))})))
 	sim.group_arrived.connect(func() -> void: hud.toast(hud.fmt("UI_GATE_BADGE", {"n": sim.gate_group.size()})))
+	sim.radio.connect(func(l: Dictionary) -> void:
+		if hud != null and not sim.offline:
+			hud.quiet = _tut != null and _tut.active()
+			hud.on_radio(l))
+	sim.merchant_arrived.connect(func() -> void:
+		if hud != null and not sim.offline:
+			hud.toast(I18n.t("UI_MERCHANT_HERE")))
+	sim.merchant_left.connect(func(sold: Dictionary) -> void:
+		if hud != null and not sim.offline and not sold.is_empty():
+			var p := 0
+			for r in sold:
+				p += int(sold[r])
+			hud.toast(hud.fmt("UI_MERCHANT_SOLD", {"p": p})))
 	_tut_layer = CanvasLayer.new()
 	_tut_layer.layer = 5
 	add_child(_tut_layer)
@@ -116,7 +138,62 @@ func _enter_game() -> void:
 	var hatch := sim._first("hatch")
 	cam.position = Vector2(Vector2i(hatch["cell"])) * 16.0 + Vector2(40, 8)
 	_clamp_cam()
+	if not _pending_welcome.is_empty():
+		hud.show_welcome(_pending_welcome)
+		_pending_welcome = {}
 	_open_test_card()
+	if sim.ela_t >= 0.0 and not bool(Settings.get_value("ending_seen", false)):
+		_show_ending.call_deferred()
+
+
+## Voltando depois de um tempo fechado: aviso no meio da tela enquanto a vila alcança o relógio.
+func _on_catch_up(frac: float) -> void:
+	if frac >= 1.0:
+		if _catch_label != null:
+			_catch_label.queue_free()
+			_catch_label = null
+		return
+	if _catch_label == null:
+		_catch_label = Label.new()
+		_catch_label.theme = UiTheme.build()
+		_catch_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_catch_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		_catch_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		var bg := StyleBoxFlat.new()
+		bg.bg_color = Color(0.05, 0.04, 0.07, 0.75)
+		_catch_label.add_theme_stylebox_override("normal", bg)
+		_catch_label.mouse_filter = Control.MOUSE_FILTER_STOP
+		var cl := CanvasLayer.new()
+		cl.layer = 30
+		add_child(cl)
+		cl.add_child(_catch_label)
+		_catch_label.tree_exited.connect(cl.queue_free)
+	_catch_label.text = I18n.t("UI_CATCHING_UP", {"p": int(frac * 100.0)})
+
+
+## O final: ela entrou pelo portão. Véu escuro com as páginas da chegada; depois a vila continua.
+func _show_ending() -> void:
+	if _ending != null:
+		return
+	if hud != null:
+		hud.close_card()
+	var el := CanvasLayer.new()
+	el.layer = 20
+	add_child(el)
+	_ending = EndingScreen.new()
+	el.add_child(_ending)
+	_ending.finished.connect(func(_k: String) -> void:
+		Settings.set_value("ending_seen", true)
+		el.queue_free()
+		_ending = null)
+	AudioManager.play_radio_cue("epilogue")
+	_ending.play_arrival([
+		[["VEND_knock"], 3.5, "LabelMuted"],
+		[["journey.arrival"], 4.0, ""],
+		[["VEND_light"], 3.5, "LabelMuted"],
+		[["ending.title"], 3.5, "LabelTitle"],
+		[["ending.line.1", "ending.line.2"], 4.0, ""],
+	])
 
 
 func _show_options() -> void:
@@ -156,6 +233,32 @@ func _open_test_card() -> void:
 			_start_placing("horta")
 			_test_cell = AutoPlayer.spot(sim, "horta")
 		"options": _show_options()
+		"merchant":
+			if not sim.merchant_here():
+				sim._merchant_arrive(sim.t + 1800.0)
+			hud.show_merchant()
+			var pr := sim._first("praca")
+			if not pr.is_empty():
+				cam.position = Vector2(Vector2i(pr["cell"])) * 16.0 + Vector2(90, 24)
+				_clamp_cam()
+		"radio": hud.show_radio()
+		"manage": hud.set_manage(true)
+		"ending": _show_ending()
+	# Capturas: mouse parado num ponto (--hover=x,y em pixels lógicos), para ver a explicação.
+	if Game.args.has("hover"):
+		var hv := String(Game.args["hover"]).split(",")
+		var at := Vector2(float(hv[0]), float(hv[1]))
+		get_tree().create_timer(0.5).timeout.connect(func() -> void:
+			get_viewport().warp_mouse(at)
+			var mm := InputEventMouseMotion.new()
+			mm.position = at
+			mm.global_position = at
+			Input.parse_input_event(mm))
+	# Capturas: janela maior que o padrão (--winpx=1500x700, em pixels de tela).
+	if Game.args.has("winpx"):
+		var wp := String(Game.args["winpx"]).split("x")
+		WindowService._user_px = Vector2i(int(wp[0]), int(wp[1]))
+		WindowService._apply_layout(true)
 
 
 ## Clique em botão da interface: som de clique (o AudioManager só toca depois do primeiro clique).
@@ -224,9 +327,33 @@ func _stop_placing() -> void:
 		world.ghost_type = ""
 
 
+var _tip_text: String = ""
+var _tip_t: float = 0.0
+
+
 func _update_hover() -> void:
 	var mp := get_viewport().get_mouse_position()
-	if _test_cell.x < 0 and hud.mouse_over_ui(mp):
+	# Botões, ícones e chips: a explicação vem do tooltip_text do controle debaixo do mouse
+	# (desenhada pelo próprio jogo; a dica nativa do Godot não aparece na janela sem borda).
+	var hc := get_viewport().gui_get_hovered_control()
+	if hc != null:
+		var tip := ""
+		var n: Node = hc
+		while n is Control:
+			if (n as Control).tooltip_text != "":
+				tip = (n as Control).tooltip_text
+				break
+			n = n.get_parent()
+		if tip != "":
+			_tip_t += get_process_delta_time()
+			if _tip_text != tip:   # o cartão é refeito a cada 0,2 s: compara o texto, não o nó
+				_tip_text = tip
+				_tip_t = 0.0
+			hud.show_tip(tip if _tip_t >= 0.25 else "", mp)
+			world.hover_cell = Vector2i(-1, -1)
+			return
+	_tip_text = ""
+	if _test_cell.x < 0 and (hud.mouse_over_ui(mp) or hc != null or _options != null):
 		world.hover_cell = Vector2i(-1, -1)
 		if _placing == "":
 			hud.show_tip("", mp)
@@ -305,6 +432,9 @@ func _click(screen: Vector2) -> void:
 		else:
 			hud.toast(I18n.t("UI_MISSING").format({"list": ""}).strip_edges())
 			_stop_placing()
+		return
+	if world.merchant_rect().has_point(wp):
+		hud.show_merchant()
 		return
 	var pid := world.person_at(wp)
 	if pid >= 0:

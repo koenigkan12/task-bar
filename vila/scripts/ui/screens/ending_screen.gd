@@ -54,9 +54,9 @@ func _ready() -> void:
 		visible = false
 
 
-func play_arrival() -> void:
+func play_arrival(pages: Array = []) -> void:
 	kind = "arrival"
-	_pages = ARRIVAL_PAGES.duplicate(true)
+	_pages = pages.duplicate(true) if not pages.is_empty() else ARRIVAL_PAGES.duplicate(true)
 	_final_title = ""
 	_final_lines = ["ending.credits"]
 	_final_buttons = [["screens.ending.next", "arrival"]]

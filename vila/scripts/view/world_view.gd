@@ -12,7 +12,10 @@ var ghost_type: String = ""          # prédio sendo posicionado ("" = nenhum)
 var ghost_cell: Vector2i = Vector2i(-1, -1)
 
 var _ground: TileMapLayer
+const ICON_FRAMES := 21                 # icons.png: 21 ícones de 8 px
 var _objects: Node2D
+var _floor: Node2D
+var _merchant_nodes: Array = []          # carroça e mascate na praça enquanto o mercador está lá
 var _overlay: Node2D
 var _zone: Node2D
 var _zone_level: int = -1
@@ -44,9 +47,12 @@ func setup(s: VilaSim) -> void:
 	_zone.draw.connect(_draw_zone)
 	add_child(_zone)
 	_zone_level = -1
+	_floor = Node2D.new()      # prédios que são chão (a praça): por baixo das pessoas
+	add_child(_floor)
 	_objects = Node2D.new()
 	_objects.y_sort_enabled = true
 	add_child(_objects)
+	_merchant_nodes = []
 	_overlay = Node2D.new()
 	_overlay.z_index = 50
 	_overlay.draw.connect(_draw_overlay)
@@ -189,11 +195,11 @@ func _frame_sprite(name: String, frames: int, frame: int, height: int) -> Sprite
 func _btex_name(b: Dictionary) -> String:
 	var tp := String(b["type"])
 	var lvl: int = int(b["level"])
-	var maxl := {"moradia": 4, "horta": 3, "poco": 2, "deposito": 3}
+	var maxl := {"moradia": 4, "horta": 3, "poco": 2, "deposito": 3, "oficina": 2, "galinheiro": 2}
 	match tp:
 		"torre":
-			return "tower_%d" % mini(3, lvl)
-		"moradia", "horta", "poco", "deposito":
+			return "tower_%d" % mini(5, lvl)
+		"moradia", "horta", "poco", "deposito", "oficina", "galinheiro":
 			return "%s_%d" % [tp, mini(int(maxl[tp]), lvl)]
 	return tp
 
@@ -228,7 +234,10 @@ func _make_building(b: Dictionary) -> Dictionary:
 	var fp := sim._fp(tp)
 	var root := Node2D.new()
 	root.position = Vector2(Vector2i(b["cell"]).x * TILE, (Vector2i(b["cell"]).y + fp.y) * TILE)
-	_objects.add_child(root)
+	if bool(sim.def(tp).get("open", false)):
+		_floor.add_child(root)
+	else:
+		_objects.add_child(root)
 	var st := String(b["state"])
 	var spr := Sprite2D.new()
 	spr.centered = false
@@ -277,7 +286,22 @@ func _make_building(b: Dictionary) -> Dictionary:
 		root.add_child(l)
 		lights.append(l)
 		_lights.append({"light": l, "base": float(spec["energy"]), "always": bool(spec.get("always", false))})
-	return {"root": root, "sprite": spr, "overlay": ov, "crops": crops, "lights": lights, "key": ""}
+	# Prédio elétrico ou que gasta insumo: alerta em cima quando falta energia ou sucata.
+	var warn: Sprite2D = null
+	var d := sim.def(tp)
+	if st == "built" and (d.has("power_use") or _input_of(b).size() > 0):
+		warn = Sprite2D.new()
+		warn.texture = tex("icons")
+		warn.hframes = ICON_FRAMES
+		warn.frame = 17 if d.has("power_use") else 15
+		warn.position = Vector2(fp.x * TILE / 2.0, -fp.y * TILE - 10)
+		warn.visible = false
+		root.add_child(warn)
+	return {"root": root, "sprite": spr, "overlay": ov, "crops": crops, "lights": lights, "key": "", "warn": warn}
+
+
+func _input_of(b: Dictionary) -> Dictionary:
+	return sim.level_def(b).get("input", {})
 
 
 func _light_specs(tp: String, level: int, st: String) -> Array:
@@ -301,8 +325,21 @@ func _light_specs(tp: String, level: int, st: String) -> Array:
 			return [{"pos": Vector2(24, -24), "color": warm, "scale": 1.1, "energy": 0.9}]
 		"poco":
 			return [{"pos": Vector2(16, -14), "color": cyan, "scale": 0.6, "energy": 0.5}]
+		"oficina":
+			return [{"pos": Vector2(24, -16), "color": warm, "scale": 1.0, "energy": 0.8}]
+		"gerador":
+			return [{"pos": Vector2(15, -23), "color": Color(1.0, 0.3, 0.25), "scale": 0.4, "energy": 0.8, "always": true}]
+		"cozinha":
+			return [{"pos": Vector2(16, -14), "color": warm, "scale": 1.0, "energy": 0.9}]
+		"estufa":
+			return [{"pos": Vector2(24, -16), "color": pink, "scale": 1.3, "energy": 0.8, "always": true}]
+		"galinheiro":
+			return [{"pos": Vector2(16, -12), "color": warm, "scale": 0.6, "energy": 0.5}]
+		"praca":
+			return [{"pos": Vector2(24, -26), "color": warm, "scale": 1.6, "energy": 0.8}]
 		"torre":
-			var out := [{"pos": Vector2(16, -50), "color": cyan, "scale": 1.0 + 0.3 * level, "energy": 0.9, "always": true}]
+			var top := -50.0 if level <= 3 else (-76.0 if level == 4 else -94.0)
+			var out := [{"pos": Vector2(16, top), "color": cyan, "scale": 1.0 + 0.3 * level, "energy": 0.9, "always": true}]
 			if level >= 2:
 				out.append({"pos": Vector2(16, -30), "color": pink, "scale": 1.2, "energy": 0.7, "always": true})
 			return out
@@ -311,6 +348,16 @@ func _light_specs(tp: String, level: int, st: String) -> Array:
 
 func _update_building(b: Dictionary, node: Dictionary) -> void:
 	var tp := String(b["type"])
+	var warn: Sprite2D = node.get("warn")
+	if warn != null:
+		var bad := false
+		if sim.def(tp).has("power_use") and sim.power_frac() < 0.999:
+			bad = true
+		var inp := _input_of(b)
+		for r in inp:
+			if float(sim.stock[r]) < float(inp[r]):
+				bad = true
+		warn.visible = bad and int(_anim_t * 2.0) % 2 == 0
 	if tp == "fogueira":
 		(node["sprite"] as Sprite2D).frame = int(_anim_t * 8.0) % 4
 	var crops: Array = node["crops"]
@@ -359,7 +406,7 @@ func _sync_people(delta: float) -> void:
 		var cr := String(p["carry_res"])
 		carry.visible = cr != "" and String(p["phase"]) == "to_store"
 		if carry.visible:
-			carry.frame = VilaSim.RES.find(cr)
+			carry.frame = 16 if cr == "pecas" else VilaSim.RES.find(cr)
 		var alert: Sprite2D = node["alert"]
 		alert.visible = p["hungry"] or p["thirsty"]
 	for id in _pnodes.keys():
@@ -372,20 +419,20 @@ func _make_person(p: Dictionary) -> Dictionary:
 	var root := Node2D.new()
 	_objects.add_child(root)
 	var spr := Sprite2D.new()
-	spr.texture = tex("person_%d" % clampi(int(p["look"]), 0, 5))
+	spr.texture = tex("person_%d" % clampi(int(p["look"]), 0, 6))
 	spr.hframes = 5
 	spr.vframes = 3
 	spr.offset = Vector2(0, -7)
 	root.add_child(spr)
 	var carry := Sprite2D.new()
 	carry.texture = tex("icons")
-	carry.hframes = 16
+	carry.hframes = ICON_FRAMES
 	carry.position = Vector2(0, -18)
 	carry.visible = false
 	root.add_child(carry)
 	var alert := Sprite2D.new()
 	alert.texture = tex("icons")
-	alert.hframes = 16
+	alert.hframes = ICON_FRAMES
 	alert.frame = 15
 	alert.position = Vector2(6, -18)
 	alert.visible = false
@@ -398,6 +445,7 @@ func _process(delta: float) -> void:
 	if sim == null:
 		return
 	_anim_t += delta
+	_sync_merchant()
 	_sync_acc += delta
 	if _sync_acc >= 0.25:
 		_sync_acc = 0.0
@@ -434,9 +482,10 @@ func _update_light() -> void:
 	_night_k = clampf(1.0 - (col.v - 0.5) / 0.46, 0.0, 1.0)
 	var flick := 0.92 + 0.08 * sin(_anim_t * 11.0) * sin(_anim_t * 3.7)
 	for e in _lights:
-		var l: PointLight2D = e["light"]
-		if not is_instance_valid(l):
+		var lo: Variant = e["light"]   # sem tipo: o prédio pode ter sido refeito e a luz liberada
+		if not is_instance_valid(lo):
 			continue
+		var l := lo as PointLight2D
 		var k := _night_k if not bool(e["always"]) else 0.25 + 0.75 * _night_k
 		l.energy = float(e["base"]) * k * flick
 	_lights = _lights.filter(func(e: Dictionary) -> bool: return is_instance_valid(e["light"]))
@@ -516,3 +565,41 @@ func _draw_brackets(r: Rect2, c: Color = Color(1, 1, 1, 0.7)) -> void:
 		var sy := 1.0 if corner.y == r.position.y else -1.0
 		_overlay.draw_line(corner, corner + Vector2(l * sx, 0), c, 1.0)
 		_overlay.draw_line(corner, corner + Vector2(0, l * sy), c, 1.0)
+
+
+# ================================================================ mercador na praça
+func _sync_merchant() -> void:
+	var here := sim.merchant_here()
+	if here == not _merchant_nodes.is_empty():
+		return
+	for n in _merchant_nodes:
+		(n as Node).queue_free()
+	_merchant_nodes = []
+	if not here:
+		return
+	var pr := sim._first("praca")
+	if pr.is_empty():
+		return
+	var base := Vector2(Vector2i(pr["cell"])) * TILE
+	var cart := Sprite2D.new()
+	cart.texture = tex("carroca")
+	cart.centered = false
+	cart.position = base + Vector2(10, 12 + 24)
+	cart.offset = Vector2(0, -24)
+	_objects.add_child(cart)
+	var man := Sprite2D.new()
+	man.texture = tex("merchant")
+	man.hframes = 5
+	man.vframes = 3
+	man.offset = Vector2(0, -7)
+	man.position = base + Vector2(30, 40)
+	_objects.add_child(man)
+	_merchant_nodes = [cart, man]
+
+
+## Onde o mascate está (para clicar nele e abrir o cartão do mercador).
+func merchant_rect() -> Rect2:
+	if _merchant_nodes.size() < 2:
+		return Rect2()
+	var man: Sprite2D = _merchant_nodes[1]
+	return Rect2(man.position + Vector2(-8, -18), Vector2(16, 20))

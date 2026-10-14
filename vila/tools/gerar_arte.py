@@ -1366,7 +1366,7 @@ PEOPLE = [
 
 # mascate que passa pela praça (folha própria: merchant.png)
 MERCHANT = dict(skin='#b07a58', skin_d='#8a5a40', hair='#a8a2a8', hair_d='#7a747c', style='hat', beard='#c4bec4',
-                cap='#3e2e2a', cap_l='#5a443a', cap_d='#241a18',
+                cap='#3e2e2a', cap_l='#5a443a', cap_d='#241a18', band=ORD,
                 jacket='#4a382c', jacket_l='#644c3a', jacket_d='#2e221c', pants='#2a2228', shoes='#141018',
                 accent=OR2, accent_l=OR, acc='belt', pack='big', pack_c=('#6a5a44', '#857258', '#4a3e30'))
 
@@ -1497,7 +1497,7 @@ def draw_person(L, P, d, f):
                 # chapéu de aba larga
                 L.rect(5, hy - 1, 10, hy + 1, P['cap'])
                 L.p(6, hy - 1, P['cap_l'])
-                L.hl(5, 10, hy + 1, ac)
+                L.hl(5, 10, hy + 1, P['band'])
                 L.hl(2, 13, hy + 2, P['cap_d'])
                 L.hl(3, 12, hy + 2, P['cap'])
                 L.p(4, hy + 3, hr)
@@ -1558,7 +1558,7 @@ def draw_person(L, P, d, f):
                 L.vl(11, hy + 1, hy + 6, hrd)
             elif st == 'hat':
                 L.rect(5, hy - 1, 10, hy + 1, P['cap'])
-                L.hl(5, 10, hy + 1, ac)
+                L.hl(5, 10, hy + 1, P['band'])
                 L.hl(2, 13, hy + 2, P['cap_d'])
                 L.hl(3, 12, hy + 2, P['cap'])
                 L.rect(4, hy + 3, 11, hy + 5, hr)
@@ -1653,7 +1653,7 @@ def draw_person(L, P, d, f):
         elif st == 'hat':
             L.rect(6, hy - 1, 10, hy + 1, P['cap'])
             L.p(7, hy - 1, P['cap_l'])
-            L.hl(6, 10, hy + 1, ac)
+            L.hl(6, 10, hy + 1, P['band'])
             L.hl(3, 13, hy + 2, P['cap_d'])
             L.hl(4, 12, hy + 2, P['cap'])
             L.rect(5, hy + 3, 6, hy + 5, hr)
@@ -1722,13 +1722,13 @@ def draw_pack(L, P, d, b):
     else:
         # de lado: a mochila fica atrás (à esquerda)
         if big:
-            _behind(L, 1, 4 + b, 5, 12 + b, pk)
-            L.vl(1, 4 + b, 12 + b, pkl)
-            L.hl(1, 5, 12 + b, pkd)
-            L.vl(0, 3 + b, 12 + b, W2)
-            _behind(L, 0, 3 + b, 5, 3 + b, roll)
-            L.p(2, 8 + b, ST2)
-            L.rect(2, 10 + b, 3, 11 + b, pkd)
+            _behind(L, 2, 5 + b, 5, 12 + b, pk)
+            L.vl(2, 5 + b, 12 + b, pkl)
+            L.hl(2, 5, 12 + b, pkd)
+            L.vl(1, 4 + b, 12 + b, W2)
+            _behind(L, 1, 4 + b, 5, 4 + b, roll)
+            L.p(3, 8 + b, ST2)
+            L.rect(3, 10 + b, 4, 11 + b, pkd)
         else:
             _behind(L, 3, 8 + b, 5, 12 + b, pk)
             L.vl(3, 8 + b, 12 + b, pkl)
@@ -3153,7 +3153,7 @@ def praca():
             if G.a(x, y) and ((x - 24) / 14) ** 2 + ((y - top - 24) / 15) ** 2 <= 1 and r.random() < .35:
                 G.p(x, y, P2)
     # lajotas de pedra espalhadas
-    for _ in range(26):
+    for _ in range(60):
         x, y = r.randint(3, W - 7), r.randint(top + 3, H - 5)
         w = r.randint(2, 4)
         if all(G.a(xx, yy) for xx in (x, x + w) for yy in (y, y + 2)):
@@ -3165,9 +3165,10 @@ def praca():
         a = i / 30 * 2 * math.pi
         x = round(W / 2 + math.cos(a) * 22.5)
         y = round(top + 24 + math.sin(a) * 22.5)
-        if G.a(x, y) and r.random() < .55:
+        if G.a(x, y) and r.random() < .8:
+            G.rect(x, y, x + 1, y, S2)
             G.p(x, y, S3)
-            G.p(x + 1, y, S1)
+            G.hl(x, x + 1, y + 1, '#2a1f24')
     # --- banco gasto (frente esquerda)
     L.rect(4, 47, 15, 48, W3)
     L.hl(4, 15, 47, W4)
@@ -3464,7 +3465,7 @@ def preview(gr, art):
 
 # ================================================================ prévia
 def preview_vila(gr, art):
-    W, H = 320, 208
+    W, H = 320, 336   # as 13 linhas de cima são a vila de sempre; embaixo, as construções novas
     cols, rows = W // 16, H // 16
     im = Image.new('RGBA', (W, H))
     r = random.Random(SEED + 999)
@@ -3532,6 +3533,18 @@ def preview_vila(gr, art):
     for (tx, ty, i) in ((11, 10, 0), (7, 11, 1), (17, 11, 2)):
         put(fr(art['rubble'], i), tx, ty)
     put(art['stump'], 12, 5)
+    # construções novas (faixa de baixo)
+    put(art['oficina_1'], 1, 15, 3, 2, True)
+    put(art['oficina_2'], 5, 15, 3, 2, True)
+    put(art['gerador'], 8, 15, 2, 2, True)
+    put(art['painel'], 11, 15, 2, 2, True)
+    put(art['estufa'], 13, 15, 3, 2, True)
+    put(art['tower_4'], 16, 15, 2, 2, True)
+    put(art['praca'], 1, 19, 3, 3, False)
+    put(art['galinheiro_1'], 5, 19, 2, 2, True)
+    put(art['galinheiro_2'], 8, 19, 2, 2, True)
+    put(art['cozinha'], 11, 19, 2, 2, True)
+    put(art['tower_5'], 18, 19, 2, 2, True)
     objs.sort(key=lambda o: o[0])
     crop_im = art['crop']
     for ty_b, tx, img in objs:
@@ -3550,8 +3563,14 @@ def preview_vila(gr, art):
         sheet = art['people'][k]
         im.alpha_composite(sheet.crop((f * 16, d * 16, f * 16 + 16, d * 16 + 16)), (px, py))
     im.alpha_composite(art['sleep'], (200, 124))
+    # carroça do mascate parada no meio da praça (por cima do chão dela)
+    im.alpha_composite(art['carroca'], (26, 268))
+    # Ela, o mascate e um morador na praça
+    for (sheet, px, py, d, f) in ((art['people'][6], 54, 300, 0, 0), (art['people'][7], 12, 304, 2, 0),
+                                  (art['people'][0], 36, 312, 2, 2)):
+        im.alpha_composite(sheet.crop((f * 16, d * 16, f * 16 + 16, d * 16 + 16)), (px, py))
     # ícones
-    im.alpha_composite(art['icons'], (4, 198))
+    im.alpha_composite(art['icons'], (4, H - 10))
     im.save(os.path.join(AQUI, 'preview_vila.png'))
     im.resize((W * 3, H * 3), Image.NEAREST).save(os.path.join(AQUI, 'preview_vila_3x.png'))
     # patch grande de chão para checar costura

@@ -17,6 +17,8 @@ signal antenna_changed(level: int)          # a torre subiu
 signal visit_happened(info: Dictionary)     # gente chegou ao portão
 signal plot_harvested(id: int)              # alguém entregou comida no depósito
 signal radio_line(line: Dictionary)
+signal catch_up_progress(frac: float)       # alcançando o tempo fechado (0..1); 1 = terminou
+signal arrival_started                      # ela chegou com a vila aberta (o AudioManager toca o epílogo)
 
 const SAVE := "user://vila.json"
 
@@ -32,6 +34,7 @@ var _speed: float = 1.0
 var _clock_offset: float = 0.0
 var _save_acc: float = 0.0
 var _from_save: bool = false
+var catching_up: bool = false
 
 
 func _ready() -> void:
@@ -96,11 +99,34 @@ func load_game() -> bool:
 	if not _from_save:
 		return false
 	in_game = true
-	var summary := sim.catch_up(now_unix())
 	game_loaded.emit()
-	if not summary.is_empty():
-		welcome_back.emit(summary)
+	_catch_up_async()
 	return true
+
+
+## Alcança o tempo fechado aos pedaços, sem travar a janela: ~1 h de vila por quadro.
+func _catch_up_async() -> void:
+	if catching_up:
+		return
+	var ctx := sim.catch_up_start(now_unix())
+	if ctx.is_empty():
+		return
+	catching_up = true
+	var s0 := sim
+	catch_up_progress.emit(0.0)
+	while true:
+		var done := sim.catch_up_chunk(ctx, 3600.0)
+		catch_up_progress.emit(1.0 - float(ctx["left"]) / maxf(1.0, float(ctx["seconds"])))
+		if done:
+			break
+		await get_tree().process_frame
+		if sim != s0:   # trocou de jogo no meio (título, novo jogo)
+			catching_up = false
+			return
+	var summary := sim.catch_up_finish(ctx, now_unix())
+	catching_up = false
+	catch_up_progress.emit(1.0)
+	welcome_back.emit(summary)
 
 
 func new_game() -> void:
@@ -166,15 +192,13 @@ func is_night() -> bool:
 
 # ================================================================ relógio
 func _process(delta: float) -> void:
-	if sim == null or not in_game:
+	if sim == null or not in_game or catching_up:
 		return
 	if _speed != 1.0:
 		_clock_offset += delta * (_speed - 1.0)
 	var gap := now_unix() - sim.t
 	if gap > 120.0:
-		var s := sim.catch_up(now_unix())
-		if not s.is_empty():
-			welcome_back.emit(s)
+		_catch_up_async()
 	elif gap > 0.0:
 		sim.advance(gap)
 	_save_acc += delta
@@ -201,3 +225,9 @@ func _set_sim(s: VilaSim) -> void:
 		if res == "comida":
 			plot_harvested.emit(id))
 	sim.changed.connect(func() -> void: state_changed.emit())
+	sim.radio.connect(func(l: Dictionary) -> void:
+		if not sim.offline and in_game:
+			radio_line.emit(l))
+	sim.ela_arrived.connect(func() -> void:
+		if not sim.offline and in_game:
+			arrival_started.emit())

@@ -12,10 +12,12 @@ signal goal_pressed
 signal res_clicked(res: String)
 
 const ART := "res://assets/art/"
-const W := 384.0
-const H := 216.0
+## Tamanho lógico atual da tela (a janela pode ser puxada pela borda: 384×216 é o mínimo).
+var W: float = 384.0
+var H: float = 216.0
 const ICON := {"comida": 0, "agua": 1, "madeira": 2, "sucata": 3, "pessoa": 4, "cama": 5, "relogio": 6,
-		"torre": 7, "martelo": 8, "seta": 9, "cadeado": 10, "check": 11, "estrela": 12, "sol": 13, "lua": 14, "alerta": 15}
+		"torre": 7, "martelo": 8, "seta": 9, "cadeado": 10, "check": 11, "estrela": 12, "sol": 13, "lua": 14, "alerta": 15,
+		"pecas": 16, "energia": 17, "radio": 18, "mercador": 19, "caderno": 20}
 const C_TEXT := Color(0.93, 0.88, 0.9)
 const C_MUTED := Color(0.62, 0.55, 0.62)
 const C_WARN := Color(1.0, 0.55, 0.35)
@@ -27,6 +29,17 @@ var sim: VilaSim
 var _font: Font
 var _icons: Texture2D
 var _res_labels: Dictionary = {}
+var _res_chips: Dictionary = {}
+var _power_chip: HBoxContainer
+var _power_label: Label
+var _radio_btn: Button
+var _merchant_btn: Button
+## Falas do rádio que chegaram com a vila aberta e ainda não foram lidas no caderno.
+var radio_unread: int = 0
+var _manage: PanelContainer
+var _manage_box: VBoxContainer
+var _manage_acc: float = 0.0
+var quiet: bool = false          # tutorial rodando: o rádio só anota, sem balão
 var _res_warn: Dictionary = {}
 var _people_label: Label
 var _clock_label: Label
@@ -74,12 +87,29 @@ func setup(s: VilaSim) -> void:
 	_toast.position = Vector2(60, 20)
 	_toast.size = Vector2(200, 14)
 	add_child(_toast)
+	_manage = PanelContainer.new()
+	_manage.visible = false
+	_manage.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(_manage)
+	var ms := ScrollContainer.new()
+	ms.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_manage.add_child(ms)
+	_manage_box = VBoxContainer.new()
+	_manage_box.add_theme_constant_override("separation", 1)
+	_manage_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	ms.add_child(_manage_box)
 	_tip = Label.new()
 	_tip.visible = false
 	_tip.add_theme_stylebox_override("normal", _panel_box())
 	_tip.add_theme_color_override("font_color", C_TEXT)
 	_tip.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_tip)
+	_tip.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	# Por cima de tudo (tutorial, Opções): camada própria.
+	_tip.theme = theme
+	var tl := CanvasLayer.new()
+	tl.layer = 50
+	add_child(tl)
+	tl.add_child(_tip)
 	refresh()
 
 
@@ -176,6 +206,13 @@ func _row(parts: Array) -> HBoxContainer:
 	return h
 
 
+## Tempo longo (a viagem dela): dias e horas.
+static func fmt_long(sec: float) -> String:
+	if sec < 86400.0:
+		return fmt_time(sec)
+	return "%dd %dh" % [int(sec / 86400.0), int(fmod(sec, 86400.0) / 3600.0)]
+
+
 static func fmt_time(sec: float) -> String:
 	var s := int(ceil(sec))
 	if s < 60:
@@ -217,8 +254,8 @@ func _cost_row(cost: Dictionary) -> HBoxContainer:
 # ================================================================ barra de cima e de baixo
 func _build_top() -> void:
 	var bar := PanelContainer.new()
-	bar.position = Vector2(0, 0)
-	bar.size = Vector2(W, 14)
+	bar.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
+	bar.offset_bottom = 14
 	bar.mouse_filter = Control.MOUSE_FILTER_STOP
 	bar.gui_input.connect(_on_bar_input)
 	add_child(bar)
@@ -243,21 +280,51 @@ func _build_top() -> void:
 		chip.add_child(warn)
 		_res_labels[r] = l
 		_res_warn[r] = warn
+		_res_chips[r] = chip
 		h.add_child(chip)
-	h.add_child(_icon_rect("pessoa"))
+	_power_chip = HBoxContainer.new()
+	_power_chip.add_theme_constant_override("separation", 1)
+	_power_chip.mouse_filter = Control.MOUSE_FILTER_PASS
+	_power_chip.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	_power_chip.gui_input.connect(func(ev: InputEvent) -> void:
+		if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT:
+			_power_chip.accept_event()
+			show_res("energia"))
+	_power_chip.add_child(_icon_rect("energia"))
+	_power_label = _label("0")
+	_power_chip.add_child(_power_label)
+	_power_chip.visible = false
+	h.add_child(_power_chip)
+	var pi := _icon_rect("pessoa")
 	_people_label = _label("1/1")
-	h.add_child(_people_label)
+	for c: Control in [pi, _people_label]:
+		c.mouse_filter = Control.MOUSE_FILTER_PASS
+		c.tooltip_text = I18n.t("TIP_PEOPLE")
+		h.add_child(c)
 	var spacer := Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	h.add_child(spacer)
 	_clock_icon = _icon_rect("sol")
-	h.add_child(_clock_icon)
 	_clock_label = _label("")
-	h.add_child(_clock_label)
+	for c: Control in [_clock_icon, _clock_label]:
+		c.mouse_filter = Control.MOUSE_FILTER_PASS
+		c.tooltip_text = I18n.t("TIP_CLOCK")
+		h.add_child(c)
+	_radio_btn = Button.new()
+	_radio_btn.theme_type_variation = "FlatButton"
+	_radio_btn.icon = icon("radio")
+	_radio_btn.tooltip_text = I18n.t("UI_RADIO_LOG")
+	_radio_btn.pressed.connect(func() -> void:
+		if _card_kind == "radio":
+			close_card()
+		else:
+			show_radio())
+	h.add_child(_radio_btn)
 	# Alça do jogo do bunker: gaveta (modo gestão), som, Opções, recolher e fechar.
 	handle = WindowHandle.new()
-	handle.show_drawer = false
+	handle.show_drawer = true
+	handle.drawer_toggled.connect(func(open: bool) -> void: set_manage(open))
 	handle.quit_requested.connect(func() -> void: quit_pressed.emit())
 	handle.options_requested.connect(func() -> void: options_pressed.emit())
 	h.add_child(handle)
@@ -271,8 +338,8 @@ func _on_bar_input(ev: InputEvent) -> void:
 
 func _build_bottom() -> void:
 	var bar := PanelContainer.new()
-	bar.position = Vector2(0, H - 16)
-	bar.size = Vector2(W, 16)
+	bar.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
+	bar.offset_top = -16
 	bar.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(bar)
 	var h := HBoxContainer.new()
@@ -282,6 +349,7 @@ func _build_bottom() -> void:
 	build_btn = bb
 	bb.icon = icon("martelo")
 	bb.text = I18n.t("UI_BUILD")
+	bb.tooltip_text = I18n.t("TIP_BUILD")
 	bb.pressed.connect(func() -> void:
 		if _card_kind == "build":
 			close_card()
@@ -292,6 +360,7 @@ func _build_bottom() -> void:
 	tower_btn = tb
 	tb.icon = icon("torre")
 	tb.text = I18n.t("UI_TOWER_BTN")
+	tb.tooltip_text = I18n.t("TIP_TOWER")
 	tb.pressed.connect(func() -> void:
 		if _card_kind == "tower":
 			close_card()
@@ -324,6 +393,15 @@ func _build_bottom() -> void:
 	_gate_btn.icon = icon("pessoa")
 	_gate_btn.position = Vector2(2, 17)
 	_gate_btn.visible = false
+	_gate_btn.tooltip_text = I18n.t("UI_GATE_TITLE")
+	_merchant_btn = Button.new()
+	_merchant_btn.icon = icon("mercador")
+	_merchant_btn.text = I18n.t("UI_MERCHANT")
+	_merchant_btn.position = Vector2(2, 33)
+	_merchant_btn.visible = false
+	_merchant_btn.tooltip_text = I18n.t("UI_MERCHANT_BADGE")
+	_merchant_btn.pressed.connect(show_merchant)
+	add_child(_merchant_btn)
 	_gate_btn.pressed.connect(show_gate)
 	add_child(_gate_btn)
 
@@ -345,6 +423,11 @@ func _goal_text() -> String:
 			return fmt("GOAL_storage", {"n": g["need"], "r": I18n.t("RES_" + String(g["res"])), "cap": g["cap"]})
 		"tower_wait":
 			return fmt("GOAL_tower_wait", {"n": g["level"]})
+		"power":
+			return I18n.t("GOAL_power")
+		"journey":
+			var left := float(g.get("left_s", -1.0))
+			return I18n.t("GOAL_journey_soon") if left < 3600.0 else fmt("GOAL_journey", {"t": fmt_long(left)})
 		"tower":
 			var miss: Dictionary = g["missing"]
 			if miss.is_empty():
@@ -371,12 +454,19 @@ func _on_goal() -> void:
 				build_chosen.emit("deposito")
 			else:
 				show_building(int(dep["id"]))
+		"power":
+			build_chosen.emit("painel" if sim.unlocked("painel") else "gerador")
+		"journey":
+			show_radio()
 		"tower", "tower_wait", "done":
 			show_tower()
 
 
 # ================================================================ atualização
 func _process(delta: float) -> void:
+	var vs := get_viewport_rect().size
+	W = vs.x
+	H = vs.y
 	if sim == null:
 		return
 	_refresh_acc += delta
@@ -401,7 +491,20 @@ func refresh() -> void:
 		l.add_theme_color_override("font_color", C_WARN if low else (C_AMBER if full else C_TEXT))
 		(_res_warn[r] as Control).visible = low
 		var bpm := sim.balance_per_min(r)
-		l.get_parent().tooltip_text = "%s %d/%d · %+.1f/min" % [I18n.t("RES_" + r), v, cap, bpm] + ((" · " + I18n.t("UI_FULL")) if full else "")
+		l.get_parent().tooltip_text = I18n.t("TIP_RES", {"r": I18n.t("RES_" + r).capitalize(), "v": v, "cap": cap, "bpm": "%+.1f" % bpm}) + ((" · " + I18n.t("UI_FULL")) if full else "")
+	(_res_chips["pecas"] as Control).visible = sim.tower >= 3 or float(sim.stock["pecas"]) > 0.0
+	var pw := sim.power()
+	_power_chip.visible = float(pw["out"]) > 0.0 or float(pw["use"]) > 0.0
+	_power_label.text = "%d/%d" % [int(pw["out"]), int(pw["use"])]
+	var pshort := float(pw["use"]) > float(pw["out"])
+	_power_label.add_theme_color_override("font_color", C_WARN if pshort else C_TEXT)
+	_power_chip.tooltip_text = fmt("UI_POWER_LINE", {"out": int(pw["out"]), "use": int(pw["use"])}) + ((" · " + I18n.t("UI_POWER_LOW")) if pshort else "")
+	_radio_btn.text = str(radio_unread) if radio_unread > 0 else ""
+	_merchant_btn.visible = sim.merchant_here()
+	var lx := 154.0 if _manage.visible else 2.0
+	_gate_btn.position.x = lx
+	_merchant_btn.position = Vector2(lx, 33 if _gate_btn.visible else 17)
+	_merchant_btn.size = Vector2.ZERO
 	_people_label.text = "%d/%d" % [sim.people.size(), sim.beds_total()]
 	var hr := sim.local_hour()
 	_clock_label.text = "%s %02d:%02d" % [fmt("UI_DAY", {"n": sim.day_number()}), int(hr), int(fposmod(hr * 60.0, 60.0))]
@@ -413,6 +516,13 @@ func refresh() -> void:
 	_gate_btn.size = Vector2(10, 14)
 	if _card.visible:
 		_rebuild_card()
+	if _manage.visible:
+		_manage.position = Vector2(2, 16)
+		_manage.size = Vector2(150, H - 34)
+		_manage_acc += 0.2
+		if _manage_acc >= 0.6:
+			_manage_acc = 0.0
+			_rebuild_manage()
 
 
 func toast(text: String) -> void:
@@ -420,8 +530,16 @@ func toast(text: String) -> void:
 	_toast.visible = true
 	_toast.modulate.a = 1.0
 	_toast_t = 3.0
+	_toast.autowrap_mode = TextServer.AUTOWRAP_OFF
+	_toast.custom_minimum_size = Vector2.ZERO
 	_toast.size = Vector2(0, 14)
-	_toast.position = Vector2(W / 2.0 - _toast.get_minimum_size().x / 2.0, 18)
+	var maxw := minf(260.0, W - 20.0)
+	if _toast.get_minimum_size().x > maxw:
+		_toast.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_toast.custom_minimum_size = Vector2(maxw, 0)
+		_toast.size = Vector2.ZERO
+	var x0 := 154.0 if _manage.visible else 0.0
+	_toast.position = Vector2(roundf(x0 + (W - x0) / 2.0 - _toast.get_minimum_size().x / 2.0), 18)
 
 
 func show_tip(text: String, at: Vector2) -> void:
@@ -430,6 +548,12 @@ func show_tip(text: String, at: Vector2) -> void:
 		return
 	_tip.text = text
 	_tip.visible = true
+	_tip.custom_minimum_size = Vector2.ZERO
+	_tip.autowrap_mode = TextServer.AUTOWRAP_OFF
+	_tip.size = Vector2.ZERO
+	if _tip.get_minimum_size().x > 160.0:
+		_tip.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_tip.custom_minimum_size = Vector2(160, 0)
 	_tip.size = Vector2.ZERO
 	var s := _tip.get_minimum_size()
 	_tip.position = Vector2(clampf(at.x + 8.0, 0.0, W - s.x), clampf(at.y + 10.0, 16.0, H - 18.0 - s.y))
@@ -470,6 +594,8 @@ func show_building(id: int) -> void:
 		show_tower()
 	elif String(b["type"]) == "gate":
 		show_gate()
+	elif String(b["type"]) == "praca" and String(b["state"]) == "built":
+		show_merchant()
 	else:
 		_open("building", id)
 
@@ -527,6 +653,12 @@ func show_res(r: String) -> void:
 func _card_res() -> void:
 	var r := _card_kind.trim_prefix("res:")
 	_clear_card()
+	if r == "energia":
+		var pw := sim.power()
+		_header("energia", I18n.t("UI_POWER"))
+		_card_box.add_child(_row([_icon_rect("energia"), _label(fmt("UI_POWER_LINE", {"out": int(pw["out"]), "use": int(pw["use"])}), C_WARN if float(pw["use"]) > float(pw["out"]) else C_TEXT)]))
+		_card_box.add_child(_wrap(I18n.t("RD_energia"), C_MUTED))
+		return
 	_header(r, I18n.t("RES_" + r))
 	var v := int(floor(float(sim.stock[r])))
 	_card_box.add_child(_row([_icon_rect("check"), _label(fmt("UI_RES_HAVE", {"n": v, "cap": int(sim.cap(r))}))]))
@@ -549,6 +681,9 @@ func show_welcome(summary: Dictionary) -> void:
 			_card_box.add_child(_row([_icon_rect(r), _label("%+d %s" % [v, I18n.t("RES_" + r)], C_GOOD if v > 0 else C_WARN)]))
 	if int(summary.get("built", 0)) > 0:
 		_card_box.add_child(_row([_icon_rect("martelo"), _label(fmt("UI_DONE", {"b": str(summary["built"])}))]))
+	if int(summary.get("radio", 0)) > 0:
+		radio_unread += int(summary["radio"])
+		_card_box.add_child(_row([_icon_rect("radio"), _label(fmt("UI_RADIO_NEW", {"n": summary["radio"]}))]))
 	if bool(summary.get("group", false)):
 		_card_box.add_child(_row([_icon_rect("pessoa"), _label(fmt("UI_GATE_BADGE", {"n": sim.gate_group.size()}))]))
 	var ok := Button.new()
@@ -609,6 +744,10 @@ func _rebuild_card() -> void:
 			_card_build()
 		"rubble":
 			_card_rubble()
+		"radio":
+			_card_radio()
+		"merchant":
+			_card_merchant()
 		_:
 			if _card_kind.begins_with("res:"):
 				_card_res()
@@ -641,6 +780,15 @@ func _card_building() -> void:
 			names.append(pname(sim.person(int(pid))))
 		_card_box.add_child(_row([_icon_rect("pessoa"), _label(fmt("UI_WORKERS", {"a": ws.size(), "b": lv["slots"]}) + ((" " + ", ".join(names)) if not names.is_empty() else ""))]))
 		_card_box.add_child(_row([_icon_rect(String(d["res"])), _label(fmt("UI_RATE", {"n": "%.1f" % (60.0 / float(lv["rate_s"]))}))]))
+	if d.has("power_use"):
+		var low := sim.power_frac() < 0.999
+		_card_box.add_child(_row([_icon_rect("energia"), _label(fmt("UI_POWER_USE", {"n": d["power_use"]}) + ((" · " + I18n.t("UI_POWER_LOW")) if low else ""), C_WARN if low else C_TEXT)]))
+	if d.has("power_out"):
+		_card_box.add_child(_row([_icon_rect("energia"), _label(fmt("UI_POWER_OUT", {"n": d["power_out"]}), C_GOOD)]))
+	var inp: Dictionary = lv.get("input", {})
+	for r in inp:
+		var short := float(sim.stock[r]) < float(inp[r])
+		_card_box.add_child(_row([_icon_rect(r), _label(fmt("UI_NO_INPUT", {"r": I18n.t("RES_" + r)}) if short else fmt("UI_INPUT", {"n": inp[r], "r": I18n.t("RES_" + r)}), C_WARN if short else C_TEXT)]))
 	if lv.has("beds") or tp == "hatch":
 		_card_box.add_child(_row([_icon_rect("cama"), _label(fmt("UI_BEDS", {"n": int(lv.get("beds", d.get("beds", 0)))}))]))
 	if lv.has("cap") or tp == "hatch":
@@ -698,7 +846,12 @@ func _card_tower() -> void:
 		_progress_lines(b)
 		return
 	if sim.tower >= sim.tower_max():
-		_card_box.add_child(_wrap(I18n.t("UI_TOWER_PROTO"), C_MUTED))
+		var gl := sim.goal()
+		if String(gl["kind"]) == "journey":
+			_card_box.add_child(_wrap(I18n.t("UI_TOWER_ELA"), C_MUTED))
+			_card_box.add_child(_row([_icon_rect("radio"), _label(_goal_text(), C_AMBER)]))
+		else:
+			_card_box.add_child(_wrap(I18n.t("GOAL_done"), C_GOOD))
 		return
 	var n := sim.tower + 1
 	_card_box.add_child(_label(fmt("UI_TOWER_NEXT", {"n": n}), C_MUTED))
@@ -714,7 +867,7 @@ func _card_tower() -> void:
 			txt = bname(parts[0], int(parts[1]))
 		else:
 			txt = bname(s)
-		var soon: bool = not sim.bal["buildings"].has(s.split("@")[0]) and s != "area" and s != "estrada"
+		var soon: bool = not sim.bal["buildings"].has(s.split("@")[0]) and not s in ["area", "estrada", "ela"]
 		grid.add_child(_row([_icon_rect("cadeado" if soon else "seta"), _label(txt + ((" (" + I18n.t("UI_SOON") + ")") if soon else ""), C_MUTED if soon else C_TEXT)]))
 	_card_box.add_child(grid)
 	var nx := sim.tower_next()
@@ -860,3 +1013,203 @@ func _card_build() -> void:
 	for type in locked:
 		var need: int = int(sim.def(type).get("tower", 1))
 		_card_box.add_child(_row([_icon_rect("cadeado"), _label("%s · %s" % [bname(type), fmt("UI_LOCKED_TOWER", {"n": need})], C_MUTED)]))
+
+
+# ================================================================ rádio
+## Uma fala nova chegou com a vila aberta: balão curto em cima e conta no botão do rádio.
+func on_radio(line: Dictionary) -> void:
+	radio_unread += 1
+	if quiet or String(line.get("kind", "")) == "reaction":
+		return
+	var who := I18n.t("speaker." + String(line.get("speaker", "ruido")))
+	toast(who + ": " + I18n.t(String(line["text_key"])))
+	_toast_t = 7.0
+
+
+func show_radio() -> void:
+	radio_unread = 0
+	_open("radio")
+
+
+func _card_radio() -> void:
+	_clear_card()
+	_header("caderno", I18n.t("UI_RADIO_LOG"))
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(170, minf(130.0, H - 60.0))
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 3)
+	scroll.add_child(col)
+	var heard: Array = sim.radio_heard
+	if heard.is_empty():
+		col.add_child(_wrap(I18n.t("UI_RADIO_EMPTY"), C_MUTED, 160))
+	# Mais nova em cima.
+	for i in range(heard.size() - 1, maxi(-1, heard.size() - 41), -1):
+		var l := sim.line(String(heard[i]))
+		if l.is_empty():
+			continue
+		col.add_child(_label(I18n.t("speaker." + String(l["speaker"])), C_AMBER))
+		col.add_child(_wrap(I18n.t(String(l["text_key"])), C_TEXT, 160))
+	_card_box.add_child(scroll)
+
+
+# ================================================================ mercador
+func show_merchant() -> void:
+	_open("merchant")
+
+
+func _card_merchant() -> void:
+	_clear_card()
+	_header("mercador", I18n.t("UI_MERCHANT"))
+	if not sim.merchant_here():
+		var md: Dictionary = sim.bal["merchant"]
+		if sim._count("praca") == 0:
+			_card_box.add_child(_wrap(I18n.t("UI_MERCHANT_NEED"), C_MUTED))
+		else:
+			var hs: Array[String] = []
+			for hr in md["hours"]:
+				hs.append("%02d:%02d" % [int(hr), int(fmod(float(hr), 1.0) * 60.0)])
+			_card_box.add_child(_wrap(fmt("UI_MERCHANT_AWAY", {"h": ", ".join(hs)}), C_MUTED))
+		_auto_sell_box()
+		return
+	var m: Dictionary = sim.merchant
+	_card_box.add_child(_row([_icon_rect("relogio"), _label(fmt("UI_MERCHANT_LEAVES", {"t": fmt_time(float(m["until"]) - sim.t)}), C_MUTED)]))
+	# Vender: um lote de cada coisa que ele compra.
+	_card_box.add_child(_label(I18n.t("UI_SELL"), C_AMBER))
+	var lot: int = int(sim.bal["merchant"]["lot"])
+	for r in m["prices"]:
+		var b := Button.new()
+		b.icon = icon(String(r))
+		b.text = fmt("UI_SELL_LOT", {"n": lot, "r": I18n.t("RES_" + String(r)), "p": sim.lot_price(String(r))})
+		b.disabled = float(sim.stock[r]) < lot
+		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		var rr := String(r)
+		b.pressed.connect(func() -> void:
+			var res := sim.sell_lot(rr)
+			if not bool(res["ok"]):
+				toast(I18n.t("UI_FULL"))
+			_rebuild_card())
+		_card_box.add_child(b)
+	# Comprar: as 3 ofertas desta visita.
+	_card_box.add_child(_label(I18n.t("UI_BUY"), C_AMBER))
+	var offers: Array = m["offers"]
+	for i in offers.size():
+		var id := String(offers[i])
+		var o := sim.offer_def(id)
+		var row := HBoxContainer.new()
+		var b := Button.new()
+		b.text = I18n.t("OF_" + id)
+		b.tooltip_text = I18n.t("OFD_" + id)
+		var sold := (m["bought"] as Array).has(i)
+		var need_group := bool(o.get("needs_group", false)) and sim.gate_group.is_empty()
+		b.disabled = sold or need_group or not sim.can_afford(o["cost"])
+		if sold:
+			b.text += " · " + I18n.t("UI_SOLD")
+		elif need_group:
+			b.tooltip_text += " " + I18n.t("UI_NEEDS_GROUP")
+		var ii := i
+		b.pressed.connect(func() -> void:
+			sim.buy_offer(ii)
+			_rebuild_card())
+		row.add_child(b)
+		row.add_child(_cost_row(o["cost"]))
+		_card_box.add_child(row)
+	var rq: Dictionary = m["request"]
+	if not rq.is_empty():
+		var rb := Button.new()
+		rb.icon = icon(String(rq["res"]))
+		rb.text = fmt("UI_REQUEST", {"n": rq["n"], "r": I18n.t("RES_" + String(rq["res"])), "p": rq["pay"]})
+		rb.tooltip_text = I18n.t("UI_DELIVER")
+		rb.disabled = float(sim.stock[String(rq["res"])]) < float(rq["n"])
+		rb.pressed.connect(func() -> void:
+			sim.fulfill_request()
+			_rebuild_card())
+		_card_box.add_child(rb)
+	_auto_sell_box()
+
+
+func _auto_sell_box() -> void:
+	var cb := CheckBox.new()
+	cb.text = I18n.t("UI_AUTO_SELL")
+	cb.button_pressed = sim.auto_sell
+	cb.toggled.connect(func(on: bool) -> void: sim.auto_sell = on)
+	_card_box.add_child(cb)
+
+
+# ================================================================ modo gestão
+## Painel à esquerda (a alça da janela abre e fecha): o balanço de cada recurso por minuto, energia,
+## as obras na fila e o que cada pessoa está fazendo. Com a janela maior, sobra mundo do lado.
+func set_manage(open: bool) -> void:
+	_manage.visible = open
+	if handle != null and handle.drawer_open != open:
+		handle.set_drawer_open(open)
+	if open:
+		_manage_acc = 1.0
+		refresh()
+
+
+func manage_open() -> bool:
+	return _manage.visible
+
+
+func _rebuild_manage() -> void:
+	for c in _manage_box.get_children():
+		_manage_box.remove_child(c)
+		c.queue_free()
+	var b := _manage_box
+	b.add_child(_label(I18n.t("UI_MANAGE_RES"), C_AMBER))
+	for r in VilaSim.RES:
+		if r == "pecas" and sim.tower < 3 and float(sim.stock[r]) <= 0.0:
+			continue
+		var fl := sim.flow_per_min(r)
+		var net := float(fl["prod"]) - float(fl["use"])
+		var row := _row([_icon_rect(r), _label("%d/%d" % [int(sim.stock[r]), int(sim.cap(r))])])
+		var sp := Control.new()
+		sp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(sp)
+		row.add_child(_label("+%.1f" % float(fl["prod"]), C_GOOD))
+		row.add_child(_label("-%.1f" % float(fl["use"]), C_WARN if net < 0.0 else C_MUTED))
+		if net < 0.0:
+			row.add_child(_icon_rect("alerta"))
+		row.mouse_filter = Control.MOUSE_FILTER_PASS
+		row.tooltip_text = I18n.t("RD_" + r)
+		b.add_child(row)
+	var pw := sim.power()
+	if float(pw["out"]) > 0.0 or float(pw["use"]) > 0.0:
+		var short := float(pw["use"]) > float(pw["out"])
+		b.add_child(_row([_icon_rect("energia"), _label(fmt("UI_POWER_LINE", {"out": int(pw["out"]), "use": int(pw["use"])}), C_WARN if short else C_TEXT)]))
+	b.add_child(_label(I18n.t("UI_MANAGE_SITES"), C_AMBER))
+	var any := false
+	for bd in sim.buildings:
+		var st := String(bd["state"])
+		if st == "built":
+			continue
+		any = true
+		var who := I18n.t("UI_WAITING_BUILDER") if int(bd["builder"]) < 0 else pname(sim.person(int(bd["builder"])))
+		var btn := Button.new()
+		btn.theme_type_variation = "FlatButton"
+		btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		btn.clip_text = true
+		btn.custom_minimum_size = Vector2(140, 0)
+		btn.icon = icon("martelo")
+		btn.text = "%s · %s" % [bname(String(bd["type"]), int(bd["level"]) + (1 if st == "upgrade" else 0)), fmt_time(float(bd["total"]) - float(bd["progress"]))]
+		btn.tooltip_text = who
+		var id := int(bd["id"])
+		btn.pressed.connect(func() -> void: show_building(id))
+		b.add_child(btn)
+	if not any:
+		b.add_child(_label(I18n.t("UI_MANAGE_NONE"), C_MUTED))
+	b.add_child(_label(I18n.t("UI_MANAGE_PEOPLE") + " %d/%d" % [sim.people.size(), sim.beds_total()], C_AMBER))
+	for p in sim.people:
+		var pb := Button.new()
+		pb.theme_type_variation = "FlatButton"
+		pb.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		pb.clip_text = true
+		pb.custom_minimum_size = Vector2(140, 0)
+		var warn := bool(p["hungry"]) or bool(p["thirsty"])
+		pb.icon = icon("alerta" if warn else "pessoa")
+		pb.text = pname(p) + " · " + _doing_text(p)
+		pb.tooltip_text = pb.text
+		var pid := int(p["id"])
+		pb.pressed.connect(func() -> void: show_person(pid))
+		b.add_child(pb)

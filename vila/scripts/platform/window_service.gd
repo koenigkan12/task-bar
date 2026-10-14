@@ -262,6 +262,13 @@ var _applied_scale: int = 0
 var _last_apply_ms: int = 0
 
 var _dragging: bool = false
+## Tamanho escolhido puxando a borda (pixels de tela; zero = o padrão, base × escala).
+var _user_px: Vector2i = Vector2i.ZERO
+var _resizing: bool = false
+var _rs_edges: int = 0                     ## 1 esquerda, 2 direita, 4 cima, 8 baixo
+var _rs_mouse0: Vector2i = Vector2i.ZERO
+var _rs_rect0: Rect2i = Rect2i()
+const EDGE_PX: int = 6
 var _native_drag: bool = false
 var _drag_mouse0: Vector2i = Vector2i.ZERO
 var _drag_win0: Vector2i = Vector2i.ZERO
@@ -310,6 +317,9 @@ func _ready() -> void:
 	if _settings != null and _settings.has_signal("changed"):
 		_settings.connect("changed", _on_setting_changed)
 
+	var up: Variant = _sget("window_px", [])
+	if up is Array and (up as Array).size() == 2:
+		_user_px = Vector2i(int(up[0]), int(up[1]))
 	_startup_layout()
 	_build_tab()
 	_setup_tray()
@@ -319,6 +329,8 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if _dragging:
 		_drag_step()
+	if _resizing:
+		_resize_step()
 	_update_fps()
 	_sync_left -= delta
 	if _sync_left <= 0.0:
@@ -332,6 +344,7 @@ func _input(event: InputEvent) -> void:
 		or (event is InputEventScreenTouch and event.pressed)
 	if is_press or event is InputEventMouseMotion:
 		note_activity()
+	_resize_input(event)
 	if is_press and not _interacted:
 		_interacted = true
 		_sset("sound_unlocked", true)
@@ -444,6 +457,8 @@ func is_collapsed() -> bool:
 
 ## Rodapé da área útil do monitor principal, canto esquerdo.
 func reset_position() -> void:
+	_user_px = Vector2i.ZERO
+	_sset("window_px", [])
 	var sc: Dictionary = _fetch_screens()
 	_screen_idx = int(sc["primary"])
 	_anchor = default_anchor(sc["usable"][_screen_idx])
@@ -514,6 +529,19 @@ func tr_tray(key: String) -> String:
 func _target_logical() -> Vector2i:
 	if _collapsed:
 		return COLLAPSED_SIZE
+	var b := _base_size
+	if _user_px != Vector2i.ZERO:
+		var s: int = maxi(ui_scale, 1)
+		b = Vector2i(maxi(_base_size.x, _user_px.x / s), maxi(_base_size.y, _user_px.y / s))
+	if _drawer_open:
+		return Vector2i(maxi(b.x, _drawer_min_w), b.y + _drawer_h)
+	return b
+
+
+## Menor tamanho lógico (a escala é escolhida por ele; puxar a borda só mostra mais mundo).
+func _min_logical() -> Vector2i:
+	if _collapsed:
+		return COLLAPSED_SIZE
 	if _drawer_open:
 		return Vector2i(maxi(_base_size.x, _drawer_min_w), _base_size.y + _drawer_h)
 	return _base_size
@@ -574,7 +602,8 @@ func _startup_layout() -> void:
 		var pick: Dictionary = pick_saved(_sget("window_pos", {}), sc["full"], idx)
 		if not pick.is_empty():
 			var pidx: int = int(pick["screen"])
-			var s: int = resolve_scale(_sget("ui_scale", "auto"), _target_logical(), (sc["full"][pidx] as Rect2i).size.y, (areas[pidx] as Rect2i).size)
+			var s: int = resolve_scale(_sget("ui_scale", "auto"), _min_logical(), (sc["full"][pidx] as Rect2i).size.y, (areas[pidx] as Rect2i).size)
+			ui_scale = s
 			var cand_anchor: Vector2i = anchor_from_saved(pick, areas[pidx])
 			var v: Dictionary = validate_rect(rect_from_anchor(cand_anchor, _target_logical() * s), areas)
 			if bool(v["ok"]):
@@ -599,7 +628,11 @@ func _apply_layout(force: bool = false) -> void:
 	if idx < 0:
 		idx = int(sc["primary"]) if _anchor == Vector2i.ZERO else nearest_screen(probe, areas)
 	_screen_idx = idx
-	var scale: int = resolve_scale(_sget("ui_scale", "auto"), logical, (sc["full"][idx] as Rect2i).size.y, (areas[idx] as Rect2i).size)
+	var scale: int = resolve_scale(_sget("ui_scale", "auto"), _min_logical(), (sc["full"][idx] as Rect2i).size.y, (areas[idx] as Rect2i).size)
+	ui_scale = scale
+	logical = _target_logical()
+	var usable_l: Vector2i = (areas[idx] as Rect2i).size / scale
+	logical = Vector2i(mini(logical.x, maxi(usable_l.x, _min_logical().x)), mini(logical.y, maxi(usable_l.y, _min_logical().y)))
 	var size: Vector2i = logical * scale
 	var rect: Rect2i = shift_into(rect_from_anchor(_anchor, size), areas[idx])
 	var layout_changed_now: bool = logical != _applied_logical or scale != _applied_scale
@@ -678,6 +711,106 @@ func _end_drag() -> void:
 	_apply_layout(true)
 	_save_position()
 	_update_fps(true)
+
+
+# ===========================================================================
+# REDIMENSIONAR PELA BORDA (a janela não tem moldura do sistema)
+# ===========================================================================
+
+func _edges_at(local: Vector2i) -> int:
+	if _collapsed or _rect.size == Vector2i.ZERO:
+		return 0
+	var e := 0
+	if local.x < EDGE_PX:
+		e |= 1
+	elif local.x >= _rect.size.x - EDGE_PX:
+		e |= 2
+	if local.y < EDGE_PX:
+		e |= 4
+	elif local.y >= _rect.size.y - EDGE_PX:
+		e |= 8
+	return e
+
+
+func _edge_cursor(e: int) -> int:
+	if e == 5 or e == 10:
+		return Input.CURSOR_FDIAGSIZE
+	if e == 6 or e == 9:
+		return Input.CURSOR_BDIAGSIZE
+	if e & 3:
+		return Input.CURSOR_HSIZE
+	if e & 12:
+		return Input.CURSOR_VSIZE
+	return Input.CURSOR_ARROW
+
+
+func _resize_input(event: InputEvent) -> void:
+	if not _native or _dragging:
+		return
+	var local: Vector2i = _mouse_global() - _rect.position
+	var e := _edges_at(local)
+	if event is InputEventMouseMotion and not _resizing:
+		Input.set_default_cursor_shape(_edge_cursor(e) as Input.CursorShape)
+	var mb := event as InputEventMouseButton
+	if mb != null and mb.button_index == MOUSE_BUTTON_LEFT and mb.pressed and e != 0:
+		_resizing = true
+		_rs_edges = e
+		_rs_mouse0 = _mouse_global()
+		_rs_rect0 = _rect
+		get_viewport().set_input_as_handled()
+		_update_fps(true)
+
+
+func is_resizing() -> bool:
+	return _resizing
+
+
+func _resize_step() -> void:
+	if not Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
+		_resizing = false
+		Input.set_default_cursor_shape(Input.CURSOR_ARROW)
+		_user_px = _rect.size
+		_sset("window_px", [_user_px.x, _user_px.y])
+		_anchor = Vector2i(_rect.position.x, _rect.end.y)
+		_apply_layout(true)
+		_save_position()
+		_update_fps(true)
+		return
+	var d: Vector2i = _mouse_global() - _rs_mouse0
+	var r := _rs_rect0
+	var mn: Vector2i = _min_logical() * maxi(ui_scale, 1)
+	if _rs_edges & 1:
+		var nx: int = mini(r.position.x + d.x, r.end.x - mn.x)
+		r.size.x = r.end.x - nx
+		r.position.x = nx
+	if _rs_edges & 2:
+		r.size.x = maxi(mn.x, r.size.x + d.x)
+	if _rs_edges & 4:
+		var ny: int = mini(r.position.y + d.y, r.end.y - mn.y)
+		r.size.y = r.end.y - ny
+		r.position.y = ny
+	if _rs_edges & 8:
+		r.size.y = maxi(mn.y, r.size.y + d.y)
+	if r == _rect:
+		return
+	var s: int = maxi(ui_scale, 1)
+	r.size = (r.size / s) * s
+	_rect = r
+	_last_apply_ms = Time.get_ticks_msec()
+	var win: Window = get_window()
+	win.content_scale_size = r.size / s
+	win.size = r.size
+	win.position = r.position
+	logical_size = r.size / s
+	_applied_logical = logical_size
+	layout_changed.emit(logical_size, s)
+
+
+## Volta ao tamanho padrão (Opções).
+func reset_size() -> void:
+	_user_px = Vector2i.ZERO
+	_sset("window_px", [])
+	_apply_layout(true)
 
 
 # ===========================================================================
@@ -766,7 +899,7 @@ func _on_mouse_exited() -> void:
 
 func _update_fps(force: bool = false) -> void:
 	var low: bool = String(_sget("energy_mode", "auto")) == "low"
-	var f: int = fps_for(_collapsed, low, _has_focus, _hover or _dragging, idle_seconds(), _dragging)
+	var f: int = fps_for(_collapsed, low, _has_focus, _hover or _dragging or _resizing, idle_seconds(), _dragging or _resizing)
 	if f != _fps or force:
 		_fps = f
 		Engine.max_fps = f

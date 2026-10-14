@@ -56,6 +56,7 @@ var ela_t: float = -1.0            # quando ela chegou (fim); -1 = ainda não
 var _merchant_key: int = -1
 var _lines: Array = []             # falas do rádio e da viagem com a hora em que tocam (refeito quando a torre sobe)
 var _lines_dirty: bool = true
+var _line_i: int = 0
 var _m_power: Dictionary = {}
 var _rethink_acc: float = 0.0
 var _m_cap: Dictionary = {}
@@ -1024,9 +1025,10 @@ func _regrow() -> void:
 
 
 func _arrivals() -> void:
-	if tower < int(bal["arrivals"]["story_tower"]) or beds_free() <= 0:
+	if tower < int(bal["arrivals"]["story_tower"]):
 		return
-	# Pessoas da história (vozes do rádio): chegam sozinhas, fora do sorteio, quando a condição fecha.
+	# Pessoas da história (vozes do rádio): chegam sozinhas, fora do sorteio, quando a condição fecha,
+	# e sempre entram (mesmo sem cama livre: dormem perto da fogueira até sobrar uma).
 	for sid in bal.get("story_order", []):
 		var story := String(sid)
 		if _story_done.has(story) or not _story_ready(story):
@@ -1040,7 +1042,7 @@ func _arrivals() -> void:
 			_group_ready_t = t + float(bal["arrivals"]["first_group_delay_s"])
 		changed.emit()
 		return
-	if not gate_group.is_empty():
+	if beds_free() <= 0 or not gate_group.is_empty():
 		return
 	if _group_ready_t >= 0.0 and t >= _group_ready_t:
 		_make_group()
@@ -1084,6 +1086,7 @@ func _story_ready(story: String) -> bool:
 ## (data/journey.json) anda em dias encurtados (ending.journey_day_scale) e termina com ela no portão.
 func _load_lines() -> void:
 	_lines_dirty = false
+	_line_i = 0
 	_lines = []
 	var rd: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/radio.json"))
 	if rd is Dictionary:
@@ -1125,9 +1128,10 @@ func _load_lines() -> void:
 func _radio_step() -> void:
 	if _lines_dirty:
 		_load_lines()
-	for l in _lines:
-		if float(l["due"]) > t:
-			return
+	# As falas estão em ordem de hora: só olha a partir da próxima ainda não tocada.
+	while _line_i < _lines.size() and float(_lines[_line_i]["due"]) <= t:
+		var l: Dictionary = _lines[_line_i]
+		_line_i += 1
 		if radio_heard.has(l["id"]):
 			continue
 		radio_heard.append(l["id"])
@@ -1637,14 +1641,19 @@ func goal() -> Dictionary:
 	var pw := power()
 	if float(pw["use"]) > float(pw["out"]):
 		return {"kind": "power", "out": float(pw["out"]), "use": float(pw["use"])}
-	if tower >= 2 and beds_free() <= 0 and _count_any("moradia") < 6:
-		return {"kind": "beds"}
 	# A próxima torre pede mais do que cabe: falta melhorar o depósito.
 	if tower < tower_max() and String(tower_building()["state"]) == "built":
 		var nxc: Dictionary = tower_next()["cost"]
 		for r in nxc:
 			if float(nxc[r]) > cap(r):
 				return {"kind": "storage", "res": r, "need": int(nxc[r]), "cap": int(cap(r))}
+	# Torre pronta para subir vem antes de pedir mais camas.
+	if tower < tower_max() and String(tower_building()["state"]) == "built" and can_afford(tower_next()["cost"]):
+		return {"kind": "tower", "level": tower + 1, "missing": {}}
+	if tower >= tower_max() and String(tower_building()["state"]) == "built" and ela_t < 0.0:
+		return {"kind": "journey", "left_s": journey_left()}
+	if tower >= 2 and beds_free() <= 0 and _count_any("moradia") < 6:
+		return {"kind": "beds"}
 	if _free_build_cells() < 6 and tower < tower_max() and String(tower_building()["state"]) == "built":
 		var nx0 := tower_next()
 		if not can_afford(nx0["cost"]):
@@ -1786,6 +1795,16 @@ func from_dict(d: Dictionary, balance: Dictionary, tz_bias: int = 0) -> void:
 
 ## Alcança o relógio depois de um tempo fechado. Devolve o que mudou, para o resumo.
 func catch_up(now_unix: float) -> Dictionary:
+	var ctx := catch_up_start(now_unix)
+	if ctx.is_empty():
+		return {}
+	advance(float(ctx["left"]))
+	return catch_up_finish(ctx, now_unix)
+
+
+## Em pedaços (o jogo anda alguns minutos de simulação por quadro e mostra o progresso):
+## catch_up_start -> catch_up_chunk até devolver true -> catch_up_finish.
+func catch_up_start(now_unix: float) -> Dictionary:
 	var elapsed: float = now_unix - t
 	var tb: Dictionary = bal["time"]
 	if elapsed < float(tb["offline_min_s"]):
@@ -1793,15 +1812,25 @@ func catch_up(now_unix: float) -> Dictionary:
 			advance(elapsed)
 		return {}
 	elapsed = minf(elapsed, float(tb["offline_cap_h"]) * 3600.0)
-	var before := stock.duplicate()
-	var built0: int = int(stats["built"])
-	var joined0: int = int(stats["joined"])
 	offline = true
-	advance(elapsed)
+	return {"seconds": elapsed, "left": elapsed, "before": stock.duplicate(), "built0": int(stats["built"]),
+			"joined0": int(stats["joined"]), "radio0": radio_heard.size()}
+
+
+func catch_up_chunk(ctx: Dictionary, seconds: float) -> bool:
+	var d := minf(seconds, float(ctx["left"]))
+	offline = true
+	advance(d)
+	ctx["left"] = float(ctx["left"]) - d
+	return float(ctx["left"]) <= 0.0
+
+
+func catch_up_finish(ctx: Dictionary, now_unix: float) -> Dictionary:
 	offline = false
 	t = maxf(t, now_unix)
 	var delta := {}
 	for r in RES:
-		delta[r] = int(round(float(stock[r]) - float(before[r])))
-	return {"seconds": elapsed, "delta": delta, "built": int(stats["built"]) - built0,
-			"joined": int(stats["joined"]) - joined0, "group": not gate_group.is_empty()}
+		delta[r] = int(round(float(stock[r]) - float(ctx["before"][r])))
+	return {"seconds": float(ctx["seconds"]), "delta": delta, "built": int(stats["built"]) - int(ctx["built0"]),
+			"joined": int(stats["joined"]) - int(ctx["joined0"]), "group": not gate_group.is_empty(),
+			"radio": radio_heard.size() - int(ctx["radio0"])}
