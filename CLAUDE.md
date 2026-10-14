@@ -13,3 +13,6 @@ Idle cozy em Godot 4.6 (GDScript tipado), janela baixa grudada no rodapé da tel
 - Depois de acrescentar imagens/áudio: `--headless --path . --import`.
 - Captura de tela não funciona com `--headless`; use `xvfb-run -a` com `--rendering-driver opengl3`.
 - `godot-interactive` e `godot-live-edit` exigem o `godot-mcp` e o plugin AI Bridge, que não estão instalados.
+
+## Mercado
+- Antes de propor ou dar como pronto um sistema, tela ou versão, confira `docs/regras-do-mercado.md` (as reclamações do nicho que o jogo tem que cobrir) e diga se algum ponto fica descoberto.
