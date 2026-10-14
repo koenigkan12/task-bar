@@ -738,6 +738,13 @@ func _card_res() -> void:
 		_card_box.add_child(_stats([_stat("energia", "+%d" % int(pw["out"]), fmt("UI_POWER_LINE", {"out": int(pw["out"]), "use": int(pw["use"])}), C_GOOD),
 			_stat("alerta", "-%d" % int(pw["use"]), fmt("UI_POWER_LINE", {"out": int(pw["out"]), "use": int(pw["use"])}), C_WARN if float(pw["use"]) > float(pw["out"]) else C_TEXT)]))
 		_card_box.add_child(_wrap(I18n.t("RD_energia"), C_MUTED))
+		var gens := {}
+		for b in sim.buildings:
+			var gd := sim.def(String(b["type"]))
+			if gd.has("power_out") and String(b["state"]) != "site":
+				gens[String(b["type"])] = int(gens.get(String(b["type"]), 0)) + 1
+		for tp in gens:
+			_card_box.add_child(_row([_label("%s ×%d" % [bname(tp), gens[tp]]), _stat("energia", "+%d" % (int(sim.def(tp)["power_out"]) * int(gens[tp])), fmt("UI_POWER_OUT", {"n": sim.def(tp)["power_out"]}), C_GOOD)]))
 		return
 	_header(r, I18n.t("RES_" + r))
 	var v := int(floor(float(sim.stock[r])))
@@ -748,6 +755,33 @@ func _card_res() -> void:
 		st.append(_stat("alerta", "-%.1f/min" % float(fl["use"]), fmt("UI_RES_OUT", {"n": "%.1f" % float(fl["use"])}), C_WARN))
 	_card_box.add_child(_stats(st))
 	_card_box.add_child(_wrap(I18n.t("RD_" + r), C_MUTED))
+	# De onde vem: cada prédio que produz (quantos e gente/vagas) e quem está catando à mão.
+	# No mapa eles ficam contornados enquanto este cartão está aberto.
+	var by_type := {}
+	for b in sim.buildings:
+		var tp := String(b["type"])
+		if String(sim.def(tp).get("res", "")) != r or String(b["state"]) == "site":
+			continue
+		if not by_type.has(tp):
+			by_type[tp] = [0, 0, 0]
+		var e: Array = by_type[tp]
+		e[0] += 1
+		e[1] += (b["workers"] as Array).size()
+		e[2] += int(sim.level_def(b).get("slots", 0))
+	var foragers := 0
+	for p in sim.people:
+		if String(p["job"].get("kind", "")) == "forage" and String(p["job"].get("res", "")) == r:
+			foragers += 1
+	if by_type.is_empty() and foragers == 0:
+		_card_box.add_child(_row([_icon_rect("alerta"), _label(I18n.t("UI_SRC_NONE"), C_WARN)]))
+	for tp in by_type:
+		var e: Array = by_type[tp]
+		var row := _row([_label("%s ×%d" % [bname(tp), e[0]]), _stat("pessoa", "%d/%d" % [e[1], e[2]], fmt("UI_WORKERS", {"a": e[1], "b": e[2]}))])
+		row.tooltip_text = I18n.t("BD_" + tp)
+		row.mouse_filter = Control.MOUSE_FILTER_PASS
+		_card_box.add_child(row)
+	if foragers > 0:
+		_card_box.add_child(_row([_label(I18n.t("UI_SRC_HAND")), _stat("pessoa", str(foragers), fmt("TIP_SRC_HAND", {"n": foragers}))]))
 
 
 func show_welcome(summary: Dictionary) -> void:

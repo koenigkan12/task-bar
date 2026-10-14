@@ -222,7 +222,10 @@ func _close_options() -> void:
 
 
 func _open_test_card() -> void:
-	match String(Game.args.get("open", "")):   # só para capturas
+	var op := String(Game.args.get("open", ""))
+	if op.begins_with("res:"):
+		hud.show_res(op.trim_prefix("res:"))
+	match op:   # só para capturas
 		"build": hud.show_build_menu()
 		"tower": hud.show_tower()
 		"gate":
@@ -287,6 +290,8 @@ func _input(ev: InputEvent) -> void:
 func _process(delta: float) -> void:
 	if hud != null:
 		_update_hover()
+		var hk: String = hud._card_kind
+		world.hl_res = hk.trim_prefix("res:") if hud.card_open() and hk.begins_with("res:") else ""
 	if _shot_t >= 0.0:
 		_shot_t -= delta
 		if _shot_t < 0.0:

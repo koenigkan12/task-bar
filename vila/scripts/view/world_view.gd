@@ -28,6 +28,7 @@ var _pnodes: Dictionary = {}            # id -> {root, sprite, carry, zz}
 var _tex: Dictionary = {}
 var _lights: Array[Dictionary] = []     # {light, base, kind}
 var _anim_t: float = 0.0
+var hl_res: String = ""                  # recurso clicado na barra de cima: contorna quem produz
 var _night_k: float = 0.0               # 0 = dia, 1 = noite fechada
 var _sync_acc: float = 0.0
 
@@ -544,6 +545,17 @@ func _timer_text(left_mid: Vector2, sec: float, col: Color) -> void:
 
 
 func _draw_overlay() -> void:
+	# Recurso clicado na barra de cima: contorno piscando nos prédios que produzem e em quem está nele.
+	if hl_res != "":
+		var hc := Color(1.0, 0.85, 0.4, 0.55 + 0.45 * sin(_anim_t * 6.0))
+		for b in sim.buildings:
+			var bd := sim.def(String(b["type"]))
+			if String(bd.get("res", "")) == hl_res or (hl_res == "energia" and bd.has("power_out")):
+				var fp := sim._fp(String(b["type"]))
+				_overlay.draw_rect(Rect2(Vector2(Vector2i(b["cell"])) * TILE - Vector2(1, 1), Vector2(fp) * TILE + Vector2(2, 2)), hc, false, 1.0)
+		for p in sim.people:
+			if String(p["job"].get("res", "")) == hl_res:
+				_overlay.draw_arc(_person_world(p) + Vector2(0, -5), 7.0, 0.0, TAU, 16, hc, 1.0)
 	# Barras de obra
 	for b in sim.buildings:
 		if String(b["state"]) == "built":
