@@ -44,7 +44,7 @@ func setup(s: VilaSim) -> void:
 	sim = s
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_font = load("res://assets/fonts/PixelifySans.ttf")
+	_font = load("res://assets/fonts/DotGothic16-Regular.ttf")
 	_icons = load(ART + "icons.png")
 	theme = _make_theme()
 	_build_top()
@@ -108,7 +108,7 @@ func _button_box(state: int) -> StyleBox:
 func _make_theme() -> Theme:
 	var th := Theme.new()
 	th.default_font = _font
-	th.default_font_size = 10
+	th.default_font_size = 8
 	th.set_color("font_color", "Label", C_TEXT)
 	th.set_color("font_color", "Button", C_TEXT)
 	th.set_color("font_hover_color", "Button", Color(1, 0.92, 0.75))

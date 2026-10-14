@@ -31,4 +31,4 @@ godot --headless --path vila --script res://tests/ui_flow_test.gd -- --fresh --h
 Toda original, gerada por `tools/gerar_arte.py` (Pillow), imitando o clima dos pacotes Stranded do penusbmic
 (que são pagos e não estão aqui). Se comprar os pacotes, os PNGs de `assets/art/` podem ser trocados mantendo
 nomes e tamanhos.
-Fonte: Pixelify Sans (OFL, `assets/fonts/`).
+Fonte: DotGothic16 (OFL, `assets/fonts/`), em 8 px lógicos (16 px na tela): é o tamanho de desenho dela.
