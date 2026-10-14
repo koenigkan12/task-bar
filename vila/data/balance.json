@@ -561,6 +561,7 @@
   "story_tower": 2,
   "first_group_delay_s": 90,
   "group_cooldown_s": 600,
+  "fire_cooldown_mult": 0.5,
   "walk_in_from": [
    39,
    15

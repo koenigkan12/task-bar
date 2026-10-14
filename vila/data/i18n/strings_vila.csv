@@ -37,9 +37,11 @@ BD_horta,Planta comida. Usa um pouco de água.,Grows food. Uses some water.
 BD_deposito,Guarda mais de cada coisa.,Stores more of everything.
 BD_moradia,Onde se dorme. Melhore no lugar para ter mais camas.,Where people sleep. Upgrade it in place for more beds.
 BD_entulho,Rende sucata e abre chão para construir.,Gives scrap and opens ground to build on.
-BD_fogueira,Onde a vila se junta à noite.,Where the village gathers at night.
+BD_fogueira,"Onde a vila se junta à noite. Acesa, é vista de longe: gente nova chega ao portão na metade do tempo.","Where the village gathers at night. Lit, it is seen from afar: new people reach the gate in half the time."
 BD_serraria,Madeira bem mais rápido que cortar à mão.,Wood much faster than by hand.
 BD_ferrovelho,Sucata bem mais rápido que catar à mão.,Scrap much faster than by hand.
+BD_torre,"Fala com o rádio. Cada nível novo libera prédios e traz gente.","Talks to the radio. Each new level unlocks buildings and brings people."
+BD_gate,Por aqui chegam os grupos de sobreviventes. Clique para ver quem está esperando.,Survivor groups arrive here. Click to see who is waiting.
 BD_hatch,Onde o Joaquim morou sozinho. Guarda um pouco de cada coisa.,Where Joaquim lived alone. Stores a little of everything.
 UI_DAY,Dia {n},Day {n}
 UI_BUILD,Construir,Build

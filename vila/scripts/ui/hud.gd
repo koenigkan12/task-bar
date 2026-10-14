@@ -555,7 +555,7 @@ func show_tip(text: String, at: Vector2) -> void:
 		_tip.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		_tip.custom_minimum_size = Vector2(160, 0)
 	_tip.size = Vector2.ZERO
-	var s := _tip.get_minimum_size()
+	var s := _tip.get_combined_minimum_size()
 	_tip.position = Vector2(clampf(at.x + 8.0, 0.0, W - s.x), clampf(at.y + 10.0, 16.0, H - 18.0 - s.y))
 
 
@@ -1018,10 +1018,15 @@ func _card_build() -> void:
 			close_card()
 			build_chosen.emit(type))
 		var row := _row([btn, _cost_row(lv["cost"]), _icon_rect("relogio"), _label(fmt_time(float(lv["time_s"])), C_MUTED)])
+		row.tooltip_text = btn.tooltip_text
+		row.mouse_filter = Control.MOUSE_FILTER_PASS
 		_card_box.add_child(row)
 	for type in locked:
 		var need: int = int(sim.def(type).get("tower", 1))
-		_card_box.add_child(_row([_icon_rect("cadeado"), _label("%s · %s" % [bname(type), fmt("UI_LOCKED_TOWER", {"n": need})], C_MUTED)]))
+		var lrow := _row([_icon_rect("cadeado"), _label("%s · %s" % [bname(type), fmt("UI_LOCKED_TOWER", {"n": need})], C_MUTED)])
+		lrow.tooltip_text = I18n.t("BD_" + type)
+		lrow.mouse_filter = Control.MOUSE_FILTER_PASS
+		_card_box.add_child(lrow)
 
 
 # ================================================================ rádio

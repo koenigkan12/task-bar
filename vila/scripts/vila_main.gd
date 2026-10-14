@@ -332,11 +332,25 @@ var _tip_text: String = ""
 var _tip_t: float = 0.0
 
 
+func _tip_under(n: Node, mp: Vector2) -> Control:
+	for ch in n.get_children():
+		var f := _tip_under(ch, mp)
+		if f != null:
+			return f
+	if n is Control and (n as Control).is_visible_in_tree() and (n as Control).tooltip_text != "" and (n as Control).get_global_rect().has_point(mp):
+		return n as Control
+	return null
+
+
 func _update_hover() -> void:
 	var mp := get_viewport().get_mouse_position()
 	# Botões, ícones e chips: a explicação vem do tooltip_text do controle debaixo do mouse
 	# (desenhada pelo próprio jogo; a dica nativa do Godot não aparece na janela sem borda).
 	var hc := get_viewport().gui_get_hovered_control()
+	# O cartão é refeito a cada 0,2 s e o Godot perde o controle debaixo do mouse parado:
+	# procura no próprio cartão quem tem explicação naquele ponto.
+	if (hc == null or not is_instance_valid(hc)) and hud.card_open():
+		hc = _tip_under(hud._card, mp)
 	if hc != null:
 		var tip := ""
 		var n: Node = hc
@@ -382,6 +396,8 @@ func _update_hover() -> void:
 		var t := hud.bname(String(b["type"]), int(b["level"]))
 		if String(b["state"]) != "built":
 			t += " · " + VilaHud.fmt_time(float(b["total"]) - float(b["progress"]))
+		if I18n.has_key("BD_" + String(b["type"])):
+			t += "\n" + I18n.t("BD_" + String(b["type"]))
 		hud.show_tip(t, mp)
 		return
 	hud.show_tip("", mp)

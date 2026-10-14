@@ -503,8 +503,17 @@ func choose(index: int) -> void:
 			stock[r] = minf(cap(r), float(stock[r]) + float(br[r]))
 		person_joined.emit(int(p["id"]))
 	gate_group.clear()
-	_group_ready_t = t + float(bal["arrivals"]["group_cooldown_s"])
+	_group_ready_t = t + group_cooldown()
 	changed.emit()
+
+
+## Espera até o próximo grupo no portão. A fogueira acesa é vista de longe: com ela pronta, a espera cai.
+func group_cooldown() -> float:
+	var cd := float(bal["arrivals"]["group_cooldown_s"])
+	var f := _first("fogueira")
+	if not f.is_empty() and String(f["state"]) == "built":
+		cd *= float(bal["arrivals"]["fire_cooldown_mult"])
+	return cd
 
 
 func _pay(cost: Dictionary) -> void:
