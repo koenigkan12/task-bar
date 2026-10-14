@@ -550,7 +550,7 @@ func refresh() -> void:
 	var into := fposmod(hr - p_start, 24.0)
 	_clock_icon.set_state(into / p_len, is_n)
 	var left_s := (p_len - into) / 24.0 * float(sim.bal["night"]["cycle_s"])
-	_clock_label.text = fmt("UI_DAY", {"n": sim.day_number()})
+	_clock_label.text = "%s %02d:%02d" % [fmt("UI_DAY", {"n": sim.day_number()}), int(sim.display_hour()), int(fposmod(sim.display_hour() * 60.0, 60.0))]
 	var dh := sim.display_hour()
 	var ctip := fmt("TIP_CLOCK_NIGHT" if is_n else "TIP_CLOCK_DAY", {"h": "%02d:%02d" % [int(dh), int(fposmod(dh * 60.0, 60.0))], "t": fmt_time(left_s)}) + "\n" + I18n.t("TIP_CLOCK")
 	_clock_icon.tooltip_text = ctip

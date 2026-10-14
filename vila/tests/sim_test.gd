@@ -157,6 +157,19 @@ func _init() -> void:
 			jumps += 1
 		prev = dh
 	_check(dark_ok and jumps == 0, "relógio: noite das 18h às 6h, sem pulos (%d)" % jumps)
+	# Várias noites: o dia avança 1 a cada amanhecer e nunca volta.
+	var dn := VilaSim.new()
+	dn.setup(bal, start, 0)
+	var d_first := dn.day_number()
+	var d_prev := d_first
+	var back := false
+	for i in 4 * 96:
+		dn.t += cyc / 96.0
+		var dd := dn.day_number()
+		if dd < d_prev:
+			back = true
+		d_prev = dd
+	_check(d_first == 1 and d_prev == 5 and not back, "4 ciclos depois é o dia 5, sem voltar (%d)" % d_prev)
 	# A noite para tudo.
 	var night := VilaSim.new()
 	night.setup(bal, start, 0)

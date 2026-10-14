@@ -423,10 +423,13 @@ func _night_end() -> void:
 	work_tonight = false
 
 
-## Dia 1 é o dia (local) em que a vila começou.
+## Dias da vila (ciclo de ~25 min), virando a cada amanhecer. Antes contava dias de verdade do
+## relógio do PC: depois de várias noites na vila continuava "Dia 1".
 func day_number() -> int:
-	var d0 := floorf((start_t + float(tz_bias_s)) / 86400.0)
-	return int(floorf((t + float(tz_bias_s)) / 86400.0) - d0) + 1
+	var cs := float(bal["night"]["cycle_s"])
+	var dawn := float(bal["time"]["night_to_h"]) / 24.0 * cs
+	var k0 := floorf((start_t - cycle_t0 - dawn) / cs)
+	return maxi(1, int(floorf((t - cycle_t0 - dawn) / cs) - k0) + 1)
 
 
 func cap(res: String) -> float:
