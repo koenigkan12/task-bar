@@ -182,13 +182,12 @@ func _frame_sprite(name: String, frames: int, frame: int, height: int) -> Sprite
 func _btex_name(b: Dictionary) -> String:
 	var tp := String(b["type"])
 	var lvl: int = int(b["level"])
+	var maxl := {"moradia": 4, "horta": 3, "poco": 2, "deposito": 3}
 	match tp:
 		"torre":
-			return "tower_%d" % mini(3, lvl if String(b["state"]) == "built" else lvl)
-		"deposito", "horta":
-			return "%s_%d" % [tp, mini(2, lvl)]
-		"hatch", "gate":
-			return tp
+			return "tower_%d" % mini(3, lvl)
+		"moradia", "horta", "poco", "deposito":
+			return "%s_%d" % [tp, mini(int(maxl[tp]), lvl)]
 	return tp
 
 
@@ -248,7 +247,7 @@ func _make_building(b: Dictionary) -> Dictionary:
 		root.add_child(ov)
 	var crops: Array[Sprite2D] = []
 	if tp == "horta" and st == "built":
-		var n := 4 if int(b["level"]) == 1 else 6
+		var n := 4 if int(b["level"]) < 3 else 6
 		for i in n:
 			var c := Sprite2D.new()
 			c.texture = tex("crop")
@@ -257,7 +256,7 @@ func _make_building(b: Dictionary) -> Dictionary:
 			var col := i % 2 if n == 4 else i % 3
 			var row := i / 2 if n == 4 else i / 3
 			var cw := 16.0 if n == 4 else 10.0
-			c.position = Vector2(2 + col * (cw - 2) + (0 if n == 4 else 0), -30 + row * 12)
+			c.position = Vector2(1 + col * 14, -31 + row * 12) if n == 4 else Vector2(2 + col * (cw - 2), -30 + row * 12)
 			root.add_child(c)
 			crops.append(c)
 	var lights: Array[PointLight2D] = []
@@ -283,11 +282,11 @@ func _light_specs(tp: String, level: int, st: String) -> Array:
 	match tp:
 		"fogueira":
 			return [{"pos": Vector2(8, -8), "color": Color(1.0, 0.6, 0.25), "scale": 2.6, "energy": 1.1, "always": true}]
-		"barraco":
-			return [{"pos": Vector2(16, -14), "color": warm, "scale": 1.0, "energy": 0.9}]
-		"casa":
-			return [{"pos": Vector2(12, -16), "color": warm, "scale": 1.0, "energy": 0.8}, {"pos": Vector2(36, -16), "color": warm, "scale": 1.0, "energy": 0.8}]
-		"deposito", "ferrovelho":
+		"moradia":
+			return [{"pos": Vector2(16, -12 - 2 * level), "color": warm, "scale": 0.8 + 0.15 * level, "energy": 0.9}]
+		"deposito":
+			return [] if level < 2 else [{"pos": Vector2(16, -14), "color": warm, "scale": 0.9, "energy": 0.7}]
+		"ferrovelho":
 			return [{"pos": Vector2(20, -14), "color": warm, "scale": 0.9, "energy": 0.7}]
 		"hatch":
 			return [{"pos": Vector2(16, -18), "color": warm, "scale": 1.2, "energy": 0.8}]
@@ -462,7 +461,14 @@ func _draw_overlay() -> void:
 		# porta: onde as pessoas vão parar
 		var door := Vector2(ghost_cell + Vector2i(fp2.x / 2, fp2.y)) * TILE
 		_overlay.draw_rect(Rect2(door + Vector2(5, 5), Vector2(6, 6)), Color(1, 1, 1, 0.35), false)
-	elif hover_cell.x >= 0:
+	# Entulho marcado para limpar: colchetes âmbar e um martelo
+	var mk := tex("icons")
+	for c in sim.marked:
+		var r1 := Rect2(Vector2(c) * TILE, Vector2(TILE, TILE))
+		_draw_brackets(r1, Color(1.0, 0.75, 0.3, 0.9))
+		if mk != null:
+			_overlay.draw_texture_rect_region(mk, Rect2(r1.position + Vector2(4, -6), Vector2(8, 8)), Rect2(8 * 8, 0, 8, 8))
+	if ghost_type == "" and hover_cell.x >= 0:
 		var sel := tex("selecao")
 		var bh := sim.building_at(hover_cell)
 		if not bh.is_empty():
@@ -473,8 +479,7 @@ func _draw_overlay() -> void:
 			_overlay.draw_texture(sel, Vector2(hover_cell) * TILE, Color(1, 1, 1, 0.55))
 
 
-func _draw_brackets(r: Rect2) -> void:
-	var c := Color(1, 1, 1, 0.7)
+func _draw_brackets(r: Rect2, c: Color = Color(1, 1, 1, 0.7)) -> void:
 	var l := 4.0
 	for corner in [r.position, Vector2(r.end.x, r.position.y), Vector2(r.position.x, r.end.y), r.end]:
 		var sx := 1.0 if corner.x == r.position.x else -1.0

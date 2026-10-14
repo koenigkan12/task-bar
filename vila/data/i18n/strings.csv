@@ -6,8 +6,22 @@ RES_sucata,sucata,scrap
 B_poco,Poço,Well
 B_horta,Horta,Garden
 B_deposito,Depósito,Storehouse
-B_barraco,Barraco,Shack
-B_casa,Casa,House
+B_moradia,Barraca,Tent
+B_moradia_1,Barraca,Tent
+B_moradia_2,Barraco,Shack
+B_moradia_3,Casa,House
+B_moradia_4,Casa de pedra,Stone house
+B_horta_1,Horta de pneu,Tire garden
+B_horta_2,Canteiro,Garden bed
+B_horta_3,Horta,Garden
+B_poco_1,Barril de chuva,Rain barrel
+B_poco_2,Poço,Well
+B_deposito_1,Caixotes,Crates
+B_deposito_2,Galpão,Shed
+B_deposito_3,Depósito,Storehouse
+B_area,Mais chão em volta,More ground around
+B_estrada,A estrada (chega gente),The road (people come)
+B_entulho,Entulho,Rubble
 B_fogueira,Fogueira,Campfire
 B_serraria,Serraria,Sawmill
 B_ferrovelho,Ferro-velho,Scrapyard
@@ -18,20 +32,25 @@ B_praca,Praça,Square
 B_oficina,Oficina,Workshop
 B_gerador,Gerador,Generator
 B_galinheiro,Galinheiro,Coop
-BD_poco,Tira água do chão.,Draws water.
+BD_poco,Junta água.,Collects water.
 BD_horta,Planta comida. Usa um pouco de água.,Grows food. Uses some water.
 BD_deposito,Guarda mais de cada coisa.,Stores more of everything.
-BD_barraco,Uma cama.,One bed.
-BD_casa,Duas camas.,Two beds.
+BD_moradia,Onde se dorme. Melhore no lugar para ter mais camas.,Where people sleep. Upgrade it in place for more beds.
+BD_entulho,Rende sucata e abre chão para construir.,Gives scrap and opens ground to build on.
 BD_fogueira,Onde a vila se junta à noite.,Where the village gathers at night.
 BD_serraria,Madeira bem mais rápido que cortar à mão.,Wood much faster than by hand.
 BD_ferrovelho,Sucata bem mais rápido que catar à mão.,Scrap much faster than by hand.
-BD_hatch,Onde o Joaquim morou sozinho. Guarda um pouco e tem uma cama.,Where Joaquim lived alone. Stores a little and has one bed.
+BD_hatch,Onde o Joaquim morou sozinho. Guarda um pouco de cada coisa.,Where Joaquim lived alone. Stores a little of everything.
 UI_DAY,Dia {n},Day {n}
 UI_BUILD,Construir,Build
 UI_CANCEL,Cancelar,Cancel
 UI_UPGRADE,Melhorar,Upgrade
-UI_UPGRADE_TO,Melhorar para nível {n},Upgrade to level {n}
+UI_UPGRADE_TO,Melhorar para {b},Upgrade to {b}
+UI_CLEAR,Limpar primeiro,Clear first
+UI_UNCLEAR,Desmarcar,Unmark
+UI_CLEAR_LEFT,Ainda tem {n} de sucata,{n} scrap left
+UI_CLEAR_MARKED,Marcado: alguém vem limpar,Marked: someone will clear it
+UI_CLEAR_TOWER,A torre limpa uma área maior quando sobe,The tower clears a bigger area when it rises
 UI_LEVEL,Nível {n},Level {n}
 UI_WORKERS,Trabalham: {a}/{b},Workers: {a}/{b}
 UI_BUILDING,Em obra,Under construction
@@ -52,7 +71,7 @@ UI_TIME,Leva {t},Takes {t}
 UI_GATE_TITLE,Gente na estrada,People on the road
 UI_GATE_PICK,Escolha quem entra (há {n} cama livre),Pick who comes in ({n} free bed)
 UI_GATE_PICK_N,Escolha quem entra (há {n} camas livres),Pick who comes in ({n} free beds)
-UI_GATE_NOBED,Sem cama livre: construa um barraco ou uma casa,No free bed: build a shack or a house
+UI_GATE_NOBED,Sem cama livre: melhore ou construa uma moradia,No free bed: upgrade or build a home
 UI_GATE_NONE,Ninguém,No one
 UI_CHOOSE,Escolher,Choose
 UI_BRINGS,Traz {n} {r},Brings {n} {r}
@@ -81,7 +100,9 @@ GOAL_tower_ready,Meta: torre {n} · pode subir!,Goal: tower {n} · ready!
 GOAL_tower_wait,A torre está subindo para o nível {n},The tower is rising to level {n}
 GOAL_more,{n} sem trabalho: construa mais {b},{n} idle: build another {b}
 GOAL_short,Acabando {r}: construa mais um {b},Running out of {r}: build another {b}
-GOAL_beds,Construa uma casa para chegar mais gente,Build a house so more people come
+GOAL_beds,Sem cama livre: melhore a barraca ou faça outra,No free bed: upgrade the tent or build another
+GOAL_storage,A torre pede {n} {r} e só cabem {cap}: melhore o depósito,The tower needs {n} {r} but only {cap} fit: upgrade storage
+GOAL_space,Pouco chão livre: clique no entulho para limpar,Little free ground: click rubble to clear it
 GOAL_done,Fim do protótipo. Obrigado por testar!,End of the prototype. Thanks for testing!
 DO_idle,Sem nada pra fazer,Nothing to do
 DO_sleep,Dormindo,Sleeping

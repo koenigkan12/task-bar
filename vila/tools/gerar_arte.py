@@ -639,8 +639,8 @@ def tower(lvl):
     L = Lay(32, 64)
     fx = Lay(32, 64)
     tower_base(L, fx, lvl)
-    if lvl == 1:
-        # mastro curto enferrujado
+    if False:
+        # (antigo nível 1) enferrujado
         L.rect(17, 22, 18, 56, R2)
         L.vl(17, 22, 56, R3)
         for y in range(26, 56, 6):
@@ -736,7 +736,7 @@ def roof_corr(L, x0, y0, x1, y1, inset, ca, cb, rim, eave):
     L.hl(x0, x1, y1, eave)
 
 
-def barraco():
+def moradia_2():
     L = Lay(32, 40)
     fx = Lay(32, 40)
     r = random.Random(21)
@@ -787,83 +787,7 @@ def barraco():
     glow(fx, 4, 24, YE, OR, None)
     fx.p(4, 25, OR2)
     im = finish(L, fx, drop=(2, 1), shadows=[('r', 4, 37, 30, 38), ('e', 16, 38, 13, 1.3)])
-    save(im, 'barraco.png')
-    return im
-
-
-def casa():
-    L = Lay(48, 48)
-    fx = Lay(48, 48)
-    r = random.Random(31)
-    # paredes de tábua
-    L.planks(3, 27, 44, 44, [W1, W2, W1, '#4a3228'], 3, W0, r)
-    L.vl(3, 27, 44, W3)
-    L.vl(44, 27, 44, W0)
-    L.hl(3, 44, 45, R0)
-    L.hl(2, 45, 45, W0)
-    L.hl(3, 44, 27, OUT)
-    L.hl(3, 44, 28, W0)
-    # vigas de canto
-    L.rect(3, 27, 4, 45, W2)
-    L.rect(43, 27, 44, 45, W1)
-    # telhado de tábuas + lona
-    for y in range(6, 27):
-        t = (y - 6) / 20
-        d = round(4 * (1 - min(1, t * 2.5)))
-        for x in range(1 + d, 47 - d):
-            c = R1 if (x // 3) % 2 else R2
-            if (x % 3) == 2:
-                c = R0
-            L.p(x, y, c)
-    L.hl(5, 42, 6, R4)
-    L.hl(4, 43, 7, R3)
-    L.rect(1, 24, 46, 26, R0)
-    L.hl(1, 46, 24, R3)
-    for x in range(1, 47, 3):
-        L.p(x, 25, W2)
-    # lona azul-escura com cordas
-    L.rect(9, 11, 24, 21, D2)
-    L.hl(9, 24, 11, D4)
-    L.vl(9, 11, 21, D3)
-    L.vl(24, 11, 21, D1)
-    L.hl(9, 24, 21, D1)
-    for x in range(11, 24, 4):
-        L.vl(x, 12, 20, D1)
-    L.line(9, 11, 6, 24, W3)
-    L.line(24, 11, 28, 24, W3)
-    L.p(16, 16, D3)
-    for _ in range(8):
-        L.p(r.randint(27, 44), r.randint(10, 22), R3)
-    # chaminé de pedra
-    L.rect(34, 1, 38, 14, S1)
-    L.vl(34, 1, 14, S3)
-    L.vl(38, 1, 14, S0)
-    for y in range(3, 14, 3):
-        L.hl(35, 37, y, S0)
-        L.p(35 + (y % 2), y + 1, S2)
-    L.rect(33, 0, 39, 1, S2)
-    L.hl(33, 39, 0, S3)
-    fx.p(36, 0, ORD)
-    fx.p(37, 0, OR2)
-    # janelas e porta
-    window(L, 8, 31, 13, 35)
-    window(L, 34, 31, 39, 35)
-    L.rect(20, 31, 26, 44, R0)
-    L.rect(21, 32, 25, 44, W0)
-    for x in (22, 24):
-        L.vl(x, 32, 44, R0)
-    L.hl(19, 27, 30, W3)
-    L.vl(19, 30, 44, W2)
-    L.vl(27, 30, 44, W1)
-    L.p(25, 38, OR)
-    L.rect(18, 45, 28, 46, S2)
-    L.hl(18, 28, 45, S3)
-    # luz da porta
-    glow(fx, 23, 29, YE, OR, None)
-    fx.p(22, 29, OR)
-    fx.p(24, 29, OR)
-    im = finish(L, fx, drop=(2, 1), shadows=[('r', 3, 46, 47, 47)])
-    save(im, 'casa.png')
+    save(im, 'moradia_2.png')
     return im
 
 
@@ -887,7 +811,7 @@ def crate(L, x0, y0, x1, y1):
     L.rect(x0 + 1, y0 + 1, x1 - 1, y0 + 1, W3)
 
 
-def deposito_1():
+def deposito_2():
     L = Lay(32, 40)
     fx = Lay(32, 40)
     L.planks(2, 22, 21, 37, [W1, '#4a3228'], 3, W0, random.Random(41))
@@ -918,11 +842,11 @@ def deposito_1():
     fx.p(12, 25, OR)
     glow(fx, 28, 33, CY, CY2)
     im = finish(L, fx, drop=(2, 1), shadows=[('r', 3, 38, 31, 39)])
-    save(im, 'deposito_1.png')
+    save(im, 'deposito_2.png')
     return im
 
 
-def deposito_2():
+def deposito_3():
     # 32x48, 2x2: galpão reforçado, mais alto, telhado de metal, mais caixotes
     L = Lay(32, 48)
     fx = Lay(32, 48)
@@ -974,7 +898,7 @@ def deposito_2():
     glow(fx, 19, 3, OR, OR2)   # luz no topo da antena
     L.vl(19, 3, 6, ST1)
     im = finish(L, fx, drop=(2, 1), shadows=[('r', 3, 46, 31, 47)])
-    save(im, 'deposito_2.png')
+    save(im, 'deposito_3.png')
     return im
 
 
@@ -1000,18 +924,18 @@ def bed(L, x0, y0, x1, y1, seed):
     L.hl(x0 + 2, x1 - 2, y0 + 2, SOIL0)
 
 
-def horta_1():
+def horta_2():
     L = Lay(32, 32)
     bed(L, 1, 3, 29, 29, 51)
     # estacas nos cantos
     for x in (1, 29):
         L.rect(x, 1, x, 4, W3)
     im = finish(L, drop=(2, 1), shadows=[('r', 2, 30, 31, 31)])
-    save(im, 'horta_1.png')
+    save(im, 'horta_2.png')
     return im
 
 
-def horta_2():
+def horta_3():
     # 32x32, 2x2: mesmo canteiro, mais cheio, barril de água com cano e lampião
     L = Lay(32, 32)
     fx = Lay(32, 32)
@@ -1042,7 +966,7 @@ def horta_2():
     L.p(3, 0, ST0)
     glow(fx, 2, 1, YE, OR, None)
     im = finish(L, fx, drop=(2, 1), shadows=[('r', 2, 30, 31, 31)])
-    save(im, 'horta_2.png')
+    save(im, 'horta_3.png')
     return im
 
 
@@ -1088,7 +1012,7 @@ def crops():
     return sheet
 
 
-def poco():
+def poco_2():
     L = Lay(32, 32)
     fx = Lay(32, 32)
     # cilindro de pedra
@@ -1138,7 +1062,7 @@ def poco():
     L.hl(13, 18, 13, R1)
     L.hl(14, 17, 15, R1)
     im = finish(L, fx, drop=(2, 1), shadows=[('e', 17, 29.5, 12, 2)])
-    save(im, 'poco.png')
+    save(im, 'poco_2.png')
     return im
 
 
@@ -1955,8 +1879,472 @@ def ghosts():
     save(L.im, 'selecao.png')
 
 
-# ================================================================ prévia
+# ================================================================ acampamento (nível 1 de cada linha)
+CV0, CV1, CV2, CV3 = '#242220', '#34302a', '#463f36', '#5c5446'  # lona velha
+ROPE = '#7a6a52'
+CABLE = '#120e14'
+
+
+def tri_fill(L, apex, yb, xl, xr, colfn):
+    ax, ay = apex
+    for y in range(ay, yb + 1):
+        t = (y - ay) / max(1, yb - ay)
+        x0 = round(ax - (ax - xl) * t)
+        x1 = round(ax + (xr - ax) * t)
+        for x in range(x0, x1 + 1):
+            L.p(x, y, colfn(x, y, x0, x1))
+
+
+def lantern(L, fx, x, y):
+    """Lanterninha pendurada: alça em (x, y-1), vidro quente em (x, y)."""
+    L.p(x, y - 1, ST0)
+    L.rect(x - 1, y, x + 1, y + 1, ORD)
+    L.hl(x - 1, x + 1, y + 2, ST0)
+    fx.p(x, y, YE)
+    fx.p(x, y + 1, OR)
+
+
+def moradia_1():
+    L = Lay(32, 32)
+    fx = Lay(32, 32)
+    # varas cruzadas saindo do topo
+    L.line(13, 1, 18, 7, W3)
+    L.line(19, 1, 14, 7, W2)
+    # caimentos do telhado (atrás do frontão)
+    tri_fill(L, (16, 4), 23, 2, 29,
+             lambda x, y, a, b: (CV2 if (x + y) % 6 else CV1) if x < 16 else (CV1 if (x + y) % 6 else CV0))
+    # frontão de lona
+    tri_fill(L, (16, 9), 28, 3, 28,
+             lambda x, y, a, b: CV3 if x <= a + 1 else (CV0 if x >= b - 1 else CV2))
+    L.hl(3, 28, 28, CV0)
+    # abertura escura com o saco de dormir
+    tri_fill(L, (16, 14), 28, 11, 21, lambda x, y, a, b: OUT if y < 21 else '#141018')
+    L.line(16, 13, 10, 28, CV3)
+    L.line(16, 13, 22, 28, CV0)
+    L.line(16, 14, 11, 27, '#6c6250')
+    L.rect(12, 24, 20, 27, R2)
+    L.hl(12, 20, 24, R3)
+    L.hl(12, 20, 27, R0)
+    L.vl(15, 24, 27, PKD)
+    L.vl(18, 24, 27, PKD)
+    L.ell(12.5, 25.5, 1.4, 2, R3)
+    L.p(12, 25, R4)
+    # remendos costurados
+    L.rect(5, 18, 8, 21, D2)
+    L.hl(5, 8, 18, D3)
+    for y in (18, 20):
+        L.p(4, y, CV3)
+        L.p(9, y, CV3)
+    L.rect(23, 15, 25, 18, R1)
+    L.hl(23, 25, 15, R2)
+    L.p(24, 19, CV3)
+    L.line(16, 4, 16, 9, CV3)
+    # estaca com a lanterna
+    L.rect(28, 10, 28, 29, W2)
+    L.p(28, 10, W4)
+    L.hl(26, 28, 11, W2)
+    lantern(L, fx, 26, 13)
+    # cordas de espia (sem contorno)
+    fx.line(3, 24, 0, 29, ROPE)
+    fx.line(28, 22, 31, 28, ROPE)
+    im = finish(L, fx, drop=(2, 1), shadows=[('r', 3, 29, 30, 30)])
+    save(im, 'moradia_1.png')
+    return im
+
+
+def moradia_3():
+    L = Lay(32, 48)
+    fx = Lay(32, 48)
+    r = random.Random(33)
+    L.planks(2, 31, 29, 45, [W1, W2, W1, '#4a3228'], 3, W0, r)
+    L.rect(2, 31, 3, 45, W3)
+    L.vl(29, 31, 45, W0)
+    L.hl(2, 29, 31, OUT)
+    L.hl(2, 29, 32, W0)
+    L.hl(1, 30, 46, R0)
+    # telhado de tábuas
+    for y in range(12, 31):
+        t = (y - 12) / 18
+        d = round(3 * (1 - min(1, t * 2.5)))
+        for x in range(1 + d, 31 - d):
+            c = R1 if (x // 3) % 2 else R2
+            if x % 3 == 2:
+                c = R0
+            L.p(x, y, c)
+    L.hl(4, 27, 12, R4)
+    L.hl(3, 28, 13, R3)
+    L.rect(1, 28, 30, 30, R0)
+    L.hl(1, 30, 28, R3)
+    for x in range(1, 31, 3):
+        L.p(x, 29, W2)
+    # lona remendando o telhado
+    L.rect(5, 16, 14, 24, D2)
+    L.hl(5, 14, 16, D4)
+    L.vl(5, 16, 24, D3)
+    L.vl(14, 16, 24, D1)
+    L.hl(5, 14, 24, D1)
+    L.vl(9, 17, 23, D1)
+    L.line(5, 16, 3, 28, W3)
+    L.line(14, 16, 16, 28, W3)
+    for _ in range(5):
+        L.p(r.randint(17, 28), r.randint(15, 26), R3)
+    # chaminé
+    L.rect(22, 4, 25, 18, S1)
+    L.vl(22, 4, 18, S3)
+    L.vl(25, 4, 18, S0)
+    for y in range(6, 18, 3):
+        L.hl(23, 24, y, S0)
+    L.rect(21, 3, 26, 4, S2)
+    L.hl(21, 26, 3, S3)
+    fx.p(23, 3, ORD)
+    fx.p(24, 3, OR2)
+    # porta e janela
+    L.rect(6, 35, 11, 45, R0)
+    L.rect(7, 36, 10, 45, W0)
+    L.vl(8, 36, 45, R0)
+    L.hl(5, 12, 34, W3)
+    L.vl(5, 34, 45, W2)
+    L.vl(12, 34, 45, W1)
+    L.p(10, 40, OR)
+    window(L, 18, 36, 23, 39)
+    L.rect(5, 46, 12, 46, S2)
+    lantern(L, fx, 14, 35)
+    im = finish(L, fx, drop=(2, 1), shadows=[('r', 3, 46, 31, 47)])
+    save(im, 'moradia_3.png')
+    return im
+
+
+def stones(L, x0, y0, x1, y1, seed):
+    """Parede de pedra em fiadas desencontradas."""
+    r = random.Random(seed)
+    L.rect(x0, y0, x1, y1, S0)
+    row = 0
+    for y in range(y0, y1 + 1, 3):
+        x = x0 - (row % 2) * 2
+        while x <= x1:
+            w = r.randint(3, 5)
+            c = r.choice([S1, S1, S2, '#4a3e48'])
+            for yy in range(y, min(y + 1, y1) + 1):
+                for xx in range(max(x, x0), min(x + w - 2, x1) + 1):
+                    L.p(xx, yy, c)
+            if max(x, x0) <= x1:
+                L.p(max(x, x0), y, S3 if c != S1 else S2)
+            x += w
+        row += 1
+
+
+def moradia_4():
+    L = Lay(32, 52)
+    fx = Lay(32, 52)
+    r = random.Random(44)
+    # parede: tábua em cima, pedra embaixo
+    L.planks(2, 31, 29, 39, [W1, '#4a3228', W1], 3, W0, r)
+    stones(L, 2, 40, 29, 49, 45)
+    L.hl(2, 29, 40, S3)
+    L.vl(2, 31, 49, S2)
+    L.vl(29, 31, 49, S0)
+    L.hl(2, 29, 31, OUT)
+    L.hl(2, 29, 32, W0)
+    L.hl(1, 30, 50, S0)
+    # telhado de metal
+    roof_corr(L, 1, 10, 30, 30, 3, ST0, D2, ST2, D0)
+    L.hl(1, 30, 27, ST1)
+    L.rect(1, 28, 30, 30, D1)
+    for x in range(1, 31, 2):
+        L.vl(x, 28, 29, D0)
+    L.hl(1, 30, 30, D0)
+    for x in range(5, 28, 6):
+        L.p(x, 14, ST3)
+        L.p(x, 22, ST3)
+    L.rect(7, 17, 12, 21, R2)   # remendo de ferrugem
+    for x in range(7, 13, 2):
+        L.vl(x, 17, 21, R1)
+    L.hl(7, 12, 17, R3)
+    # chaminé de pedra com fumaça
+    stones(L, 22, 2, 26, 18, 46)
+    L.vl(22, 2, 18, S3)
+    L.vl(26, 2, 18, S0)
+    L.rect(21, 1, 27, 2, S2)
+    L.hl(21, 27, 1, S3)
+    fx.p(24, 1, ORD)
+    fx.p(23, 1, OR2)
+    fx.p(24, 0, (138, 128, 144, 170))
+    fx.p(25, 0, (110, 100, 118, 130))
+    fx.p(22, 0, (110, 100, 118, 110))
+    # janelas e porta
+    window(L, 5, 33, 9, 37)
+    window(L, 22, 33, 26, 37)
+    L.rect(13, 36, 18, 49, R0)
+    L.rect(14, 37, 17, 49, W1)
+    L.vl(15, 37, 49, W0)
+    L.hl(14, 17, 42, R0)
+    L.hl(12, 19, 35, S3)
+    L.vl(12, 35, 49, S2)
+    L.vl(19, 35, 49, S1)
+    L.p(17, 43, OR)
+    L.rect(11, 50, 20, 50, S3)
+    lantern(L, fx, 15, 33)
+    im = finish(L, fx, drop=(2, 1), shadows=[('r', 3, 50, 31, 51)])
+    save(im, 'moradia_4.png')
+    return im
+
+
+def tire(L, cx, cy, rx=7, ry=5, col='#16141a', hi='#3a3842', seed=0):
+    r = random.Random(seed)
+    L.ell(cx, cy + 1.2, rx, ry, col)
+    L.ell(cx, cy, rx, ry, hi)
+    for i in range(16):
+        a = i / 16 * 2 * math.pi
+        if i % 2:
+            L.p(int(cx + math.cos(a) * (rx - .6)), int(cy + math.sin(a) * (ry - .6)), col)
+    L.ell(cx, cy + .3, rx - 1.6, ry - 1.5, OUT)
+    L.ell(cx, cy + .6, rx - 2, ry - 1.9, SOIL1)
+    for y in range(int(cy - ry), int(cy + ry) + 1):
+        for x in range(int(cx - rx), int(cx + rx) + 1):
+            if L.px[x, y] == hx(SOIL1) and r.random() < .25:
+                L.p(x, y, r.choice([SOIL2, SOIL0, '#4a3434']))
+
+
+def horta_1():
+    L = Lay(32, 32)
+    tire(L, 8.5, 10.5, seed=1)
+    tire(L, 23.5, 10, seed=2)
+    tire(L, 8.5, 22.5, seed=3, hi='#34505e', col='#1a222c')   # pneu pintado
+    tire(L, 23.5, 22.5, seed=4)
+    # regador amassado no meio
+    L.rect(14, 15, 18, 19, '#3e5c5a')
+    L.hl(14, 18, 15, '#5a7e78')
+    L.vl(18, 15, 19, '#24363a')
+    L.p(16, 17, '#2c4446')  # amassado
+    L.p(17, 16, '#2c4446')
+    L.line(19, 17, 21, 14, '#3e5c5a')
+    L.p(21, 13, '#5a7e78')
+    L.hl(15, 17, 13, '#24363a')
+    L.p(14, 14, '#24363a')
+    L.p(18, 14, '#24363a')
+    im = finish(L, drop=(1, 1), shadows=[('e', 8.5, 28, 7, 1.5), ('e', 23.5, 28, 7, 1.5)])
+    save(im, 'horta_1.png')
+    return im
+
+
+def poco_1():
+    L = Lay(32, 32)
+    fx = Lay(32, 32)
+    # varas
+    for x in (3, 27):
+        L.rect(x, 2, x + 1, 27, W2)
+        L.vl(x, 2, 27, W3)
+    # barril
+    L.rect(10, 15, 21, 28, D2)
+    L.vl(10, 15, 28, D3)
+    L.vl(11, 15, 28, D3)
+    L.vl(21, 15, 28, D0)
+    L.vl(20, 15, 28, D1)
+    for y in (18, 25):
+        L.hl(10, 21, y, D1)
+        L.hl(10, 21, y - 1, D4)
+    L.ell(15.5, 15, 6, 2.2, D4)
+    L.ell(15.5, 15.2, 4.8, 1.4, '#0f1a22')
+    L.hl(10, 21, 28, D0)
+    fx.p(13, 15, CY)
+    fx.p(14, 15, CY2)
+    fx.p(18, 15, CYD)
+    # funil de lona amarrado nas varas
+    for x in range(4, 28):
+        top = 3 + (1 if 9 < x < 22 else 0)
+        bot = 6 + round(5 * (1 - abs(x - 15.5) / 12))
+        for y in range(top, bot + 1):
+            c = D2 if (x // 3) % 2 else D3
+            if y == bot:
+                c = D1
+            L.p(x, y, c)
+        L.p(x, top, D4)
+    L.p(4, 3, ROPE)
+    L.p(26, 3, ROPE)
+    L.rect(15, 11, 16, 12, ST1)   # bico do funil
+    fx.p(15, 13, CY2)
+    # balde
+    L.rect(23, 23, 28, 28, R2)
+    L.vl(23, 23, 28, R3)
+    L.vl(28, 23, 28, R0)
+    L.hl(23, 28, 23, R4)
+    L.hl(24, 27, 26, R1)
+    L.hl(24, 27, 21, ST1)
+    L.p(23, 22, ST1)
+    L.p(28, 22, ST1)
+    fx.p(7, 29, CYD)
+    fx.p(8, 29, CY2)
+    im = finish(L, fx, drop=(2, 1), shadows=[('e', 16, 29.5, 9, 1.5)])
+    save(im, 'poco_1.png')
+    return im
+
+
+def deposito_1():
+    L = Lay(32, 32)
+    fx = Lay(32, 32)
+    crate(L, 2, 19, 12, 28)
+    crate(L, 13, 20, 21, 28)
+    crate(L, 6, 12, 15, 19)
+    # barril alto
+    L.rect(22, 15, 28, 28, R2)
+    L.vl(22, 15, 28, R3)
+    L.vl(28, 15, 28, R0)
+    L.vl(27, 15, 28, R1)
+    L.hl(22, 28, 18, R1)
+    L.hl(22, 28, 25, R1)
+    L.hl(22, 28, 15, R4)
+    # lona amarrada por cima
+    r = random.Random(47)
+    for x in range(3, 27):
+        top = 8 + round(3 * abs(x - 12) / 14)
+        bot = 17 + (2 if x < 13 else 0) + r.randint(0, 1) - (3 if x > 20 else 0)
+        for y in range(top, bot + 1):
+            c = D2 if (x + y // 2) % 5 else D1
+            if y == top:
+                c = D4
+            elif y == top + 1:
+                c = D3
+            L.p(x, y, c)
+        L.p(x, bot, D0)
+    L.vl(12, 9, 18, D1)
+    L.vl(19, 10, 16, D1)
+    # cordas
+    L.line(4, 10, 4, 18, ROPE)
+    L.line(20, 9, 23, 15, ROPE)
+    fx.line(3, 18, 0, 28, ROPE)
+    fx.line(26, 14, 31, 28, ROPE)
+    L.p(0, 29, W3)
+    L.p(31, 29, W3)
+    glow(fx, 17, 24, OR, OR2)
+    im = finish(L, fx, drop=(2, 1), shadows=[('r', 3, 29, 30, 30)])
+    save(im, 'deposito_1.png')
+    return im
+
+
+def bezier(fx, p0, p1, p2, c, n=40):
+    for i in range(n + 1):
+        t = i / n
+        x = (1 - t) ** 2 * p0[0] + 2 * (1 - t) * t * p1[0] + t * t * p2[0]
+        y = (1 - t) ** 2 * p0[1] + 2 * (1 - t) * t * p1[1] + t * t * p2[1]
+        fx.p(round(x), round(y), c)
+
+
+def tower_1():
+    L = Lay(32, 64)
+    fx = Lay(32, 64)
+    # monte de pedras na base
+    L.ell(17, 59, 5, 2.4, S1)
+    L.p(14, 58, S3)
+    L.p(19, 58, S2)
+    L.p(16, 60, S0)
+    L.p(20, 59, S3)
+    # cano torto
+    pts = [(16, 58), (15, 50), (17, 41), (16, 32), (18, 25)]
+    for a, b in zip(pts, pts[1:]):
+        L.line(a[0], a[1], b[0], b[1], ST1)
+        L.line(a[0] + 1, a[1], b[0] + 1, b[1], ST0)
+    for (x, y) in pts[1:-1]:
+        L.hl(x - 1, x + 2, y, D3)
+    L.p(16, 46, R2)
+    L.p(16, 45, R3)
+    L.p(17, 36, R2)
+    # galho amarrado no topo e vareta de antena
+    L.line(15, 27, 21, 24, W2)
+    L.p(21, 23, W3)
+    L.vl(18, 19, 24, ST2)
+    L.p(18, 18, ST3)
+    fx.p(18, 17, CYD)
+    # estaca + espia
+    L.rect(27, 57, 27, 60, W3)
+    L.p(27, 57, W4)
+    L.rect(26, 60, 29, 60, S1)
+    L.p(28, 59, S2)
+    fx.line(19, 26, 27, 57, CABLE)
+    # caixinha de rádio
+    L.rect(4, 52, 11, 58, D1)
+    L.hl(4, 11, 52, D3)
+    L.vl(4, 52, 58, D2)
+    L.vl(11, 52, 58, D0)
+    for y in (54, 56):
+        L.hl(6, 8, y, D0)
+    L.p(10, 54, ST2)
+    L.vl(5, 49, 51, ST1)
+    glow(fx, 10, 56, CY2, CY2, CYD)
+    # cabo solto descendo do topo até a caixa
+    bezier(fx, (16, 30), (4, 40), (8, 51), CABLE)
+    im = finish(L, fx, drop=(1, 1), shadows=[('e', 17, 61, 7, 1.8), ('e', 8, 59.5, 5, 1.2)])
+    save(im, 'tower_1.png')
+    return im
+
+
 def preview(gr, art):
+    """Acampamento inicial numa clareira."""
+    W, H = 240, 160
+    cols, rows = W // 16, H // 16
+    im = Image.new('RGBA', (W, H))
+    r = random.Random(SEED + 555)
+
+    def tile(c, rr):
+        return gr.crop((c * 16, rr * 16, c * 16 + 16, rr * 16 + 16))
+
+    for ty in range(rows):
+        for tx in range(cols):
+            edge = tx in (0, 1, cols - 1, cols - 2) or ty in (0, rows - 1)
+            v = r.random()
+            if tx == 7 and ty >= 7:
+                t = tile(r.randint(0, 3), 1)
+            elif not edge and v < .88:
+                t = tile(r.randint(0, 3), 0)
+            elif v < .5:
+                t = tile(r.choice([5, 5, 6, 7]), 1) if r.random() < .5 else tile(5, 0)
+            elif v < .7:
+                t = tile(r.choice([4, 6, 7]), 0)
+            else:
+                t = tile(r.randint(0, 3), 0)
+            im.paste(t, (tx * 16, ty * 16))
+
+    def fr(img, i, w=16, h=None):
+        h = h or img.height
+        return img.crop((i * w, 0, i * w + w, h))
+
+    objs = []
+
+    def put(img, tx, ty_bottom, fh=1):
+        objs.append((ty_bottom, tx, img))
+
+    put(art['hatch'], 6, 5)
+    put(art['tower_1'], 9, 4)
+    put(art['moradia_1'], 3, 7)
+    put(art['deposito_1'], 3, 4)
+    put(art['poco_1'], 11, 5)
+    put(art['horta_1'], 10, 8)
+    put(fr(art['fogueira'], 2), 7, 7)
+    trees_ = ((0, 2, 2), (1, 1, 0), (3, 1, 3), (0, 5, 1), (1, 8, 2), (5, 1, 2), (12, 1, 0), (14, 3, 3),
+              (13, 2, 2), (14, 6, 1), (13, 9, 2), (0, 9, 3), (5, 9, 0))
+    for (tx, ty, i) in trees_:
+        put(fr(art['tree'], i, 16, 32), tx, ty)
+    for (tx, ty, i) in ((2, 9, 0), (12, 8, 1), (8, 1, 2), (1, 5, 1), (13, 5, 0), (11, 9, 2)):
+        put(fr(art['rubble'], i), tx, ty)
+    put(art['stump'], 10, 2)
+    put(art['stump'], 2, 3)
+    objs.sort(key=lambda o: o[0])
+    crop_im = art['crop']
+    for ty_b, tx, img in objs:
+        x = tx * 16
+        y = (ty_b + 1) * 16 - img.height
+        im.alpha_composite(img, (x, y))
+        if img is art['horta_1']:
+            for k, (i, j) in enumerate(((0, 0), (1, 0), (0, 1), (1, 1))):
+                im.alpha_composite(fr(crop_im, [2, 3, 1, 2][k]), (x + 1 + 14 * i, y + 1 + 12 * j))
+    for k, (px, py, d, f) in enumerate(((104, 116, 0, 0), (132, 104, 2, 1), (84, 96, 1, 2))):
+        sheet = art['people'][k]
+        im.alpha_composite(sheet.crop((f * 16, d * 16, f * 16 + 16, d * 16 + 16)), (px, py))
+    im.save(os.path.join(AQUI, 'preview.png'))
+    im.resize((W * 3, H * 3), Image.NEAREST).save(os.path.join(AQUI, 'preview_3x.png'))
+
+
+# ================================================================ prévia
+def preview_vila(gr, art):
     W, H = 320, 208
     cols, rows = W // 16, H // 16
     im = Image.new('RGBA', (W, H))
@@ -2007,17 +2395,17 @@ def preview(gr, art):
 
     put(art['hatch'], 8, 8, 2, 2, True)
     put(art['tower_2'], 12, 8, 2, 2, True)
-    put(art['barraco'], 1, 3, 2, 2, True)
-    put(art['casa'], 4, 3, 3, 2, True)
-    put(art['deposito_1'], 15, 4, 2, 2, True)
-    put(art['horta_1'], 1, 7, 2, 2, True)
-    put(art['poco'], 4, 7, 2, 2, True)
+    put(art['moradia_2'], 1, 3, 2, 2, True)
+    put(art['moradia_4'], 4, 3, 2, 2, True)
+    put(art['deposito_2'], 15, 4, 2, 2, True)
+    put(art['horta_2'], 1, 7, 2, 2, True)
+    put(art['poco_2'], 4, 7, 2, 2, True)
     put(art['serraria'], 1, 12, 3, 2, True)
     put(art['ferrovelho'], 13, 12, 3, 2, True)
     put(fr(art['fogueira'], 1), 7, 6)
     put(art['gate'], 18, 9, 2, 2, False)
-    put(art['horta_2'], 17, 7, 2, 2, True)
-    put(art['deposito_2'], 7, 3, 2, 2, True)
+    put(art['horta_3'], 17, 7, 2, 2, True)
+    put(art['deposito_3'], 7, 3, 2, 2, True)
     put(art['obra_2'], 5, 12, 2, 2, True)
     for (tx, ty, i) in ((10, 2, 0), (11, 3, 2), (17, 2, 3), (0, 9, 1), (19, 12, 2), (9, 12, 0), (16, 10, 3),
                         (14, 1, 1)):
@@ -2031,10 +2419,10 @@ def preview(gr, art):
         x = tx * 16
         y = (ty_b + 1) * 16 - img.height
         im.alpha_composite(img, (x, y))
-        if img is art['horta_1']:
+        if img is art['horta_2']:
             for k, (cx, cy) in enumerate(((0, 0), (1, 0), (0, 1), (1, 1))):
                 im.alpha_composite(fr(crop_im, [3, 2, 1, 3][k]), ((tx + cx) * 16, (ty_b - 1 + cy) * 16))
-        if img is art['horta_2']:
+        if img is art['horta_3']:
             for k, (cx, cy) in enumerate(((0, 0), (1, 0), (0, 1), (1, 1))):
                 im.alpha_composite(fr(crop_im, 3), ((tx + cx) * 16, (ty_b - 1 + cy) * 16))
     # pessoas
@@ -2045,8 +2433,8 @@ def preview(gr, art):
     im.alpha_composite(art['sleep'], (200, 124))
     # ícones
     im.alpha_composite(art['icons'], (4, 198))
-    im.save(os.path.join(AQUI, 'preview.png'))
-    im.resize((W * 3, H * 3), Image.NEAREST).save(os.path.join(AQUI, 'preview_3x.png'))
+    im.save(os.path.join(AQUI, 'preview_vila.png'))
+    im.resize((W * 3, H * 3), Image.NEAREST).save(os.path.join(AQUI, 'preview_vila_3x.png'))
     # patch grande de chão para checar costura
     patch = Image.new('RGBA', (160, 96))
     for ty in range(6):
@@ -2061,22 +2449,33 @@ def preview(gr, art):
 
 def main():
     os.makedirs(SAIDA, exist_ok=True)
+    for velho in ('barraco.png', 'casa.png', 'poco.png'):
+        for f in (velho, velho + '.import'):
+            p = os.path.join(SAIDA, f)
+            if os.path.exists(p):
+                os.remove(p)
     art = {}
     gr = ground()
     art['tree'] = trees()
     art['stump'] = stump()
     art['rubble'] = rubble()
     art['hatch'] = hatch()
-    for lvl in (1, 2, 3):
+    art['tower_1'] = tower_1()
+    for lvl in (2, 3):
         art['tower_%d' % lvl] = tower(lvl)
-    art['barraco'] = barraco()
-    art['casa'] = casa()
+    art['moradia_1'] = moradia_1()
+    art['moradia_2'] = moradia_2()
+    art['moradia_3'] = moradia_3()
+    art['moradia_4'] = moradia_4()
     art['deposito_1'] = deposito_1()
     art['deposito_2'] = deposito_2()
+    art['deposito_3'] = deposito_3()
     art['horta_1'] = horta_1()
     art['horta_2'] = horta_2()
+    art['horta_3'] = horta_3()
     art['crop'] = crops()
-    art['poco'] = poco()
+    art['poco_1'] = poco_1()
+    art['poco_2'] = poco_2()
     art['serraria'] = serraria()
     art['ferrovelho'] = ferrovelho()
     art['fogueira'] = fogueira()
@@ -2090,6 +2489,7 @@ def main():
     light()
     ghosts()
     preview(gr, art)
+    preview_vila(gr, art)
 
 
 if __name__ == '__main__':

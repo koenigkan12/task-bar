@@ -31,6 +31,7 @@ var terrain: PackedByteArray = PackedByteArray()
 var occ: PackedInt32Array = PackedInt32Array()       # id do prédio em cada célula, -1 livre
 var regrow: Dictionary = {}       # célula (Vector2i) -> t em que a árvore volta
 var rubble: Dictionary = {}       # célula -> sucata que resta
+var marked: Dictionary = {}       # entulho marcado para limpar primeiro
 var buildings: Array[Dictionary] = []
 var people: Array[Dictionary] = []
 var gate_group: Array[Dictionary] = []   # candidatos esperando no portão
@@ -42,6 +43,8 @@ var _rng := RandomNumberGenerator.new()
 var _group_ready_t: float = -1.0
 var _story_done: Dictionary = {}
 var _rethink_acc: float = 0.0
+var _fdirty: bool = true            # terreno mudou: refaz a lista de árvores e entulhos
+var _fcache: Dictionary = {}
 
 
 # ================================================================ criação
@@ -60,10 +63,11 @@ func setup(balance: Dictionary, now_unix: float, tz_bias: int = 0) -> void:
 	_gen_map()
 	_place_fixed("hatch", _v(m["hatch"]))
 	_place_fixed("torre", _v(m["tower"]))
-	_place_fixed("gate", _v(m["gate"]))
+	# A barraca do Joaquim: uma moradia nível 1 como qualquer outra (dá para melhorar no lugar).
+	_place_fixed("moradia", _v(m["tent"]))
 	_rebuild_astar()
 	var hatch: Dictionary = _first("hatch")
-	_add_person("Joaquim", 0, [], _door(hatch) + Vector2i(0, 0), "joaquim")
+	_add_person("Joaquim", 0, [], _door(hatch), "joaquim")
 
 
 func _v(a: Array) -> Vector2i:
@@ -75,29 +79,25 @@ func _gen_map() -> void:
 	occ.resize(w * h)
 	occ.fill(-1)
 	var m: Dictionary = bal["map"]
-	var c := Vector2(float(m["hatch"][0]) + 2.0, float(m["hatch"][1]) + 1.0)
-	var rad: float = float(m["clear_radius"])
-	var road: int = int(m["road_row"])
+	var c := center()
+	var r1: float = open_radius(1)
+	var rmax: float = open_radius(tower_max())
 	var noise := FastNoiseLite.new()
 	noise.seed = int(m["seed"])
 	noise.frequency = 0.18
 	for y in h:
 		for x in w:
 			var i := y * w + x
-			var d := Vector2(x, y).distance_to(c) + noise.get_noise_2d(x, y) * 2.5
+			var d := Vector2(x, y).distance_to(c) + noise.get_noise_2d(x, y) * 1.2
 			var k := T_GROUND
-			if y == road and x >= int(c.x):
-				k = T_ROAD
-			elif d > rad + 4.0:
-				k = T_TREE if _rng.randf() < 0.55 else T_GROUND
-			elif d > rad:
-				var r := _rng.randf()
-				if r < 0.22:
-					k = T_TREE
-				elif r < 0.34:
-					k = T_RUBBLE
-			elif d > 3.5 and _rng.randf() < 0.05:
-				k = T_RUBBLE
+			var r := _rng.randf()
+			if d <= r1:
+				k = T_GROUND
+			elif d <= rmax + 1.5:
+				# Anel de entulho e mato: é o que a vila precisa abrir para crescer (nada de chão livre aqui).
+				k = T_RUBBLE if r < 0.72 else T_TREE
+			else:
+				k = T_TREE if r < 0.7 else T_RUBBLE
 			terrain[i] = k
 			if k == T_RUBBLE:
 				rubble[Vector2i(x, y)] = int(bal["rubble_amount"])
@@ -110,17 +110,70 @@ func _place_fixed(type: String, cell: Vector2i) -> void:
 			var c := cell + Vector2i(dx, dy)
 			if terrain[_i(c)] != T_ROAD:
 				terrain[_i(c)] = T_GROUND
+				_fdirty = true
 			rubble.erase(c)
 	# Limpa a frente (porta) para dar para chegar.
 	var door := cell + Vector2i(fp.x / 2, fp.y)
 	if _inside(door) and terrain[_i(door)] != T_ROAD:
 		terrain[_i(door)] = T_GROUND
+		_fdirty = true
 	var b := {"id": _next_id, "type": type, "cell": cell, "level": 1, "state": "built",
 			"progress": 0.0, "total": 0.0, "workers": [], "builder": -1, "acc": 0.0}
 	_next_id += 1
 	buildings.append(b)
 	if not bool(def(type).get("walkable", false)):
 		_mark(b, true)
+
+
+## Centro da clareira (as áreas abertas pela torre são círculos em volta dele).
+func center() -> Vector2:
+	return Vector2(_v(bal["map"]["center"]))
+
+
+func open_radius(level: int) -> float:
+	return float(bal["map"]["open_radius"].get(str(level), 4.0))
+
+
+## A torre subiu: o entulho dentro do novo raio vira chão (a sucata vai para o depósito, até o limite).
+## Na torre 2 a estrada aparece e o portão é montado na ponta dela.
+func _open_area(level: int) -> void:
+	var c := center()
+	var rad := open_radius(level)
+	var gained := 0
+	for y in h:
+		for x in w:
+			var cell := Vector2i(x, y)
+			if terrain[_i(cell)] == T_RUBBLE and Vector2(cell).distance_to(c) <= rad:
+				gained += int(rubble.get(cell, 0))
+				rubble.erase(cell)
+				marked.erase(cell)
+				terrain[_i(cell)] = T_GROUND
+				_fdirty = true
+	if level == int(bal["arrivals"]["story_tower"]) and _first("gate").is_empty():
+		var row: int = int(bal["map"]["road_row"])
+		for x in range(int(c.x), w):
+			var rc := Vector2i(x, row)
+			if occ[_i(rc)] < 0:
+				rubble.erase(rc)
+				marked.erase(rc)
+				regrow.erase(rc)
+				terrain[_i(rc)] = T_ROAD
+				_fdirty = true
+		_place_fixed("gate", _v(bal["map"]["gate"]))
+	stock["sucata"] = minf(cap("sucata"), float(stock["sucata"]) + float(gained) * float(bal.get("open_scrap_share", 0.5)))
+	_rebuild_astar()
+
+
+## Marca (ou desmarca) um entulho para limpar primeiro. Quem cata sucata vai nos marcados antes.
+func toggle_mark(cell: Vector2i) -> bool:
+	if terrain_at(cell) != T_RUBBLE:
+		return false
+	if marked.has(cell):
+		marked.erase(cell)
+	else:
+		marked[cell] = true
+	changed.emit()
+	return marked.has(cell)
 
 
 # ================================================================ consultas
@@ -207,7 +260,7 @@ func day_number() -> int:
 func cap(res: String) -> float:
 	var c: float = float(bal["storage"]["hatch_cap"])
 	for b in buildings:
-		if String(b["type"]) == "deposito" and _working(b):
+		if String(b["type"]) == "deposito" and String(b["state"]) != "site":
 			c += float(level_def(b).get("cap", 0))
 	return c
 
@@ -215,12 +268,10 @@ func cap(res: String) -> float:
 func beds_total() -> int:
 	var n := 0
 	for b in buildings:
-		if not _working(b) and String(b["type"]) != "hatch":
+		# Moradia em melhoria continua com as camas do nível atual (ninguém fica sem cama).
+		if String(b["state"]) == "site":
 			continue
-		if String(b["type"]) == "hatch":
-			n += int(def("hatch").get("beds", 0))
-		else:
-			n += int(level_def(b).get("beds", 0))
+		n += int(level_def(b).get("beds", def(String(b["type"])).get("beds", 0)))
 	return n
 
 
@@ -309,6 +360,7 @@ func build(type: String, cell: Vector2i) -> Dictionary:
 		for dx in _fp(type).x:
 			var c := cell + Vector2i(dx, dy)
 			terrain[_i(c)] = T_GROUND
+			_fdirty = true
 	_rebuild_astar()
 	changed.emit()
 	return {"ok": true, "id": int(b["id"])}
@@ -522,6 +574,12 @@ func _pick_job(p: Dictionary) -> Dictionary:
 		return {"kind": "build", "b": int(sites[0]["id"])}
 	var best := {}
 	var best_v := 0.0
+	# Entulho marcado pelo jogador: limpar vale a pena mesmo com sucata sobrando (é o espaço que importa).
+	if not marked.is_empty() and _nearest_forage("sucata", p["pos"]) != Vector2i(-1, -1):
+		var assigned := _assigned_to("sucata", p)
+		if assigned < maxi(1, people.size() / 2):
+			best = {"kind": "forage", "res": "sucata", "clear": true}
+			best_v = 0.6 * float(bal["forage"]["sucata"]["yield"]) / (float(bal["forage"]["sucata"]["work_s"]) + 8.0) / 3.0
 	for res in RES:
 		var u := urgency(res) / (1.0 + float(_assigned_to(res, p)))
 		if u <= 0.0:
@@ -551,6 +609,17 @@ func _pick_job(p: Dictionary) -> Dictionary:
 	return best
 
 
+func _forage_cells(kind: int) -> Array:
+	if _fdirty:
+		_fdirty = false
+		_fcache = {T_TREE: [], T_RUBBLE: []}
+		for i in terrain.size():
+			var k: int = terrain[i]
+			if k == T_TREE or k == T_RUBBLE:
+				(_fcache[k] as Array).append(Vector2i(i % w, i / w))
+	return _fcache.get(kind, [])
+
+
 func _nearest_forage(res: String, from: Vector2) -> Vector2i:
 	var kind := T_TREE if res == "madeira" else T_RUBBLE
 	var best := Vector2i(-1, -1)
@@ -559,17 +628,24 @@ func _nearest_forage(res: String, from: Vector2) -> Vector2i:
 	for q in people:
 		if q["target_cell"] != Vector2i(-1, -1):
 			taken[q["target_cell"]] = true
-	for y in h:
-		for x in w:
-			var c := Vector2i(x, y)
-			if terrain[_i(c)] != kind or taken.has(c):
+	if res == "sucata":
+		for c0 in marked:
+			if taken.has(c0) or terrain[_i(c0)] != T_RUBBLE or not _reachable_neighbor(c0):
 				continue
-			if not _reachable_neighbor(c):
-				continue
-			var d := from.distance_squared_to(Vector2(c))
-			if d < bd:
-				bd = d
-				best = c
+			var d0 := from.distance_squared_to(Vector2(c0))
+			if d0 < bd:
+				bd = d0
+				best = c0
+		if best != Vector2i(-1, -1):
+			return best
+	for c in _forage_cells(kind):
+		if taken.has(c):
+			continue
+		var d := from.distance_squared_to(Vector2(c))
+		if d >= bd or not _reachable_neighbor(c):
+			continue
+		bd = d
+		best = c
 	return best
 
 
@@ -664,13 +740,11 @@ func _set_job(p: Dictionary, job: Dictionary) -> void:
 
 func _bed_door(p: Dictionary) -> Vector2i:
 	# Joaquim dorme no bunker; os outros na casa/barraco mais perto (camas não são nominais no protótipo).
-	if String(p["story"]) == "joaquim":
-		return _door(_first("hatch"))
 	var best := _door(_first("hatch"))
 	var bd := 1e9
 	for b in buildings:
 		var tp := String(b["type"])
-		if (tp == "barraco" or tp == "casa") and _working(b):
+		if tp == "moradia" and String(b["state"]) != "site":
 			var d := Vector2(p["pos"]).distance_squared_to(Vector2(_door(b)))
 			if d < bd:
 				bd = d
@@ -804,6 +878,7 @@ func _regrow() -> void:
 					busy = true
 			if not busy:
 				terrain[_i(c)] = T_TREE
+				_fdirty = true
 				regrow.erase(c)
 				_astar.set_point_solid(c, true)
 
@@ -941,6 +1016,7 @@ func _finish(b: Dictionary) -> void:
 	if tp == "torre":
 		tower += 1
 		b["state"] = "built"
+		_open_area(tower)
 		tower_up.emit(tower)
 	elif String(b["state"]) == "upgrade":
 		b["level"] = int(b["level"]) + 1
@@ -1015,13 +1091,16 @@ func _do_forage(p: Dictionary, dt: float) -> void:
 				var y: float = float(f["yield"])
 				if res == "madeira":
 					terrain[_i(c)] = T_STUMP
+					_fdirty = true
 					regrow[c] = t + float(f["regrow_s"])
 					_astar.set_point_solid(c, false)
 				else:
 					var left: int = int(rubble.get(c, 0)) - int(y)
 					if left <= 0:
 						rubble.erase(c)
+						marked.erase(c)
 						terrain[_i(c)] = T_GROUND
+						_fdirty = true
 						_astar.set_point_solid(c, false)
 					else:
 						rubble[c] = left
@@ -1034,6 +1113,7 @@ func _do_forage(p: Dictionary, dt: float) -> void:
 			if _walk(p, dt):
 				_deliver(p)
 				_set_job(p, {"kind": "idle"})
+				p["phase"] = "idle"
 
 
 func _to_storage(p: Dictionary) -> void:
@@ -1117,8 +1197,18 @@ func goal() -> Dictionary:
 				return {"kind": "more", "type": pair[1], "res": pair[0], "idle": idle}
 			if float(stock[pair[0]]) <= 3.0 and balance_per_min(pair[0]) < 0.0:
 				return {"kind": "short", "type": pair[1], "res": pair[0]}
-	if tower >= 2 and beds_free() <= 0 and gate_group.is_empty() and _count_any("casa") + _count_any("barraco") < 6:
+	if tower >= 2 and beds_free() <= 0 and _count_any("moradia") < 6:
 		return {"kind": "beds"}
+	# A próxima torre pede mais do que cabe: falta melhorar o depósito.
+	if tower < tower_max() and String(tower_building()["state"]) == "built":
+		var nxc: Dictionary = tower_next()["cost"]
+		for r in nxc:
+			if float(nxc[r]) > cap(r):
+				return {"kind": "storage", "res": r, "need": int(nxc[r]), "cap": int(cap(r))}
+	if _free_build_cells() < 6 and tower < tower_max() and String(tower_building()["state"]) == "built":
+		var nx0 := tower_next()
+		if not can_afford(nx0["cost"]):
+			return {"kind": "space"}
 	if tower < tower_max():
 		var tb := tower_building()
 		if String(tb["state"]) != "built":
@@ -1126,6 +1216,15 @@ func goal() -> Dictionary:
 		var nx := tower_next()
 		return {"kind": "tower", "level": tower + 1, "missing": missing(nx["cost"])}
 	return {"kind": "done"}
+
+
+## Quantas células livres de construção restam (para avisar que falta chão).
+func _free_build_cells() -> int:
+	var n := 0
+	for i in terrain.size():
+		if occ[i] < 0 and (terrain[i] == T_GROUND or terrain[i] == T_STUMP):
+			n += 1
+	return n
 
 
 func _count_any(type: String) -> int:
@@ -1156,6 +1255,7 @@ func to_dict() -> Dictionary:
 		rb.append([c.x, c.y, rubble[c]])
 	return {"v": 1, "t": t, "start_t": start_t, "stock": stock, "tower": tower, "terrain": Marshalls.raw_to_base64(terrain),
 			"buildings": bs, "people": ps, "regrow": rg, "rubble": rb, "gate": gate_group,
+			"marked": marked.keys().map(func(c: Vector2i) -> Array: return [c.x, c.y]),
 			"stats": stats, "next_id": _next_id, "group_t": _group_ready_t, "story": _story_done.keys(),
 			"rng": _rng.state}
 
@@ -1173,6 +1273,7 @@ func from_dict(d: Dictionary, balance: Dictionary, tz_bias: int = 0) -> void:
 		stock[r] = float(d["stock"].get(r, 0.0))
 	tower = int(d["tower"])
 	terrain = Marshalls.base64_to_raw(String(d["terrain"]))
+	_fdirty = true
 	occ = PackedInt32Array()
 	occ.resize(w * h)
 	occ.fill(-1)
@@ -1199,6 +1300,9 @@ func from_dict(d: Dictionary, balance: Dictionary, tz_bias: int = 0) -> void:
 	rubble.clear()
 	for e in d["rubble"]:
 		rubble[Vector2i(int(e[0]), int(e[1]))] = int(e[2])
+	marked.clear()
+	for e in d.get("marked", []):
+		marked[Vector2i(int(e[0]), int(e[1]))] = true
 	gate_group.clear()
 	for g in d["gate"]:
 		gate_group.append(g)

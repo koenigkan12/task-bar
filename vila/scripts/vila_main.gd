@@ -81,7 +81,7 @@ func _ready() -> void:
 	sim.building_done.connect(func(id: int) -> void:
 		var b := sim.by_id(id)
 		if not b.is_empty() and String(b["type"]) != "torre":
-			hud.toast(hud.fmt("UI_DONE", {"b": hud.bname(String(b["type"]))})))
+			hud.toast(hud.fmt("UI_DONE", {"b": hud.bname(String(b["type"]), int(b["level"]))})))
 	sim.group_arrived.connect(func() -> void: hud.toast(hud.fmt("UI_GATE_BADGE", {"n": sim.gate_group.size()})))
 	if not summary.is_empty():
 		hud.show_welcome(summary)
@@ -94,8 +94,8 @@ func _ready() -> void:
 			hud.show_gate()
 		"person": hud.show_person(int(sim.people[sim.people.size() - 1]["id"]))
 		"place":
-			_start_placing("casa")
-			_test_cell = AutoPlayer.spot(sim, "casa")
+			_start_placing("horta")
+			_test_cell = AutoPlayer.spot(sim, "horta")
 	_place_window()
 	if _shot != "":
 		_shot_t = float(args.get("shot_after", "2.0"))
@@ -229,9 +229,12 @@ func _update_hover() -> void:
 		var p := sim.person(pid)
 		hud.show_tip(hud.pname(p) + " · " + hud._doing_text(p), mp)
 		return
+	if sim.terrain_at(c) == VilaSim.T_RUBBLE:
+		hud.show_tip(tr("B_entulho") + " · " + tr("UI_CLEAR"), mp)
+		return
 	var b := sim.building_at(c)
 	if not b.is_empty():
-		var t := hud.bname(String(b["type"]))
+		var t := hud.bname(String(b["type"]), int(b["level"]))
 		if String(b["state"]) != "built":
 			t += " · " + VilaHud.fmt_time(float(b["total"]) - float(b["progress"]))
 		hud.show_tip(t, mp)
@@ -301,5 +304,7 @@ func _click(screen: Vector2) -> void:
 		hud.close_card()
 		return
 	var k := sim.terrain_at(c)
-	if k == VilaSim.T_GROUND or k == VilaSim.T_STUMP:
+	if k == VilaSim.T_RUBBLE:
+		hud.show_rubble(c)
+	elif k == VilaSim.T_GROUND or k == VilaSim.T_STUMP:
 		hud.show_build_menu()

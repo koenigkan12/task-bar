@@ -178,8 +178,9 @@ func fmt(key: String, args: Dictionary = {}) -> String:
 	return tr(key).format(args)
 
 
-func bname(type: String) -> String:
-	return tr("B_" + type)
+func bname(type: String, level: int = 1) -> String:
+	var k := "B_%s_%d" % [type, level]
+	return tr(k) if tr(k) != k else tr("B_" + type)
 
 
 func pname(p: Dictionary) -> String:
@@ -298,6 +299,10 @@ func _goal_text() -> String:
 			return fmt("GOAL_short", {"r": tr("RES_" + String(g["res"])), "b": bname(g["type"])})
 		"beds":
 			return tr("GOAL_beds")
+		"space":
+			return tr("GOAL_space")
+		"storage":
+			return fmt("GOAL_storage", {"n": g["need"], "r": tr("RES_" + String(g["res"])), "cap": g["cap"]})
 		"tower_wait":
 			return fmt("GOAL_tower_wait", {"n": g["level"]})
 		"tower":
@@ -317,7 +322,15 @@ func _on_goal() -> void:
 		"build", "more", "short":
 			build_chosen.emit(String(g["type"]))
 		"beds":
-			show_build_menu()
+			show_building(int(sim._first("moradia").get("id", -1)))
+		"space":
+			toast(tr("UI_CLEAR_TOWER"))
+		"storage":
+			var dep := sim._first("deposito")
+			if dep.is_empty():
+				build_chosen.emit("deposito")
+			else:
+				show_building(int(dep["id"]))
 		"tower", "tower_wait", "done":
 			show_tower()
 
@@ -425,6 +438,34 @@ func show_tower() -> void:
 	_open("tower")
 
 
+var _rubble_cell: Vector2i = Vector2i(-1, -1)
+
+
+func show_rubble(cell: Vector2i) -> void:
+	_rubble_cell = cell
+	_open("rubble")
+
+
+func _card_rubble() -> void:
+	_clear_card()
+	if sim.terrain_at(_rubble_cell) != VilaSim.T_RUBBLE:
+		close_card()
+		return
+	_header("sucata", tr("B_entulho"), tr("BD_entulho"))
+	_card_box.add_child(_row([_icon_rect("sucata"), _label(fmt("UI_CLEAR_LEFT", {"n": int(sim.rubble.get(_rubble_cell, 0))}))]))
+	var on := sim.marked.has(_rubble_cell)
+	if on:
+		_card_box.add_child(_row([_icon_rect("check"), _label(tr("UI_CLEAR_MARKED"), C_GOOD)]))
+	var b := Button.new()
+	b.text = tr("UI_UNCLEAR" if on else "UI_CLEAR")
+	b.icon = icon("martelo")
+	b.pressed.connect(func() -> void:
+		sim.toggle_mark(_rubble_cell)
+		_rebuild_card())
+	_card_box.add_child(b)
+	_card_box.add_child(_wrap(tr("UI_CLEAR_TOWER"), C_MUTED))
+
+
 func show_person(id: int) -> void:
 	_open("person", id)
 
@@ -507,6 +548,8 @@ func _rebuild_card() -> void:
 			_card_gate()
 		"build":
 			_card_build()
+		"rubble":
+			_card_rubble()
 		_:
 			return
 	_place_card()
@@ -520,7 +563,7 @@ func _card_building() -> void:
 	_clear_card()
 	var tp := String(b["type"])
 	var d := sim.def(tp)
-	var title := bname(tp)
+	var title := bname(tp, int(b["level"]))
 	if d.has("levels") and (d["levels"] as Array).size() > 1:
 		title += " · " + fmt("UI_LEVEL", {"n": b["level"]})
 	_header("martelo", title, tr("BD_" + tp))
@@ -546,9 +589,16 @@ func _card_building() -> void:
 		var nd: Dictionary = levels[nl - 1]
 		var need_t: int = int(nd.get("tower", d.get("tower", 1)))
 		if sim.tower < need_t:
-			_card_box.add_child(_row([_icon_rect("cadeado"), _label(fmt("UI_UPGRADE_TO", {"n": nl}) + " · " + fmt("UI_LOCKED_TOWER", {"n": need_t}), C_MUTED)]))
+			_card_box.add_child(_row([_icon_rect("cadeado"), _label(fmt("UI_UPGRADE_TO", {"b": bname(tp, nl)}) + " · " + fmt("UI_LOCKED_TOWER", {"n": need_t}), C_MUTED)]))
 		else:
-			_card_box.add_child(_row([_label(fmt("UI_UPGRADE_TO", {"n": nl}), C_MUTED)]))
+			var gain := ""
+			if nd.has("beds"):
+				gain = " · " + fmt("UI_BEDS", {"n": nd["beds"]})
+			elif nd.has("cap"):
+				gain = " · " + fmt("UI_CAP", {"n": nd["cap"]})
+			elif nd.has("rate_s"):
+				gain = " · " + fmt("UI_RATE", {"n": "%.1f" % (60.0 / float(nd["rate_s"]))})
+			_card_box.add_child(_wrap(fmt("UI_UPGRADE_TO", {"b": bname(tp, nl)}) + gain, C_MUTED))
 			_card_box.add_child(_row([_cost_row(nd["cost"]), _icon_rect("relogio"), _label(fmt_time(float(nd["time_s"])))]))
 			var up := Button.new()
 			up.text = tr("UI_UPGRADE")
@@ -599,10 +649,10 @@ func _card_tower() -> void:
 		var txt: String
 		if "@" in s:
 			var parts := s.split("@")
-			txt = "%s %s" % [bname(parts[0]), fmt("UI_LEVEL", {"n": parts[1]})]
+			txt = bname(parts[0], int(parts[1]))
 		else:
 			txt = bname(s)
-		var soon: bool = not sim.bal["buildings"].has(s.split("@")[0])
+		var soon: bool = not sim.bal["buildings"].has(s.split("@")[0]) and s != "area" and s != "estrada"
 		grid.add_child(_row([_icon_rect("cadeado" if soon else "seta"), _label(txt + ((" (" + tr("UI_SOON") + ")") if soon else ""), C_MUTED if soon else C_TEXT)]))
 	_card_box.add_child(grid)
 	var nx := sim.tower_next()

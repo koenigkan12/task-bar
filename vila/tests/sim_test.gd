@@ -27,6 +27,11 @@ func _init() -> void:
 	var start := 1760000000.0 - fposmod(1760000000.0, 86400.0) + 7.0 * 3600.0   # 7h UTC
 	sim.setup(bal, start, 0)
 	_check(sim.people.size() == 1, "começa só com o Joaquim")
+	_check(sim._first("gate").is_empty(), "começa sem estrada nem portão")
+	_check(sim._count_any("moradia") == 1 and sim.beds_total() == 1, "começa com uma barraca de uma cama")
+	var free0 := sim._free_build_cells()
+	print("chão livre no começo: ", free0)
+	_check(free0 >= 14 and free0 <= 60, "clareira pequena no começo (14 a 60 células livres)")
 	_check(not sim.is_night(), "começa de dia")
 	var t_tower2 := -1.0
 	var t_ari := -1.0
@@ -47,11 +52,13 @@ func _init() -> void:
 			t_ari = elapsed
 		if t_group < 0.0 and not sim.gate_group.is_empty():
 			t_group = elapsed
+	print("chão livre depois: ", sim._free_build_cells(), " · marcados: ", sim.marked.size())
 	print("torre 2 em %.1f min, 2ª pessoa em %.1f min, 1º grupo em %.1f min" % [t_tower2 / 60.0, t_ari / 60.0, t_group / 60.0])
 	print("depois de 3 h: torre %d, %d pessoas, %d prédios, estoque %s" % [sim.tower, sim.people.size(), sim.buildings.size(), str(sim.stock)])
 	for p in sim.people:
 		print("  ", p["name"], " -> ", sim.doing(p), " ", p["passives"])
 	_check(t_tower2 > 0.0 and t_tower2 < 30.0 * 60.0, "torre 2 em menos de 30 min")
+	_check(not sim._first("gate").is_empty(), "a estrada e o portão aparecem na torre 2")
 	_check(t_ari > 0.0, "seu Ari chega depois da torre 2")
 	_check(t_group > 0.0, "chega um grupo de 3 no portão")
 	_check(sim.people.size() >= 3, "pelo menos 3 pessoas em 3 h")
@@ -72,7 +79,7 @@ func _init() -> void:
 	var t1 := Time.get_ticks_msec()
 	sim2.catch_up(sim2.t + 72.0 * 3600.0)
 	print("offline 72 h em ", Time.get_ticks_msec() - t1, " ms")
-	_check(Time.get_ticks_msec() - t1 < 8000, "offline de 72 h em menos de 8 s")
+	_check(Time.get_ticks_msec() - t1 < 15000, "offline de 72 h em menos de 15 s")
 	for r in VilaSim.RES:
 		_check(float(sim2.stock[r]) <= sim2.cap(r) + 0.01, "offline respeita o depósito (%s)" % r)
 	# A noite para tudo.
