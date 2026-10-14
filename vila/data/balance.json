@@ -38,13 +38,13 @@
  "open_scrap_share": 0.5,
  "time": {
   "step_s": 0.25,
-  "offline_step_s": 30.0,
-  "offline_rethink_s": 60.0,
+  "offline_step_s": 60.0,
+  "offline_rethink_s": 120.0,
   "offline_fraction": 0.2,
   "offline_cap_h": 72,
   "offline_min_s": 120,
   "night_from_h": 22,
-  "night_to_h": 6,
+  "night_to_h": 4,
   "save_every_s": 30
  },
  "start": {
@@ -55,6 +55,15 @@
    "sucata": 6,
    "pecas": 0
   }
+ },
+ "night": {
+  "cycle_s": 1500,
+  "start_hour": 7,
+  "rested_bonus": 0.1,
+  "tired_penalty": 0.1,
+  "tired_min_mult": 0.3,
+  "rest_nights_per_tired": 2,
+  "no_bed_rest": 0.5
  },
  "demolish_refund": 0.5,
  "storage": {

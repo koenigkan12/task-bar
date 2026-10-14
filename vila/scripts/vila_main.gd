@@ -246,6 +246,10 @@ func _open_test_card() -> void:
 				cam.position = Vector2(Vector2i(pr["cell"])) * 16.0 + Vector2(90, 24)
 				_clamp_cam()
 		"radio": hud.show_radio()
+		"tired":   # capturas: todo mundo com 2 noites viradas
+			for p in sim.people:
+				p["tired"] = 2
+			hud.show_person(int(sim.people[0]["id"]))
 		"manage": hud.set_manage(true)
 		"ending": _show_ending()
 		var o:

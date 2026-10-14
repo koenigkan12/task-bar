@@ -27,6 +27,9 @@ const T_STUMP := 4
 var bal: Dictionary = {}
 var t: float = 0.0
 var tz_bias_s: int = 0
+var cycle_t0: float = 0.0       # relógio da vila: instante em que o ciclo marcou 0h (balance "night.cycle_s")
+var work_tonight: bool = false  # "virar a noite": vale só para a noite atual
+var _was_night: bool = false
 var start_t: float = 0.0       # quando a vila começou (para o "Dia N")          # fuso local em segundos (a vista põe o do sistema; os testes fixam)
 var stock: Dictionary = {}
 var tower: int = 1
@@ -89,6 +92,8 @@ func setup(balance: Dictionary, now_unix: float, tz_bias: int = 0) -> void:
 	var hatch: Dictionary = _first("hatch")
 	_add_person("Joaquim", 0, [], _door(hatch), "joaquim")
 	tower_t = {1: t}
+	set_cycle_hour(float(bal["night"]["start_hour"]))
+	_was_night = is_night()
 
 
 func _v(a: Array) -> Vector2i:
@@ -355,9 +360,52 @@ func is_night() -> bool:
 	return hour >= a or hour < z
 
 
+## Hora da vila (0 a 24). Não é o relógio do PC: um dia da vila dura balance "night.cycle_s".
 func local_hour() -> float:
-	var s: float = fposmod(t + float(tz_bias_s), 86400.0)
-	return s / 3600.0
+	return fposmod((t - cycle_t0) / float(bal["night"]["cycle_s"]) * 24.0, 24.0)
+
+
+## Acerta o relógio da vila para marcar `hour` agora.
+func set_cycle_hour(hour: float) -> void:
+	cycle_t0 = t - hour / 24.0 * float(bal["night"]["cycle_s"])
+	_was_night = is_night()
+
+
+## Fração da produção: +bônus com o sono em dia; cada noite virada que falta descansar tira um tanto.
+func rest_mult(p: Dictionary) -> float:
+	var nb: Dictionary = bal["night"]
+	var tired := int(p.get("tired", 0))
+	if tired <= 0:
+		return 1.0 + float(nb["rested_bonus"])
+	return maxf(float(nb["tired_min_mult"]), 1.0 - float(nb["tired_penalty"]) * tired)
+
+
+## Liga ou desliga "virar a noite". Ligando de noite, quem estava dormindo levanta.
+func set_work_tonight(on: bool) -> void:
+	work_tonight = on
+	if on:
+		for p in people:
+			if p["asleep"] or String(p["job"].get("kind", "")) == "sleep":
+				p["asleep"] = false
+				_set_job(p, {"kind": "idle"})
+	changed.emit()
+
+
+## A noite acabou: quem virou a noite cansa mais; quem dormiu descansa (sem cama, metade).
+func _night_end() -> void:
+	var nb: Dictionary = bal["night"]
+	var beds := beds_total()
+	for i in people.size():
+		var p: Dictionary = people[i]
+		if work_tonight:
+			p["tired"] = int(p["tired"]) + 1
+			p["rest"] = 0.0
+		elif int(p["tired"]) > 0:
+			p["rest"] = float(p["rest"]) + (1.0 if i < beds else float(nb["no_bed_rest"]))
+			if float(p["rest"]) >= float(nb["rest_nights_per_tired"]) - 0.001:
+				p["rest"] = 0.0
+				p["tired"] = int(p["tired"]) - 1
+	work_tonight = false
 
 
 ## Dia 1 é o dia (local) em que a vila começou.
@@ -701,7 +749,8 @@ func _add_person(nm: String, look: int, passives: Array, at: Vector2i, story: St
 			"pos": Vector2(at), "path": PackedVector2Array(), "job": {}, "phase": "idle",
 			"carry_res": "", "carry": 0.0, "work_t": 0.0, "hungry": false, "thirsty": false,
 			"eat_acc": 0.0, "drink_acc": 0.0, "facing": Vector2.DOWN, "moving": false,
-			"story": story, "bio": bio, "asleep": false, "target_cell": Vector2i(-1, -1)}
+			"story": story, "bio": bio, "asleep": false, "target_cell": Vector2i(-1, -1),
+			"tired": 0, "rest": 0.0}
 	_next_id += 1
 	people.append(p)
 	stats["joined"] = int(stats["joined"]) + 1
@@ -719,7 +768,8 @@ func bonus(p: Dictionary, job: String) -> float:
 
 func _speed(p: Dictionary) -> float:
 	var s: float = float(bal["people"]["speed_tiles_s"]) * bonus(p, "walk") * (1.0 + perk_bonus("carrinho"))
-	return s * (float(bal["people"]["hungry_speed"]) if (p["hungry"] or p["thirsty"]) else 1.0)
+	# Cansado anda mais devagar (só perde, o bônus de sono em dia não acelera o passo).
+	return s * (float(bal["people"]["hungry_speed"]) if (p["hungry"] or p["thirsty"]) else 1.0) * minf(1.0, rest_mult(p))
 
 
 ## Energia: oferta dos geradores e painéis prontos contra o gasto dos prédios elétricos prontos.
@@ -761,7 +811,7 @@ func food_mult() -> float:
 
 
 func _work_mult(p: Dictionary) -> float:
-	return float(bal["people"]["hungry_speed"]) if (p["hungry"] or p["thirsty"]) else 1.0
+	return (float(bal["people"]["hungry_speed"]) if (p["hungry"] or p["thirsty"]) else 1.0) * rest_mult(p)
 
 
 ## O que mais falta, de 0 a ~2. Comida e água pesam pelo consumo; madeira e sucata pela próxima meta.
@@ -815,7 +865,7 @@ func _assigned_to(res: String, except: Dictionary) -> int:
 
 ## Escolhe o próximo trabalho: obra sem construtor primeiro, depois o recurso que mais falta.
 func _pick_job(p: Dictionary) -> Dictionary:
-	if is_night():
+	if is_night() and not work_tonight:
 		return {"kind": "sleep"}
 	# Obras em ordem de chegada: uma pessoa por obra.
 	var sites: Array[Dictionary] = []
@@ -1068,7 +1118,15 @@ func advance(seconds: float) -> void:
 	var left := seconds
 	while left > 1e-6:
 		# Noite com todo mundo dormindo: nada anda, pula direto para a manhã.
-		if is_night() and _all_asleep():
+		# Offline ninguém vê a caminhada até a cama: dormem direto, e a noite pode ser pulada.
+		if offline and is_night() and not work_tonight and not _all_asleep():
+			for p in people:
+				if not p["asleep"]:
+					_set_job(p, {"kind": "sleep"})
+					p["pos"] = Vector2(_bed_door(p))
+					p["path"] = PackedVector2Array()
+					p["asleep"] = true
+		if is_night() and not work_tonight and _all_asleep():
 			var to_morning := _secs_to_morning()
 			var jump := minf(left, to_morning)
 			if jump > step:
@@ -1093,13 +1151,17 @@ func _secs_to_morning() -> float:
 	var hr := local_hour()
 	var z: float = float(bal["time"]["night_to_h"])
 	var dh: float = z - hr if hr < z else 24.0 - hr + z
-	return dh * 3600.0
+	return dh / 24.0 * float(bal["night"]["cycle_s"])
 
 
 func _step(dt: float) -> void:
 	t += dt
 	_m_urg.clear()   # o estoque muda a cada passo; limite e camas só mudam com prédio (_invalidate)
 	var night := is_night()
+	if _was_night and not night:
+		_night_end()
+	_was_night = night
+	night = night and not work_tonight   # virando a noite: todo mundo segue como se fosse dia
 	_needs(dt, night)
 	_regrow()
 	_arrivals()
@@ -1328,7 +1390,7 @@ func _merchant_step() -> void:
 			_merchant_leave()
 		return
 	var md: Dictionary = bal["merchant"]
-	if tower < int(md["tower"]) or _count("praca") == 0 or is_night():
+	if tower < int(md["tower"]) or _count("praca") == 0:
 		return
 	var d0 := day_start(t)
 	var hours: Array = md["hours"]
@@ -1909,7 +1971,7 @@ func to_dict() -> Dictionary:
 		ps.append({"id": p["id"], "name": p["name"], "look": p["look"], "passives": p["passives"],
 				"pos": [p["pos"].x, p["pos"].y], "story": p["story"], "bio": p["bio"],
 				"eat_acc": p["eat_acc"], "drink_acc": p["drink_acc"],
-				"carry_res": p["carry_res"], "carry": p["carry"]})
+				"carry_res": p["carry_res"], "carry": p["carry"], "tired": p["tired"], "rest": p["rest"]})
 	var rg: Array = []
 	for c in regrow:
 		rg.append([c.x, c.y, regrow[c]])
@@ -1921,7 +1983,8 @@ func to_dict() -> Dictionary:
 			"marked": marked.keys().map(func(c: Vector2i) -> Array: return [c.x, c.y]),
 			"stats": stats, "next_id": _next_id, "group_t": _group_ready_t, "story": _story_done.keys(),
 			"rng": _rng.state, "tower_t": tower_t, "perks": perks, "merchant": merchant, "auto_sell": auto_sell,
-			"radio": radio_heard, "ela_t": ela_t, "merchant_key": _merchant_key}
+			"radio": radio_heard, "ela_t": ela_t, "merchant_key": _merchant_key,
+			"cycle_t0": cycle_t0, "work_tonight": work_tonight}
 
 
 func from_dict(d: Dictionary, balance: Dictionary, tz_bias: int = 0) -> void:
@@ -1958,6 +2021,8 @@ func from_dict(d: Dictionary, balance: Dictionary, tz_bias: int = 0) -> void:
 		p["drink_acc"] = float(e["drink_acc"])
 		p["carry_res"] = String(e.get("carry_res", ""))
 		p["carry"] = float(e.get("carry", 0.0))
+		p["tired"] = int(e.get("tired", 0))
+		p["rest"] = float(e.get("rest", 0.0))
 	regrow.clear()
 	for e in d["regrow"]:
 		regrow[Vector2i(int(e[0]), int(e[1]))] = float(e[2])
@@ -1996,6 +2061,12 @@ func from_dict(d: Dictionary, balance: Dictionary, tz_bias: int = 0) -> void:
 	radio_heard = (d.get("radio", []) as Array).duplicate()
 	ela_t = float(d.get("ela_t", -1.0))
 	_merchant_key = int(d.get("merchant_key", -1))
+	if d.has("cycle_t0"):
+		cycle_t0 = float(d["cycle_t0"])
+	else:
+		set_cycle_hour(float(bal["night"]["start_hour"]))   # save antigo: começa de manhã
+	work_tonight = bool(d.get("work_tonight", false))
+	_was_night = is_night()
 	_lines_dirty = true
 	_invalidate()
 	_rebuild_astar()

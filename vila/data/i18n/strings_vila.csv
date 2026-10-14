@@ -262,7 +262,7 @@ UI_TOWER_ELA,"A torre está pronta. Agora é esperar ela.","The tower is done. N
 VEND_knock,(Alguém no portão. Botas gastas e uma mochila.),(Someone at the gate. Worn boots and a backpack.)
 VEND_light,(As luzes da vila acendem uma por uma.),(The village lights come on one by one.)
 TIP_PEOPLE,Pessoas na vila / camas,People in the village / beds
-TIP_CLOCK,"Hora na vila, a mesma do seu relógio. De noite todo mundo dorme.","Village time, same as your clock. At night everyone sleeps."
+TIP_CLOCK,"Hora na vila (um dia da vila dura uns 25 minutos) e quantos dias de verdade ela já tem. De noite todo mundo descansa.","Village time (a village day lasts about 25 minutes) and how many real days it has lasted. At night everyone rests."
 TIP_BUILD,Escolher um prédio para construir,Pick a building to build
 TIP_TOWER,"A torre do rádio: subir de nível libera prédios, chão e gente nova","The radio tower: each level unlocks buildings, ground and new people"
 TIP_RES,"{r}: {v} de {cap} · {bpm} por minuto. Clique para ver de onde vem.","{r}: {v} of {cap} · {bpm} per minute. Click to see where it comes from."
@@ -280,7 +280,7 @@ UI_CUT_GIVES,Rende {n} de madeira,Gives {n} wood
 UI_CUT_MARKED,Marcada: alguém livre vem cortar,Marked: someone free will cut it
 UI_SITE_WHO,{b}: {name} vai construir,{b}: {name} will build it
 UI_SITE_NEXT,"{b}: quem terminar o que está fazendo vem construir","{b}: whoever finishes their task will build it"
-UI_SITE_NIGHT,{b}: a obra começa de manhã (de noite todo mundo dorme),{b}: building starts in the morning (everyone sleeps at night)
+UI_SITE_NIGHT,"{b}: a obra começa de manhã (de noite todo mundo descansa, a não ser que você vire a noite)","{b}: building starts in the morning (everyone rests at night unless you pull an all-nighter)"
 UI_CAP_ADD,"Soma {n} ao espaço de cada recurso ({list}). Hoje cabe {total} de cada","Adds {n} room for each resource ({list}). Right now {total} of each fits"
 UI_GAIN_BEDS,"fica com {n} camas","goes to {n} beds"
 UI_GAIN_CAP,"soma {n} de espaço em cada recurso","adds {n} room for each resource"
@@ -296,3 +296,10 @@ UI_PLACE_tree,"Tem uma árvore aqui. Clique nela para mandar cortar.","There is 
 UI_PLACE_rubble,"Tem entulho aqui. Clique nele para mandar limpar.","There is rubble here. Click it to have it cleared."
 UI_PLACE_road,Aqui é a estrada.,This is the road.
 UI_PLACE_closed,"Ficaria todo cercado: ninguém conseguiria chegar até ele.","It would be boxed in: nobody could reach it."
+UI_NIGHT_OFF,Virar a noite,Pull an all-nighter
+UI_NIGHT_ON,Virando a noite,Pulling an all-nighter
+UI_NIGHT_ON_TOAST,"Todo mundo trabalha esta noite. Amanhã vão estar cansados.","Everyone works tonight. They will be tired tomorrow."
+UI_NIGHT_OFF_TOAST,Todo mundo vai descansar esta noite.,Everyone rests tonight.
+TIP_NIGHT,"De noite a vila descansa. Virar a noite põe todo mundo para trabalhar só nesta noite, mas cada noite virada tira {pen}% da produção até descansarem {rest} noites. Com o sono em dia, produzem {bonus}% a mais.","At night the village rests. An all-nighter puts everyone to work for this night only, but each one costs {pen}% output until they rest {rest} nights. Well rested, they make {bonus}% more."
+TIP_RESTED,"Sono em dia: produz {n}% a mais.","Well rested: makes {n}% more."
+TIP_TIRED,"Cansado ({t} noites viradas): produz {n}% a menos e anda mais devagar. Faltam {left} noites de descanso.","Tired ({t} all-nighters): makes {n}% less and walks slower. {left} nights of rest to go."

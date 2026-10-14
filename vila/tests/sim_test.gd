@@ -63,6 +63,29 @@ func _init() -> void:
 	_check(t_group > 0.0, "chega um grupo de 3 no portão")
 	_check(sim.people.size() >= 3, "pelo menos 3 pessoas em 3 h")
 	_check(min_stock >= -0.001, "estoque nunca negativo (min %.2f)" % min_stock)
+	# Dia e noite da vila: ciclo próprio, noite = 25%; virar a noite cansa; 2 noites de descanso por noite virada.
+	var nb: Dictionary = bal["night"]
+	var cyc := float(nb["cycle_s"])
+	var night_s := 0.0
+	var probe := VilaSim.new()
+	probe.setup(bal, start, 0)
+	for i in 240:
+		probe.t += cyc / 240.0
+		if probe.is_night():
+			night_s += cyc / 240.0
+	_check(absf(night_s / cyc - 0.25) < 0.02, "noite ocupa 25%% do ciclo (%.0f%%)" % (night_s / cyc * 100.0))
+	var jq: Dictionary = sim.people[0]
+	jq["tired"] = 0
+	jq["rest"] = 0.0
+	sim.set_cycle_hour(23.0)
+	sim.set_work_tonight(true)
+	sim.advance(cyc * 0.25)   # passa a noite inteira trabalhando
+	_check(int(jq["tired"]) == 1 and not sim.work_tonight, "virar a noite cansa 1 e só vale para aquela noite")
+	_check(absf(sim.rest_mult(jq) - (1.0 - float(nb["tired_penalty"]))) < 0.001, "cansado produz 10% a menos")
+	sim.advance(cyc)
+	_check(int(jq["tired"]) == 1, "1 noite de descanso ainda não recupera")
+	sim.advance(cyc)
+	_check(int(jq["tired"]) == 0 and sim.rest_mult(jq) > 1.0, "2 noites de descanso recuperam e voltam o bônus")
 	# Desmontar: libera o chão, devolve metade e não deixa mexer no bunker nem na torre.
 	var pc: Dictionary = sim._first("poco")
 	var cell0: Vector2i = pc["cell"]
@@ -108,11 +131,12 @@ func _init() -> void:
 	_check(cut.terrain_at(tree) == VilaSim.T_STUMP and not cut.regrow.has(tree), "a árvore marcada é cortada em %ds e não volta" % int(waited))
 	# A noite para tudo.
 	var night := VilaSim.new()
-	night.setup(bal, start - 7.0 * 3600.0 + 23.0 * 3600.0, 0)
-	_check(night.is_night(), "23h é noite")
+	night.setup(bal, start, 0)
+	night.set_cycle_hour(23.0)
+	_check(night.is_night(), "23h na vila é noite")
 	night.stock["madeira"] = 50.0
 	night.build("poco", AutoPlayer.spot(night, "poco"))
-	night.advance(600.0)
+	night.advance(float(bal["night"]["cycle_s"]) * 4.5 / 24.0)   # até perto das 4h, ainda noite
 	var pb: Dictionary = night.buildings[night.buildings.size() - 1]
 	_check(String(pb["state"]) == "site" and float(pb["progress"]) == 0.0, "obra não anda de noite")
 	print("FALHAS: ", fails)

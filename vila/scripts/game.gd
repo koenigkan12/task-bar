@@ -107,6 +107,8 @@ func prepare_title() -> void:
 	if not _from_save:
 		_set_sim(VilaSim.new())
 		sim.setup(bal, now_unix(), tz)
+	if args.has("hour"):   # testes e capturas: a vila começa nessa hora
+		sim.set_cycle_hour(float(args["hour"]))
 	sim_replaced.emit()
 
 
@@ -147,6 +149,8 @@ func _catch_up_async() -> void:
 func new_game() -> void:
 	_set_sim(VilaSim.new())
 	sim.setup(bal, now_unix(), tz)
+	if args.has("hour"):
+		sim.set_cycle_hour(float(args["hour"]))
 	_from_save = false
 	if args.has("demo"):
 		var mins := float(args["demo"])

@@ -53,6 +53,7 @@ var _card_id: int = -1
 var _toast: Label
 var _toast_t: float = 0.0
 var _tip: Label
+var _night_btn: Button
 var _refresh_acc: float = 0.0
 var handle: WindowHandle
 var build_btn: Button
@@ -385,6 +386,15 @@ func _build_bottom() -> void:
 		_on_goal())
 	goal_btn = _goal_btn
 	h.add_child(_goal_btn)
+	# De noite: botão para pôr todo mundo trabalhando só nesta noite (cansa; ver balance "night").
+	_night_btn = Button.new()
+	_night_btn.icon = icon("lua")
+	_night_btn.visible = false
+	_night_btn.pressed.connect(func() -> void:
+		sim.set_work_tonight(not sim.work_tonight)
+		toast(I18n.t("UI_NIGHT_ON_TOAST") if sim.work_tonight else I18n.t("UI_NIGHT_OFF_TOAST"))
+		refresh())
+	h.add_child(_night_btn)
 	var zm := Button.new()
 	zm.text = "-"
 	zm.custom_minimum_size = Vector2(14, 0)
@@ -519,6 +529,12 @@ func refresh() -> void:
 	_clock_icon.texture = icon("lua" if sim.is_night() else "sol")
 	_goal_btn.text = _goal_text()
 	_goal_btn.tooltip_text = _goal_btn.text
+	var nb: Dictionary = sim.bal["night"]
+	_night_btn.visible = sim.is_night() or sim.work_tonight
+	_night_btn.text = I18n.t("UI_NIGHT_ON") if sim.work_tonight else I18n.t("UI_NIGHT_OFF")
+	_night_btn.add_theme_color_override("font_color", C_WARN if sim.work_tonight else C_TEXT)
+	_night_btn.tooltip_text = fmt("TIP_NIGHT", {"bonus": int(round(float(nb["rested_bonus"]) * 100.0)),
+			"pen": int(round(float(nb["tired_penalty"]) * 100.0)), "rest": int(nb["rest_nights_per_tired"])})
 	_gate_btn.visible = not sim.gate_group.is_empty()
 	_gate_btn.text = fmt("UI_GATE_BADGE", {"n": sim.gate_group.size()})
 	_gate_btn.size = Vector2(10, 14)
@@ -998,6 +1014,13 @@ func _card_person() -> void:
 	var bio := I18n.t("PB_" + story) if story != "" else (I18n.t("BIO_%d" % int(p["bio"])) if int(p["bio"]) >= 0 else "")
 	_header("pessoa", pname(p), "\"" + bio + "\"" if bio != "" else "")
 	_card_box.add_child(_row([_icon_rect("relogio"), _label(_doing_text(p))]))
+	# Sono: +10% com o sono em dia; cada noite virada tira 10% até descansar 2 noites por ela.
+	var rm := sim.rest_mult(p)
+	var pct := int(round((rm - 1.0) * 100.0))
+	var tired := int(p.get("tired", 0))
+	var stip := fmt("TIP_RESTED", {"n": pct}) if tired <= 0 else fmt("TIP_TIRED", {"t": tired, "n": -pct,
+			"left": tired * int(sim.bal["night"]["rest_nights_per_tired"]) - int(floor(float(p.get("rest", 0.0))))})
+	_card_box.add_child(_stats([_stat("lua", "%+d%%" % pct, stip, C_GOOD if tired <= 0 else C_WARN)]))
 	if p["hungry"]:
 		_card_box.add_child(_row([_icon_rect("comida"), _icon_rect("alerta"), _label(I18n.t("UI_HUNGRY"), C_WARN)]))
 	if p["thirsty"]:

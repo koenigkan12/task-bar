@@ -403,9 +403,12 @@ func _sync_people(delta: float) -> void:
 		else:
 			row = 1 if f.y < 0.0 else 0
 			spr.flip_h = false
+		# Cansaço (noites viradas): cor mais apagada e passo mais lento.
+		var tired := int(p.get("tired", 0))
+		spr.modulate = Color.WHITE if tired <= 0 else Color(1, 1, 1).lerp(Color(0.62, 0.64, 0.82), clampf(tired / 3.0, 0.25, 1.0))
 		var col := 0
 		if p["moving"]:
-			col = 1 + int((_anim_t + float(id) * 0.37) * 8.0) % 4
+			col = 1 + int((_anim_t + float(id) * 0.37) * 8.0 * minf(1.0, sim.rest_mult(p))) % 4
 		elif String(p["phase"]) in ["building", "working", "foraging"]:
 			col = 1 + int((_anim_t + float(id) * 0.37) * 4.0) % 2   # mexendo no lugar
 		spr.frame = row * 5 + col
@@ -476,8 +479,8 @@ func _process(delta: float) -> void:
 func _update_light() -> void:
 	var hr := sim.local_hour()
 	var keys := [
-		[0.0, Color(0.30, 0.30, 0.52)], [5.0, Color(0.32, 0.32, 0.55)], [6.5, Color(0.70, 0.62, 0.78)],
-		[8.0, Color(0.96, 0.93, 1.0)], [17.0, Color(0.96, 0.93, 1.0)], [19.0, Color(0.92, 0.70, 0.66)],
+		[0.0, Color(0.30, 0.30, 0.52)], [4.0, Color(0.32, 0.32, 0.55)], [5.2, Color(0.70, 0.62, 0.78)],
+		[6.5, Color(0.96, 0.93, 1.0)], [17.0, Color(0.96, 0.93, 1.0)], [19.0, Color(0.92, 0.70, 0.66)],
 		[20.5, Color(0.55, 0.45, 0.66)], [22.0, Color(0.32, 0.32, 0.55)], [24.0, Color(0.30, 0.30, 0.52)]]
 	var col: Color = keys[0][1]
 	for i in keys.size() - 1:
@@ -587,6 +590,15 @@ func _draw_overlay() -> void:
 		# A obra já mostra o tempo dela em cima; aqui só carga e coleta.
 		if ph != "building":
 			_timer_text(at + Vector2(22 if ic >= 0 else 13, 1), sim.eta(p), Color(0.75, 1.0, 0.8))
+	# Cansado: um "z" pequeno subindo do lado da cabeça.
+	if _timer_font == null:
+		_timer_font = load("res://assets/fonts/DotGothic16-Regular.ttf")
+	for p in sim.people:
+		if p["asleep"] or int(p.get("tired", 0)) <= 0:
+			continue
+		var ph2 := fposmod(_anim_t * 0.6 + float(p["id"]) * 0.31, 1.0)
+		var zp := _person_world(p) + Vector2(-9, -16 - ph2 * 5.0)
+		_overlay.draw_string(_timer_font, zp.round(), "z", HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(0.75, 0.8, 1.0, 1.0 - ph2))
 	# Obra esperando alguém livre: ampulheta (relógio) piscando em cima.
 	for b in sim.buildings:
 		if String(b["state"]) != "built" and int(b["builder"]) < 0 and icons != null and int(_anim_t * 2.0) % 2 == 0:
