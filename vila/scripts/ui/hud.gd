@@ -682,16 +682,18 @@ func _card_res() -> void:
 	if r == "energia":
 		var pw := sim.power()
 		_header("energia", I18n.t("UI_POWER"))
-		_card_box.add_child(_row([_icon_rect("energia"), _label(fmt("UI_POWER_LINE", {"out": int(pw["out"]), "use": int(pw["use"])}), C_WARN if float(pw["use"]) > float(pw["out"]) else C_TEXT)]))
+		_card_box.add_child(_stats([_stat("energia", "+%d" % int(pw["out"]), fmt("UI_POWER_LINE", {"out": int(pw["out"]), "use": int(pw["use"])}), C_GOOD),
+			_stat("alerta", "-%d" % int(pw["use"]), fmt("UI_POWER_LINE", {"out": int(pw["out"]), "use": int(pw["use"])}), C_WARN if float(pw["use"]) > float(pw["out"]) else C_TEXT)]))
 		_card_box.add_child(_wrap(I18n.t("RD_energia"), C_MUTED))
 		return
 	_header(r, I18n.t("RES_" + r))
 	var v := int(floor(float(sim.stock[r])))
-	_card_box.add_child(_wrap_row("check", fmt("UI_RES_HAVE", {"n": v, "cap": int(sim.cap(r))})))
 	var fl := sim.flow_per_min(r)
-	_card_box.add_child(_row([_icon_rect("seta"), _label(fmt("UI_RES_IN", {"n": "%.1f" % float(fl["prod"])}), C_GOOD)]))
+	var st: Array = [_stat(r, "%d/%d" % [v, int(sim.cap(r))], fmt("UI_RES_HAVE", {"n": v, "cap": int(sim.cap(r))})),
+		_stat("seta", "+%.1f/min" % float(fl["prod"]), fmt("UI_RES_IN", {"n": "%.1f" % float(fl["prod"])}), C_GOOD)]
 	if float(fl["use"]) > 0.0:
-		_card_box.add_child(_row([_icon_rect("alerta"), _label(fmt("UI_RES_OUT", {"n": "%.1f" % float(fl["use"])}), C_WARN)]))
+		st.append(_stat("alerta", "-%.1f/min" % float(fl["use"]), fmt("UI_RES_OUT", {"n": "%.1f" % float(fl["use"])}), C_WARN))
+	_card_box.add_child(_stats(st))
 	_card_box.add_child(_wrap(I18n.t("RD_" + r), C_MUTED))
 
 
@@ -804,28 +806,63 @@ func _card_building() -> void:
 		var names: Array[String] = []
 		for pid in ws:
 			names.append(pname(sim.person(int(pid))))
-		_card_box.add_child(_row([_icon_rect("pessoa"), _label(fmt("UI_WORKERS", {"a": ws.size(), "b": lv["slots"]}) + ((" " + ", ".join(names)) if not names.is_empty() else ""))]))
-		_card_box.add_child(_wrap_row(String(d["res"]), fmt("UI_RATE", {"n": "%.1f" % (60.0 / float(lv["rate_s"])), "r": I18n.t("RES_" + String(d["res"]))})))
+		var rate := "%.1f" % (60.0 / float(lv["rate_s"]))
+		_card_box.add_child(_stats([
+			_stat("pessoa", "%d/%d" % [ws.size(), int(lv["slots"])], fmt("UI_WORKERS", {"a": ws.size(), "b": lv["slots"]})),
+			_stat(String(d["res"]), rate + "/min", fmt("UI_RATE", {"n": rate, "r": I18n.t("RES_" + String(d["res"]))}))]))
+		if not names.is_empty():
+			_card_box.add_child(_wrap(", ".join(names), C_MUTED))
 	if d.has("power_use"):
 		var low := sim.power_frac() < 0.999
 		var pw := sim.power()
-		_card_box.add_child(_row([_icon_rect("energia"), _label(fmt("UI_POWER_USE", {"n": d["power_use"]}))]))
-		_card_box.add_child(_wrap(fmt("UI_POWER_TOTAL", {"out": int(pw["out"]), "use": int(pw["use"])}), C_MUTED))
-		if low:
-			_card_box.add_child(_wrap_row("alerta", I18n.t("UI_POWER_LOW"), C_WARN))
+		var ptip := fmt("UI_POWER_USE", {"n": d["power_use"]}) + ". " + fmt("UI_POWER_TOTAL", {"out": int(pw["out"]), "use": int(pw["use"])}) + ((". " + I18n.t("UI_POWER_LOW")) if low else "")
+		_card_box.add_child(_stats([_stat("energia", "-%d" % int(d["power_use"]), ptip, C_WARN if low else C_TEXT)]))
 	if d.has("power_out"):
-		_card_box.add_child(_row([_icon_rect("energia"), _label(fmt("UI_POWER_OUT", {"n": d["power_out"]}), C_GOOD)]))
+		_card_box.add_child(_stats([_stat("energia", "+%d" % int(d["power_out"]), fmt("UI_POWER_OUT", {"n": d["power_out"]}), C_GOOD)]))
 	var inp: Dictionary = lv.get("input", {})
 	for r in inp:
 		var short := float(sim.stock[r]) < float(inp[r])
-		_card_box.add_child(_wrap_row(r, fmt("UI_NO_INPUT", {"r": I18n.t("RES_" + r)}) if short else fmt("UI_INPUT", {"n": inp[r], "r": I18n.t("RES_" + r)}), C_WARN if short else C_TEXT))
+		_card_box.add_child(_stats([_stat(r, "-%d" % int(inp[r]), fmt("UI_NO_INPUT", {"r": I18n.t("RES_" + r)}) if short else fmt("UI_INPUT", {"n": inp[r], "r": I18n.t("RES_" + r)}), C_WARN if short else C_TEXT)]))
 	var beds := int(lv.get("beds", d.get("beds", 0)))
 	if beds > 0:
-		_card_box.add_child(_wrap_row("cama", fmt("UI_BEDS", {"n": beds, "used": sim.people.size(), "total": sim.beds_total()})))
-	if tp == "hatch":
-		_card_box.add_child(_wrap_row("check", fmt("UI_CAP", {"n": int(sim.bal["storage"]["hatch_cap"]), "list": _res_list()})))
-	elif lv.has("cap"):
-		_card_box.add_child(_wrap_row("check", fmt("UI_CAP_ADD", {"n": int(lv["cap"]), "list": _res_list(), "total": int(sim.cap("comida"))})))
+		_card_box.add_child(_stats([_stat("cama", str(beds), fmt("UI_BEDS", {"n": beds, "used": sim.people.size(), "total": sim.beds_total()}))]))
+	if tp == "hatch" or lv.has("cap"):
+		# Um ícone por recurso com o quanto este prédio guarda (o bunker é a base; depósito soma).
+		var add := tp != "hatch"
+		var n := int(lv["cap"]) if add else int(sim.bal["storage"]["hatch_cap"])
+		var ctip := fmt("UI_CAP_ADD", {"n": n, "list": _res_list(), "total": int(sim.cap("comida"))}) if add else fmt("UI_CAP", {"n": n, "list": _res_list()})
+		var cs: Array = []
+		for r in VilaSim.RES:
+			cs.append(_stat(r, ("+%d" if add else "%d") % n, ctip))
+		_card_box.add_child(_stats(cs))
+	var nl: int = int(b["level"]) + 1
+	var levels: Array = d.get("levels", [])
+	if nl <= levels.size():
+		var nd: Dictionary = levels[nl - 1]
+		var need_t: int = int(nd.get("tower", d.get("tower", 1)))
+		if sim.tower < need_t:
+			_card_box.add_child(_row([_icon_rect("cadeado"), _label(fmt("UI_UPGRADE_TO", {"b": bname(tp, nl)}) + " · " + fmt("UI_LOCKED_TOWER", {"n": need_t}), C_MUTED)]))
+		else:
+			var gain: Array = [_stat("seta", bname(tp, nl), fmt("UI_UPGRADE_TO", {"b": bname(tp, nl)}), C_MUTED)]
+			if nd.has("beds"):
+				gain.append(_stat("cama", str(int(nd["beds"])), fmt("UI_GAIN_BEDS", {"n": nd["beds"]})))
+			elif nd.has("cap"):
+				gain.append(_stat("check", "+%d" % int(nd["cap"]), fmt("UI_GAIN_CAP", {"n": nd["cap"]})))
+			elif nd.has("rate_s"):
+				var nr := "%.1f" % (60.0 / float(nd["rate_s"]))
+				gain.append(_stat(String(d.get("res", "seta")), nr + "/min", fmt("UI_GAIN_RATE", {"n": nr})))
+			_card_box.add_child(_stats(gain))
+			_card_box.add_child(_row([_cost_row(nd["cost"]), _icon_rect("relogio"), _label(fmt_time(float(nd["time_s"])))]))
+			var up := Button.new()
+			up.text = I18n.t("UI_UPGRADE")
+			up.icon = icon("seta")
+			up.disabled = not sim.can_afford(nd["cost"])
+			up.pressed.connect(func() -> void:
+				var r := sim.upgrade(_card_id)
+				if not bool(r["ok"]):
+					toast(I18n.t("UI_MISSING").format({"list": ""}))
+				_rebuild_card())
+			_card_box.add_child(up)
 	if sim.can_demolish(b):
 		var dm := Button.new()
 		dm.text = I18n.t("UI_DEMOLISH")
@@ -840,33 +877,27 @@ func _card_building() -> void:
 					toast(fmt("UI_DEMOLISHED", {"b": nm}))
 					close_card()))
 		_card_box.add_child(dm)
-	var nl: int = int(b["level"]) + 1
-	var levels: Array = d.get("levels", [])
-	if nl <= levels.size():
-		var nd: Dictionary = levels[nl - 1]
-		var need_t: int = int(nd.get("tower", d.get("tower", 1)))
-		if sim.tower < need_t:
-			_card_box.add_child(_row([_icon_rect("cadeado"), _label(fmt("UI_UPGRADE_TO", {"b": bname(tp, nl)}) + " · " + fmt("UI_LOCKED_TOWER", {"n": need_t}), C_MUTED)]))
-		else:
-			var gain := ""
-			if nd.has("beds"):
-				gain = ": " + fmt("UI_GAIN_BEDS", {"n": nd["beds"]})
-			elif nd.has("cap"):
-				gain = ": " + fmt("UI_GAIN_CAP", {"n": nd["cap"]})
-			elif nd.has("rate_s"):
-				gain = ": " + fmt("UI_GAIN_RATE", {"n": "%.1f" % (60.0 / float(nd["rate_s"]))})
-			_card_box.add_child(_wrap(fmt("UI_UPGRADE_TO", {"b": bname(tp, nl)}) + gain, C_MUTED))
-			_card_box.add_child(_row([_cost_row(nd["cost"]), _icon_rect("relogio"), _label(fmt_time(float(nd["time_s"])))]))
-			var up := Button.new()
-			up.text = I18n.t("UI_UPGRADE")
-			up.icon = icon("seta")
-			up.disabled = not sim.can_afford(nd["cost"])
-			up.pressed.connect(func() -> void:
-				var r := sim.upgrade(_card_id)
-				if not bool(r["ok"]):
-					toast(I18n.t("UI_MISSING").format({"list": ""}))
-				_rebuild_card())
-			_card_box.add_child(up)
+
+
+## Ícone + número curto; a frase que explica vai na dica do mouse (regra da interface: ícone e número,
+## texto só quando não der).
+func _stat(ic: String, text: String, tip: String, col: Color = C_TEXT) -> HBoxContainer:
+	var h := _row([_icon_rect(ic), _label(text, col)])
+	h.add_theme_constant_override("separation", 1)
+	h.tooltip_text = tip
+	h.mouse_filter = Control.MOUSE_FILTER_PASS
+	return h
+
+
+## Vários _stat lado a lado, quebrando linha se não couber.
+func _stats(items: Array) -> HFlowContainer:
+	var f := HFlowContainer.new()
+	f.add_theme_constant_override("h_separation", 6)
+	f.custom_minimum_size = Vector2(138, 0)
+	f.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	for it in items:
+		f.add_child(it)
+	return f
 
 
 ## Ícone + texto que quebra linha (frases longas dos cartões).
