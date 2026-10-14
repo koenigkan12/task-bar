@@ -58,6 +58,35 @@ func _initialize() -> void:
 	await process_frame
 	await process_frame
 	_check(main._placing == "horta", "clique com o cartão se atualizando no meio ainda vale")
+	# X do cartão: mouse parado em cima por um tempo (o cartão se atualiza) e um clique fecha.
+	hud.show_tower()
+	for i in 5:
+		await process_frame
+	var xb: Button = null
+	for c in hud._card_box.get_child(0).get_children():
+		if c is Button and (c as Button).text == "x":
+			xb = c
+	var xp: Vector2 = xb.get_global_rect().get_center()
+	var mv := InputEventMouseMotion.new()
+	mv.position = xp
+	mv.global_position = xp
+	Input.parse_input_event(mv)
+	for i in 3:
+		hud.refresh()
+		await process_frame
+	var dn := InputEventMouseButton.new()
+	dn.button_index = MOUSE_BUTTON_LEFT
+	dn.position = xp
+	dn.global_position = xp
+	dn.pressed = true
+	Input.parse_input_event(dn)
+	await process_frame
+	var up2 := dn.duplicate() as InputEventMouseButton
+	up2.pressed = false
+	Input.parse_input_event(up2)
+	await process_frame
+	await process_frame
+	_check(not hud.card_open(), "um clique no X fecha o cartão")
 	for i in 30:
 		await process_frame
 	print("FALHAS: ", fails)

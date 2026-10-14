@@ -524,14 +524,18 @@ func refresh() -> void:
 	_gate_btn.size = Vector2(10, 14)
 	# Refazer o cartão troca os botões por novos: com o botão do mouse apertado, o clique
 	# começava num botão e terminava em outro e se perdia. Espera soltar para refazer.
+	# Com o mouse em cima do cartão ele também não é refeito: refazer muda o tamanho e a posição dos
+	# botões (o X andava quando um texto mudava de largura) e o clique caía fora dele.
 	var held := Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) or Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT)
-	if _card.visible and not held:
+	var mp := get_viewport().get_mouse_position()
+	var over_card := _card.visible and _card.get_global_rect().grow(3).has_point(mp)
+	if _card.visible and not held and not over_card:
 		_rebuild_card()
 	if _manage.visible:
 		_manage.position = Vector2(2, 16)
 		_manage.size = Vector2(150, H - 34)
 		_manage_acc += 0.2
-		if _manage_acc >= 0.6 and not held:
+		if _manage_acc >= 0.6 and not held and not _manage.get_global_rect().grow(3).has_point(mp):
 			_manage_acc = 0.0
 			_rebuild_manage()
 

@@ -289,6 +289,10 @@ var _tray_menu: PopupMenu = null
 
 
 func _ready() -> void:
+	# Botões disparam ao apertar, não ao soltar. Clicar na janela vinda de outro programa faz o
+	# sistema tirar e devolver o foco no meio do clique; o Godot então perde o "soltar" e o
+	# primeiro clique não valia (tinha que clicar duas vezes).
+	get_tree().node_added.connect(_on_node_added)
 	if _settings == null:
 		_settings = get_node_or_null("/root/Settings")
 	_native = DisplayServer.get_name() != "headless"
@@ -752,6 +756,10 @@ func _resize_input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion and not _resizing:
 		Input.set_default_cursor_shape(_edge_cursor(e) as Input.CursorShape)
 	var mb := event as InputEventMouseButton
+	# Em cima de um botão o clique é do botão, mesmo colado na borda (os ícones de cima e a barra
+	# de baixo encostam na borda da janela).
+	if mb != null and mb.pressed and e != 0 and get_viewport().gui_get_hovered_control() is BaseButton:
+		return
 	if mb != null and mb.button_index == MOUSE_BUTTON_LEFT and mb.pressed and e != 0:
 		_resizing = true
 		_rs_edges = e
@@ -759,6 +767,11 @@ func _resize_input(event: InputEvent) -> void:
 		_rs_rect0 = _rect
 		get_viewport().set_input_as_handled()
 		_update_fps(true)
+
+
+func _on_node_added(n: Node) -> void:
+	if n is BaseButton:
+		(n as BaseButton).action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 
 
 func is_resizing() -> bool:
