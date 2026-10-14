@@ -37,6 +37,27 @@ func _initialize() -> void:
 	var jq: Dictionary = sim.people[0]
 	main._click(main.get_canvas_transform() * main.world._person_world(jq) + Vector2(0, -6) * main.cam.zoom)
 	_check(hud._card_kind == "person", "clicar no Joaquim abre o cartão dele")
+	# Clique de verdade (apertar, cartão se atualiza, soltar) num botão do menu Construir.
+	hud.show_build_menu()
+	await process_frame
+	await process_frame
+	var bb: Button = hud.build_btns["horta"]
+	var at: Vector2 = bb.get_global_rect().get_center()
+	var ev := InputEventMouseButton.new()
+	ev.button_index = MOUSE_BUTTON_LEFT
+	ev.position = at
+	ev.global_position = at
+	ev.pressed = true
+	Input.parse_input_event(ev)
+	await process_frame
+	hud.refresh()
+	await process_frame
+	var up := ev.duplicate() as InputEventMouseButton
+	up.pressed = false
+	Input.parse_input_event(up)
+	await process_frame
+	await process_frame
+	_check(main._placing == "horta", "clique com o cartão se atualizando no meio ainda vale")
 	for i in 30:
 		await process_frame
 	print("FALHAS: ", fails)

@@ -514,13 +514,16 @@ func refresh() -> void:
 	_gate_btn.visible = not sim.gate_group.is_empty()
 	_gate_btn.text = fmt("UI_GATE_BADGE", {"n": sim.gate_group.size()})
 	_gate_btn.size = Vector2(10, 14)
-	if _card.visible:
+	# Refazer o cartão troca os botões por novos: com o botão do mouse apertado, o clique
+	# começava num botão e terminava em outro e se perdia. Espera soltar para refazer.
+	var held := Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) or Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT)
+	if _card.visible and not held:
 		_rebuild_card()
 	if _manage.visible:
 		_manage.position = Vector2(2, 16)
 		_manage.size = Vector2(150, H - 34)
 		_manage_acc += 0.2
-		if _manage_acc >= 0.6:
+		if _manage_acc >= 0.6 and not held:
 			_manage_acc = 0.0
 			_rebuild_manage()
 

@@ -76,7 +76,7 @@ static func play(sim: VilaSim) -> void:
 				if bool(sim.upgrade(int(b["id"]))["ok"]):
 					up = true
 					break
-		if not up and sim._count_any("moradia") < 4:
+		if not up and sim._count_any("moradia") < 6:
 			_try(sim, "moradia")
 	if sim.tower >= 2:
 		for tp in ["serraria", "ferrovelho"]:
@@ -88,6 +88,8 @@ static func play(sim: VilaSim) -> void:
 		if sim.tower >= int(e[1]) and sim._count_any(String(e[0])) == 0 and sim.unlocked(String(e[0])):
 			var pw: Dictionary = sim.power()
 			if String(e[0]) in ["oficina", "estufa"] and float(pw["out"]) - float(pw["use"]) < 2.0:
+				continue
+			if AutoPlayer.spot(sim, String(e[0])).x < 0:
 				continue
 			_try(sim, String(e[0]))
 			break

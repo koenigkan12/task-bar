@@ -1701,6 +1701,11 @@ func goal() -> Dictionary:
 		return {"kind": "tower", "level": tower + 1, "missing": {}}
 	if tower >= tower_max() and String(tower_building()["state"]) == "built" and ela_t < 0.0:
 		return {"kind": "journey", "left_s": journey_left()}
+	# A torre pede peças e ainda não tem oficina: isso vem antes de mais camas.
+	if tower < tower_max() and String(tower_building()["state"]) == "built":
+		var mt: Dictionary = missing(tower_next()["cost"])
+		if mt.has("pecas") and _count_any("oficina") == 0 and unlocked("oficina"):
+			return {"kind": "build", "type": "oficina"}
 	if tower >= 2 and beds_free() <= 0 and _count_any("moradia") < 6:
 		# Só pede cama quando dá para fazer: melhorar uma barraca ou ter chão para outra.
 		if _can_add_beds():
