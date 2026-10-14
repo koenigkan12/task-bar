@@ -8,6 +8,8 @@ uniform float height = 32.0;
 void vertex() {
 	float k = clamp(-VERTEX.y / height, 0.0, 1.0);
 	float phase = MODEL_MATRIX[3].x * 0.071 + MODEL_MATRIX[3].y * 0.037;
-	float s = sin(TIME * (1.3 + wind * 1.6) + phase) * (0.6 + wind * 1.6) + wind * 1.2;
+	// Frequência fixa: se ela dependesse do vento, cada mudança de vento pulava a fase
+	// (TIME grande vezes a diferença) e as árvores tremiam como num terremoto.
+	float s = sin(TIME * 1.4 + phase) * (0.6 + wind * 0.5) + wind * 0.6;
 	VERTEX.x += round(s * k * k);
 }
