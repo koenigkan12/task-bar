@@ -481,7 +481,7 @@ func _process(delta: float) -> void:
 func _update_light() -> void:
 	var hr := sim.local_hour()
 	var night := Color(0.19, 0.21, 0.42)
-	var day := Color(1.3, 1.2, 1.0)
+	var day := Color(1.5, 1.4, 1.12)
 	var keys := [
 		[0.0, night], [4.0, night], [5.2, Color(0.62, 0.55, 0.74)],
 		[6.5, day], [17.0, day], [19.0, Color(1.08, 0.80, 0.62)],
@@ -503,6 +503,7 @@ func _update_light() -> void:
 		var l := lo as PointLight2D
 		var k := _night_k if not bool(e["always"]) else 0.25 + 0.75 * _night_k
 		l.energy = float(e["base"]) * 1.5 * k * flick
+		l.visible = l.energy > 0.01   # de dia a luz apagada nem entra no desenho
 	_lights = _lights.filter(func(e: Dictionary) -> bool: return is_instance_valid(e["light"]))
 
 
