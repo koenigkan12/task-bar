@@ -181,15 +181,14 @@ func update_fx(delta: float, sim: VilaSim, night_k: float) -> void:
 	_dust.emitting = wind > 0.65 and night_k < 0.5
 	_dust.gravity = Vector2(wind * 20.0, 0)
 	_flies.emitting = night_k > 0.55
+	# Prédio desmontado leva o nó junto: confere antes de pôr numa variável tipada (dava erro).
+	_smokes = _smokes.filter(func(e: Dictionary) -> bool: return is_instance_valid(e["p"]))
 	for e in _smokes:
 		var p: CPUParticles2D = e["p"]
-		if is_instance_valid(p):
-			p.gravity = Vector2(4.0 + wind * 18.0, -3.0)
-	_smokes = _smokes.filter(func(e: Dictionary) -> bool: return is_instance_valid(e["p"]))
+		p.gravity = Vector2(4.0 + wind * 18.0, -3.0)
+	_sparks = _sparks.filter(func(e: Dictionary) -> bool: return is_instance_valid(e["p"]))
 	for e in _sparks:
 		var s: CPUParticles2D = e["p"]
-		if not is_instance_valid(s):
-			continue
 		var b := sim.by_id(int(e["b"]))
 		var busy := false
 		if not b.is_empty():

@@ -48,6 +48,8 @@ var _goal_btn: Button
 var _gate_btn: Button
 var _card: PanelContainer
 var _card_box: VBoxContainer
+var _card_scroll: ScrollContainer
+const BOTTOM_H := 16.0   # altura da barra de baixo
 var _card_kind: String = ""
 var _card_id: int = -1
 var _toast: Label
@@ -76,12 +78,19 @@ func setup(s: VilaSim) -> void:
 	_build_top()
 	_build_bottom()
 	_card = PanelContainer.new()
+	_card.anchor_left = 1.0
+	_card.anchor_right = 1.0
+	_card.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	_card.visible = false
 	_card.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(_card)
+	# O conteúdo fica num rolador: cartão alto demais rola em vez de sair da janela.
+	_card_scroll = ScrollContainer.new()
+	_card_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_card.add_child(_card_scroll)
 	_card_box = VBoxContainer.new()
 	_card_box.add_theme_constant_override("separation", 2)
-	_card.add_child(_card_box)
+	_card_scroll.add_child(_card_box)
 	_toast = Label.new()
 	_toast.visible = false
 	_toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -551,6 +560,10 @@ func refresh() -> void:
 	var over_card := _card.visible and _card.get_global_rect().grow(3).has_point(mp)
 	if _card.visible and not held and not over_card:
 		_rebuild_card()
+		# Texto que terminou de quebrar linha depois: ajusta o tamanho sem refazer nada.
+		var inner := _card_box.get_combined_minimum_size()
+		if _card_target(inner) != _card.size:
+			_fit_card(inner)
 	if _manage.visible:
 		_manage.position = Vector2(2, 16)
 		_manage.size = Vector2(150, H - 34)
@@ -573,8 +586,15 @@ func toast(text: String) -> void:
 		_toast.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		_toast.custom_minimum_size = Vector2(maxw, 0)
 		_toast.size = Vector2.ZERO
+	# Fica no espaço livre entre o painel da esquerda e o cartão aberto; se não couber ali,
+	# desce para cima da barra de baixo (antes ele cobria o título do cartão).
 	var x0 := 154.0 if _manage.visible else 0.0
-	_toast.position = Vector2(roundf(x0 + (W - x0) / 2.0 - _toast.get_minimum_size().x / 2.0), 18)
+	var x1 := _card.position.x if _card.visible else W
+	var ts := _toast.get_minimum_size()
+	if ts.x <= x1 - x0 - 4.0:
+		_toast.position = Vector2(roundf(x0 + (x1 - x0) / 2.0 - ts.x / 2.0), 18)
+	else:
+		_toast.position = Vector2(roundf(W / 2.0 - ts.x / 2.0), H - BOTTOM_H - ts.y - 2.0)
 
 
 ## above: em cima do cursor (no posicionamento o fantasma do prédio fica embaixo e à direita).
@@ -765,16 +785,37 @@ func _header(ic: String, title: String, sub: String = "") -> void:
 func _place_card() -> void:
 	if _offscreen:
 		return
-	await get_tree().process_frame
-	if not is_instance_valid(_card):
-		return
-	_card.size = Vector2.ZERO
-	var s := _card.get_combined_minimum_size()
-	_card.size = s
-	if _card_kind == "gate":
-		_card.position = Vector2(roundf(W / 2.0 - s.x / 2.0), 17)
-	else:
-		_card.position = Vector2(W - s.x - 2.0, 17)
+	# Texto que quebra linha só sabe a altura depois de ter largura: confere por alguns quadros.
+	var last := Vector2(-1, -1)
+	for i in 3:
+		await get_tree().process_frame
+		if not is_instance_valid(_card) or not _card.visible:
+			return
+		var inner := _card_box.get_combined_minimum_size()
+		if inner == last:
+			return
+		last = inner
+		_fit_card(inner)
+
+
+## Tamanho do conteúdo + borda do painel, sem passar da faixa entre a barra de cima e a de baixo.
+func _card_target(inner: Vector2) -> Vector2:
+	var pad := _card.get_theme_stylebox("panel").get_minimum_size()
+	var avail := H - 17.0 - BOTTOM_H - 1.0
+	var tall := inner.y + pad.y > avail
+	var bar := _card_scroll.get_v_scroll_bar().get_combined_minimum_size().x + 1.0 if tall else 0.0
+	return Vector2(minf(inner.x + pad.x + bar, W - 4.0), minf(inner.y + pad.y, avail))
+
+
+func _fit_card(inner: Vector2) -> void:
+	var pad := _card.get_theme_stylebox("panel").get_minimum_size()
+	var s := _card_target(inner)
+	_card_scroll.custom_minimum_size = s - pad
+	# Preso na direita: se o conteúdo ainda crescer, o cartão cresce para a esquerda, nunca para fora.
+	_card.offset_right = -2.0
+	_card.offset_left = -2.0 - s.x
+	_card.offset_top = 17.0
+	_card.offset_bottom = 17.0 + s.y
 
 
 ## Refaz o cartão fora da tela e só troca se mudou alguma coisa. Antes ele era refeito no lugar a
@@ -795,9 +836,9 @@ func _rebuild_card() -> void:
 		_card_box = old_box
 		build_btns = old_btns
 		return
-	_card.remove_child(old_box)
+	_card_scroll.remove_child(old_box)
 	old_box.queue_free()
-	_card.add_child(_card_box)
+	_card_scroll.add_child(_card_box)
 	_place_card()
 
 
@@ -1053,6 +1094,20 @@ func _passive_lines(passives: Array, box: Container, width: float = 92.0) -> voi
 		box.add_child(_wrap(txt, RAR_COLOR[rar], width))
 
 
+## Versão curta das habilidades: nome na cor da raridade e o número; a frase inteira vai na dica.
+func _passive_short(passives: Array, box: Container) -> void:
+	if passives.is_empty():
+		box.add_child(_label(I18n.t("UI_NO_PASSIVES"), C_MUTED))
+	for ps in passives:
+		var rar := String(ps["rar"])
+		var id := String(ps["id"])
+		var pct := int(round(float(sim.bal["rarity"][rar]["bonus"]) * 100.0))
+		var row := _row([_label(I18n.t("PAS_" + id), RAR_COLOR[rar]), _label(("-%d%%" if id == "come_pouco" else "+%d%%") % pct, RAR_COLOR[rar])])
+		row.tooltip_text = "%s %s: %s" % [I18n.t("PAS_" + id), I18n.t("RAR_" + rar), fmt("PASD_" + id, {"p": pct})]
+		row.mouse_filter = Control.MOUSE_FILTER_PASS
+		box.add_child(row)
+
+
 func _card_person() -> void:
 	var p := sim.person(_card_id)
 	if p.is_empty():
@@ -1124,8 +1179,11 @@ func _card_gate() -> void:
 		var c: Dictionary = sim.gate_group[i]
 		var pc := PanelContainer.new()
 		var v := VBoxContainer.new()
-		v.custom_minimum_size = Vector2(96, 0)
+		v.custom_minimum_size = Vector2(84, 0)
 		pc.add_child(v)
+		# A fala vai na dica (rosto, nome e coluna); no cartão ficam só ícones e números curtos.
+		var bio := "\"" + I18n.t("BIO_%d" % int(c["bio"])) + "\""
+		pc.tooltip_text = bio
 		var face := TextureRect.new()
 		var at := AtlasTexture.new()
 		at.atlas = load(ART + "person_%d.png" % int(c["look"]))
@@ -1133,13 +1191,22 @@ func _card_gate() -> void:
 		face.texture = at
 		face.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
 		face.custom_minimum_size = Vector2(16, 16)
-		v.add_child(_row([face, _label(String(c["name"]), C_AMBER)]))
-		v.add_child(_wrap("\"" + I18n.t("BIO_%d" % int(c["bio"])) + "\"", C_MUTED, 92))
+		var nr := _row([face, _label(String(c["name"]), C_AMBER)])
+		nr.tooltip_text = bio
+		nr.mouse_filter = Control.MOUSE_FILTER_PASS
+		v.add_child(nr)
 		v.add_child(HSeparator.new())
-		_passive_lines(c["passives"], v)
+		_passive_short(c["passives"], v)
 		var br: Dictionary = c.get("brings", {})
 		for r in br:
-			v.add_child(_row([_icon_rect(r), _label(fmt("UI_BRINGS", {"n": br[r], "r": I18n.t("RES_" + r)}), C_GOOD)]))
+			var brow := _row([_icon_rect(r), _label("+%d" % int(br[r]), C_GOOD)])
+			brow.tooltip_text = fmt("UI_BRINGS", {"n": br[r], "r": I18n.t("RES_" + r)})
+			brow.mouse_filter = Control.MOUSE_FILTER_PASS
+			v.add_child(brow)
+		# Empurra o botão para o fundo: os três "Escolher" ficam na mesma linha.
+		var fill := Control.new()
+		fill.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		v.add_child(fill)
 		var pick := Button.new()
 		pick.text = I18n.t("UI_CHOOSE")
 		pick.disabled = free <= 0
@@ -1159,6 +1226,16 @@ func _card_build() -> void:
 	build_btns.clear()
 	_header("martelo", I18n.t("UI_BUILD"))
 	var locked: Array[String] = []
+	# Muitos prédios liberados: duas colunas, para a lista caber na altura da janela.
+	var n_open := 0
+	for tp in sim.bal["build_order"]:
+		if sim.unlocked(String(tp)):
+			n_open += 1
+	var grid := GridContainer.new()
+	grid.columns = 2 if n_open > 7 else 1
+	grid.add_theme_constant_override("h_separation", 6)
+	grid.add_theme_constant_override("v_separation", 2)
+	_card_box.add_child(grid)
 	for tp in sim.bal["build_order"]:
 		var type := String(tp)
 		if not sim.unlocked(type):
@@ -1199,11 +1276,24 @@ func _card_build() -> void:
 		var row := _row(parts)
 		row.tooltip_text = btn.tooltip_text
 		row.mouse_filter = Control.MOUSE_FILTER_PASS
-		_card_box.add_child(row)
+		grid.add_child(row)
+	# Trancados: uma linha por nível da torre ("🔒 Torre 3: Praça, Oficina…"); o que cada um faz vai na dica.
+	var by_t := {}
 	for type in locked:
 		var need: int = int(sim.def(type).get("tower", 1))
-		var lrow := _row([_icon_rect("cadeado"), _label("%s · %s" % [bname(type), fmt("UI_LOCKED_TOWER", {"n": need})], C_MUTED)])
-		lrow.tooltip_text = I18n.t("BD_" + type)
+		if not by_t.has(need):
+			by_t[need] = []
+		(by_t[need] as Array).append(type)
+	var ts: Array = by_t.keys()
+	ts.sort()
+	for need in ts:
+		var names: PackedStringArray = []
+		var tips: PackedStringArray = []
+		for type in by_t[need]:
+			names.append(bname(type))
+			tips.append(bname(type) + ": " + I18n.t("BD_" + type))
+		var lrow := _row([_icon_rect("cadeado"), _wrap(fmt("UI_LOCKED_TOWER", {"n": need}) + ": " + ", ".join(names), C_MUTED, 136)])
+		lrow.tooltip_text = "\n".join(tips)
 		lrow.mouse_filter = Control.MOUSE_FILTER_PASS
 		_card_box.add_child(lrow)
 

@@ -108,5 +108,24 @@ func _initialize() -> void:
 	_check(hud._card.get_global_rect().encloses(btm.get_global_rect()), "o último botão do cartão cabe dentro dele")
 	for i in 30:
 		await process_frame
+	# Portão com o grupo mais comprido (2 habilidades e "traz" em todos): os três "Escolher" cabem na tela.
+	sim.gate_group.clear()
+	for nm in ["Lúcia", "Jonas", "Edu"]:
+		sim.gate_group.append({"name": nm, "look": 1, "bio": 1, "brings": {"agua": 7},
+				"passives": [{"id": "horta", "rar": "rara"}, {"id": "pernas", "rar": "excelente"}]})
+	hud.show_gate()
+	for i in 4:
+		await process_frame
+	var vp: Rect2 = hud.get_viewport_rect()
+	var area := Rect2(0, 16, vp.size.x, vp.size.y - 32)
+	_check(area.encloses(hud._card.get_global_rect()), "cartão do portão fica entre as barras (%s)" % str(hud._card.get_global_rect()))
+	var picks := 0
+	var stack: Array = [hud._card_box]
+	while not stack.is_empty():
+		var n: Node = stack.pop_back()
+		stack.append_array(n.get_children())
+		if n is Button and (n as Button).text == root.get_node("I18n").t("UI_CHOOSE") and hud._card.get_global_rect().encloses((n as Button).get_global_rect()):
+			picks += 1
+	_check(picks == 3, "os três botões Escolher aparecem inteiros (%d)" % picks)
 	print("FALHAS: ", fails)
 	quit(1 if fails > 0 else 0)

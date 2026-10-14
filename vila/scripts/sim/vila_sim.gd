@@ -1550,6 +1550,8 @@ func _make_group() -> void:
 	for p in people:
 		names.erase(String(p["name"]))
 	var ids: Array = bal["passives"].keys()
+	# Falas sem repetir dentro do mesmo grupo.
+	var bios: Array = range(int(bal["bios"]))
 	for k in 3:
 		var nm: String = String(names[_rng.randi_range(0, names.size() - 1)]) if not names.is_empty() else "?"
 		names.erase(nm)
@@ -1567,7 +1569,7 @@ func _make_group() -> void:
 			var amt: Array = bal["arrivals"]["brings_amount"]
 			brings[RES[_rng.randi_range(0, RES.size() - 1)]] = _rng.randi_range(int(amt[0]), int(amt[1]))
 		gate_group.append({"name": nm, "look": _rng.randi_range(1, 5), "passives": passives,
-				"brings": brings, "bio": _rng.randi_range(0, int(bal["bios"]) - 1)})
+				"brings": brings, "bio": bios.pop_at(_rng.randi_range(0, bios.size() - 1)) if not bios.is_empty() else 0})
 
 
 func _roll_rarity() -> String:
