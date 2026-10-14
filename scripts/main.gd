@@ -172,7 +172,6 @@ func _on_game_started(is_new: bool) -> void:
 	_bunker.connect("man_clicked", func() -> void: _open_card("man", {"kind": "man"}))
 	_bunker.connect("antenna_clicked", func() -> void: _open_card("antenna", {"kind": "antenna"}))
 	_bunker.connect("generator_clicked", func(id: int) -> void: _open_card("gen", {"kind": "instance", "id": id}, id))
-	add_child(DebugSpeed.new())   # TESTE: F9 muda a velocidade, F10 pula 1 h. Remover antes do lançamento (ver scripts/debug)
 	_hud = StatusHud.new()
 	_hud.clicked.connect(func() -> void: _drawer.open("build"))
 	_hud.man_clicked.connect(func() -> void:

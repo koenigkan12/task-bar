@@ -24,11 +24,11 @@
     "demolish_refund": 1.0
   },
   "crops": {
-    "batata": { "cycle_min": 3, "price": 0.6, "requires_antenna": 1, "greenhouse_only": false },
-    "feijao": { "cycle_min": 8, "price": 2.6, "requires_antenna": 2, "greenhouse_only": false },
-    "tomate": { "cycle_min": 15, "price": 7.0, "requires_antenna": 4, "greenhouse_only": true }
+    "batata": { "cycle_min": 3, "price": 4.8, "requires_antenna": 1, "greenhouse_only": false },
+    "feijao": { "cycle_min": 8, "price": 21.0, "requires_antenna": 2, "greenhouse_only": false },
+    "tomate": { "cycle_min": 15, "price": 56.0, "requires_antenna": 4, "greenhouse_only": true }
   },
-  "visits_per_day": { "1": 3, "2": 3, "3": 5, "4": 5, "5": 6 },
+  "visits_per_day": { "1": 24, "2": 24, "3": 32, "4": 32, "5": 40 },
   "box_capacity": { "balde": 560, "calha": 880, "roldana": 1360, "esteira": 2000 },
   "carry_min": { "balde": 0.2, "calha": 0.1, "roldana": 0.04, "esteira": 0.007 },
   "auto_water_plots": { "lata": 0, "gotejador": 4, "cisterna": 10, "bomba": 99 },
@@ -169,8 +169,8 @@
     "order": ["vaso:4", "gotejador", "calha", "antena@2", "moinho", "comodo2", "canteiro:1", "canteiro:2", "gotejador", "antena@3", "prateleira", "bateria", "antena@4", "cisterna", "estufa", "roldana", "comodo3", "painel", "antena@5", "bomba", "esteira"]
   },
   "test_targets": {
-    "antenna5_day_min": 1.3,
-    "antenna5_day_max": 2.6,
-    "antenna_day_hint": { "2": 0.5, "3": 0.8, "4": 1.4, "5": 1.8 }
+    "antenna5_day_min": 1.0,
+    "antenna5_day_max": 2.2,
+    "antenna_day_hint": { "2": 0.4, "3": 0.5, "4": 0.8, "5": 1.4 }
   }
 }

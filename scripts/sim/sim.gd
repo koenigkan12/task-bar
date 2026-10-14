@@ -100,8 +100,6 @@ var _step: float = 10.0
 var _wake: float = 360.0
 var _sleep: float = 1320.0
 var _price_scale: float = 1.0
-## Tempo acelerado (modo de teste): sem o sinal de cada colheita, para não inundar a cena e o áudio.
-var fast_forward: bool = false
 var _warn_seen: Dictionary = {"food": false, "water": false}   # o jogador viu o vermelho nesta sessão
 
 
@@ -211,18 +209,6 @@ func advance(game_minutes: float) -> void:
 
 func debug_advance_minutes(m: float) -> void:
 	advance(m)
-
-
-## Modo de teste: avança `m` minutos de uma vez, sem os sinais finos (como no catch-up), e avisa o essencial.
-func debug_skip(m: float) -> void:
-	var was_dead: bool = _dead
-	_muted = true
-	advance(m)
-	_muted = false
-	if _dead and not was_dead:
-		died.emit(_death_days)
-	diary_changed.emit()
-	state_changed.emit()
 
 
 func set_time_scale(_x: float) -> void:
@@ -482,7 +468,7 @@ func _harvest(p: Dictionary) -> void:
 	p["first"] = false
 	var inst := _inst_by_id(int(p["inst"]))
 	p["crop"] = _resolve_crop(String(inst.get("item", "")), String(inst.get("crop_order", "")))
-	if not _muted and not fast_forward:
+	if not _muted:
 		plot_harvested.emit(int(p["id"]))
 
 

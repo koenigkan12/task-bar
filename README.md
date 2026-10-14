@@ -40,7 +40,6 @@ Tudo é com o mouse.
 | Mover a janela | Arraste pela alça (ícone da mão); ela fica dentro da área útil do monitor |
 | Recolher | Botão de esconder na alça: a janela vira uma aba pequena na borda de baixo e o jogo continua. Clique na aba para voltar |
 | Sempre por cima, resetar posição, sair | Menu do ícone na bandeja do Windows (perto do relógio) |
-| **Teste:** acelerar o tempo | **F9** alterna 1x → 10x → 60x (selo "x10" no canto de baixo da faixa); **F10** pula 1 hora. Modo de teste, sem save: para tirar antes do lançamento apague `scripts/debug/` e a linha `DebugSpeed` em `scripts/main.gd` |
 | Janela sumiu da tela | Menu da bandeja → Resetar posição, ou rode `QuantosDias.exe --reset-window` |
 
 Esc fecha a gaveta ou cancela o posicionamento; com a gaveta fechada, abre as Opções. Fechar o jogo e voltar depois: o tempo passado conta (até 72 h) e a gaveta mostra um resumo do que aconteceu.
