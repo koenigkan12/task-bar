@@ -233,6 +233,9 @@ func _open_test_card() -> void:
 		"place":
 			_start_placing("horta")
 			_test_cell = AutoPlayer.spot(sim, "horta")
+			if Game.args.has("cell"):   # --cell=dx,dy: desloca do lugar livre (para ver célula bloqueada)
+				var cs := String(Game.args["cell"]).split(",")
+				_test_cell += Vector2i(int(cs[0]), int(cs[1]))
 		"options": _show_options()
 		"merchant":
 			if not sim.merchant_here():
