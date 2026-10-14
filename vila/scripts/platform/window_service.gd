@@ -18,6 +18,9 @@ signal first_interaction()
 const COLLAPSED_SIZE: Vector2i = Vector2i(48, 16)
 ## Quanto da janela (em pixels de tela) precisa continuar visível num monitor.
 const MIN_VISIBLE: Vector2i = Vector2i(96, 24)
+## Altura lógica mínima ao puxar a borda: dá para deixar a janela bem mais baixa que o tamanho
+## inicial (a largura mínima continua a inicial: a barra de cima precisa dela inteira).
+const MIN_H_LOGICAL: int = 120
 const IDLE_SECONDS: float = 10.0
 const FPS_ACTIVE: int = 30
 const FPS_IDLE: int = 12
@@ -536,7 +539,7 @@ func _target_logical() -> Vector2i:
 	var b := _base_size
 	if _user_px != Vector2i.ZERO:
 		var s: int = maxi(ui_scale, 1)
-		b = Vector2i(maxi(_base_size.x, _user_px.x / s), maxi(_base_size.y, _user_px.y / s))
+		b = Vector2i(maxi(_base_size.x, _user_px.x / s), maxi(mini(_base_size.y, MIN_H_LOGICAL), _user_px.y / s))
 	if _drawer_open:
 		return Vector2i(maxi(b.x, _drawer_min_w), b.y + _drawer_h)
 	return b
@@ -548,7 +551,7 @@ func _min_logical() -> Vector2i:
 		return COLLAPSED_SIZE
 	if _drawer_open:
 		return Vector2i(maxi(_base_size.x, _drawer_min_w), _base_size.y + _drawer_h)
-	return _base_size
+	return Vector2i(_base_size.x, mini(_base_size.y, MIN_H_LOGICAL))
 
 
 func _fetch_screens() -> Dictionary:
@@ -606,7 +609,7 @@ func _startup_layout() -> void:
 		var pick: Dictionary = pick_saved(_sget("window_pos", {}), sc["full"], idx)
 		if not pick.is_empty():
 			var pidx: int = int(pick["screen"])
-			var s: int = resolve_scale(_sget("ui_scale", "auto"), _min_logical(), (sc["full"][pidx] as Rect2i).size.y, (areas[pidx] as Rect2i).size)
+			var s: int = resolve_scale(_sget("ui_scale", "auto"), _base_size, (sc["full"][pidx] as Rect2i).size.y, (areas[pidx] as Rect2i).size)
 			ui_scale = s
 			var cand_anchor: Vector2i = anchor_from_saved(pick, areas[pidx])
 			var v: Dictionary = validate_rect(rect_from_anchor(cand_anchor, _target_logical() * s), areas)
@@ -632,7 +635,8 @@ func _apply_layout(force: bool = false) -> void:
 	if idx < 0:
 		idx = int(sc["primary"]) if _anchor == Vector2i.ZERO else nearest_screen(probe, areas)
 	_screen_idx = idx
-	var scale: int = resolve_scale(_sget("ui_scale", "auto"), _min_logical(), (sc["full"][idx] as Rect2i).size.y, (areas[idx] as Rect2i).size)
+	# A escala sai do tamanho inicial, não do mínimo: encolher a janela não aumenta os pixels.
+	var scale: int = resolve_scale(_sget("ui_scale", "auto"), _base_size if not _collapsed else _min_logical(), (sc["full"][idx] as Rect2i).size.y, (areas[idx] as Rect2i).size)
 	ui_scale = scale
 	logical = _target_logical()
 	var usable_l: Vector2i = (areas[idx] as Rect2i).size / scale
