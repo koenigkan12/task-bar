@@ -1,0 +1,189 @@
+key,pt_BR,en
+ui.btn.ok,OK,OK
+ui.btn.cancel,Cancelar,Cancel
+ui.btn.close,Fechar,Close
+ui.btn.back,Voltar,Back
+ui.btn.yes,Sim,Yes
+ui.btn.no,Não,No
+ui.btn.buy,Comprar,Buy
+ui.btn.place,Colocar aqui,Place here
+ui.btn.move,Mover,Move
+ui.btn.demolish,Desmontar,Dismantle
+ui.btn.upgrade,Melhorar,Upgrade
+ui.btn.dig,Escavar,Dig
+ui.btn.hide,Esconder,Hide
+ui.btn.show,Mostrar,Show
+ui.btn.mark_read,Marcar lidas,Mark as read
+ui.btn.more,Ver mais,See more
+ui.btn.next,Próximo,Next
+ui.scrap,Sucata,Scrap
+ui.scrap.value,{n} sucata,{n} scrap
+ui.day,Dia {n},Day {n}
+ui.clock,{h}h{m},{h}:{m}
+ui.box,Caixa,Box
+ui.antenna,Antena {n},Antenna {n}
+ui.antenna.next,Próxima antena,Next antenna
+ui.antenna.max,Antena no máximo,Antenna maxed out
+ui.antenna.cost,Melhorar {n},Upgrade {n}
+ui.cost,Custo {n},Cost {n}
+ui.building,Em obra,Under construction
+ui.locked,Bloqueado,Locked
+ui.new,Novo,New
+ui.unread,{n} novas,{n} new
+ui.empty,Nada por aqui,Nothing here
+ui.loading,Abrindo…,Opening…
+ui.version,Versão {v},Version {v}
+ui.handle,Arrastar,Drag
+ui.place.pick,Escolha o lugar,Pick a spot
+ui.place.invalid,Não cabe aqui,Doesn't fit here
+ui.demolish.confirm,Desmontar e recuperar a sucata?,Dismantle and get the scrap back?
+ui.radio.empty,Só chiado por enquanto.,Just static for now.
+ui.diary.empty,O diário está vazio.,The diary is empty.
+ui.diary.while_away,Enquanto você estava fora,While you were away
+title.name,Quantos Dias?,Quantos Dias?
+title.subtitle,"Um rádio, um bunker, uma promessa.","A radio, a bunker, a promise."
+title.btn.continue,Continuar,Continue
+title.btn.new,Novo jogo,New game
+title.btn.options,Opções,Options
+title.btn.quit,Sair,Quit
+title.btn.credits,Créditos,Credits
+title.save_info,Dia {day} · Antena {antenna},Day {day} · Antenna {antenna}
+title.new.title,Começar de novo?,Start over?
+title.new.text,Um novo jogo apaga o salvo.,A new game erases your save.
+title.new.btn,Começar,Start
+title.delete.title,Apagar progresso?,Erase progress?
+title.delete.text,Isso apaga o jogo salvo. Não dá pra desfazer.,This erases your save. It can't be undone.
+title.delete.btn,Apagar,Erase
+title.credits.title,Créditos,Credits
+title.credits.text,Feito com sucata e carinho.,Made with scrap and care.
+opt.title,Opções,Options
+opt.language,Idioma,Language
+opt.language.auto,Automático,Automatic
+opt.language.pt,Português,Português
+opt.language.en,English,English
+opt.audio,Áudio,Audio
+opt.audio.silent,Silencioso,Silent
+opt.audio.ambient,Ambiente,Ambient
+opt.audio.full,Completo,Full
+opt.audio.help,Ambiente deixa o rádio só em texto.,Ambient keeps the radio text-only.
+opt.volume,Volume,Volume
+opt.scale,Tamanho da janela,Window size
+opt.scale.auto,Auto,Auto
+opt.scale.1,1×,1×
+opt.scale.2,2×,2×
+opt.scale.3,3×,3×
+opt.scale.4,4×,4×
+opt.on_top,Sempre por cima,Always on top
+opt.energy,Economia de energia,Power saving
+opt.energy.auto,Automática,Automatic
+opt.energy.normal,Normal,Normal
+opt.energy.low,Máxima,Maximum
+opt.energy.help,"Menos quadros por segundo, menos bateria.","Fewer frames per second, less battery."
+opt.text_size,Tamanho do texto,Text size
+opt.text_size.normal,Normal,Normal
+opt.text_size.large,Grande,Large
+opt.text_size.huge,Enorme,Huge
+opt.reduce_flicker,Reduzir piscadas,Reduce flicker
+opt.reduce_flicker.help,A lâmpada deixa de piscar.,The lamp stops flickering.
+opt.tray,Ícone na bandeja,Tray icon
+opt.reset_window,Resetar posição,Reset position
+opt.reset_window.btn,Resetar,Reset
+opt.erase,Apagar progresso,Erase progress
+opt.erase.btn,Apagar,Erase
+opt.erase.help,Volta ao primeiro dia. Sem volta.,Back to day one. No undo.
+opt.on,Ligado,On
+opt.off,Desligado,Off
+hint.drag,Arraste a alça para mover a janela.,Drag the handle to move the window.
+hint.hide,Esconder: Joaquim segue trabalhando.,Hide: Joaquim keeps working.
+hint.radio,O rádio guarda tudo que Joaquim ouviu.,The radio keeps everything Joaquim heard.
+hint.box,A caixa da escotilha troca cestos por sucata.,The hatch box trades baskets for scrap.
+hint.build,"Escolha a máquina, depois o lugar.","Pick a machine, then a spot."
+hint.demolish,Desmontar devolve toda a sucata.,Dismantling gives all the scrap back.
+hint.move,Mover não custa nada.,Moving costs nothing.
+hint.pra_que,As etiquetas mostram pra que serve cada coisa.,The tags show what each thing is for.
+hint.power,Luz piscando? Falta energia.,Flickering light? Not enough power.
+hint.offline,"Com o jogo fechado, a vida segue por um tempo.","With the game closed, life goes on for a while."
+hint.first_run,Joaquim planta e leva a colheita pra caixa.,Joaquim plants and hauls the harvest to the box.
+hint.goal,Fixe um objetivo e a gente avisa quando der.,Pin a goal and we'll tell you when it's ready.
+hint.planting,A cultura escolhida vale pra sempre naquele vaso.,The crop you pick stays in that pot for good.
+hint.dig,Escavar abre sala nova. Dá pra ter até três.,Digging opens a new room. Up to three.
+tab.build,Construir,Build
+tab.radio,Rádio,Radio
+tab.options,Opções,Options
+tab.filter.all,Tudo,All
+toast.item_done,{item} ficou pronto,{item} is ready
+toast.item_started,{item} em obra,{item} under construction
+toast.item_removed,{item} desmontado,{item} dismantled
+toast.item_moved,{item} mudou de lugar,{item} moved
+toast.dug,Joaquim terminou de escavar,Joaquim finished digging
+toast.box_full,Caixa cheia: clique nela,Box full: click it
+toast.no_power,Sem energia: veja os geradores,Out of power: check generators
+toast.antenna,Antena nível {n},Antenna level {n}
+toast.radio_new,Fala nova no rádio,New voice on the radio
+toast.not_enough,Faltam {n} sucata,{n} more scrap needed
+toast.goal_ready,Dá pra comprar: {item},You can buy: {item}
+toast.house_item,A casa ganhou: {item},The place got: {item}
+toast.hungry,Joaquim está com fome,Joaquim is hungry
+toast.saved,Jogo salvo,Game saved
+toast.save_failed,Não deu pra salvar,Couldn't save
+toast.window_reset,Janela no lugar de novo,Window back in place
+welcome.title,Bem-vindo de volta,Welcome back
+welcome.hours,Passaram {hours} h.,{hours} h went by.
+welcome.visits,{visits} trocas na caixa,{visits} trades at the box
+welcome.scrap,+{scrap} sucata,+{scrap} scrap
+welcome.harvested,{harvested} cestos colhidos,{harvested} baskets picked
+welcome.nights,Joaquim dormiu {nights} noites.,Joaquim slept {nights} nights.
+welcome.lines,{n} falas novas no rádio,{n} new voices on the radio
+welcome.capped,A vida só andou até {hours} h.,Life only moved on for up to {hours} h.
+welcome.quiet,Tudo calmo por aqui.,All quiet here.
+welcome.btn,Seguir,Go on
+goal.btn.pin,Meta,Goal
+goal.ready,Dá pra comprar,Ready to buy
+crop.pick,Escolher cultura,Pick a crop
+crop.pick.help,Vale pra toda a estrutura.,Applies to the whole structure.
+crop.locked,Antena {n} libera,Unlocked by antenna {n}
+crop.greenhouse_only,Só na estufa,Greenhouse only
+crop.current,Plantando: {crop},Growing: {crop}
+crop.price,Cesto vale {n},Basket is worth {n}
+crop.cycle,Ciclo de {min} min,{min} min cycle
+buy.cost,Custo {n},Cost {n}
+buy.cols,Ocupa {n} colunas,Takes {n} columns
+buy.cols.one,Ocupa 1 coluna,Takes 1 column
+buy.cols.none,Não ocupa espaço,Takes no room
+buy.power,Usa {n} de energia,Uses {n} power
+buy.build_time,Obra: {min} min,Build: {min} min
+buy.replaces,Troca a atual,Replaces the old one
+buy.pick_spot,Escolha o lugar,Pick a spot
+buy.confirm,Comprar {item} por {cost}?,Buy {item} for {cost}?
+buy.post_contact,Só depois do contato,Only after contact
+buy.tier,Nível {n},Tier {n}
+buy.owned,Você tem {n},You have {n}
+buy.refund,Devolve {n} sucata,Refunds {n} scrap
+buy.surface,Fica lá em cima,Goes up top
+status.sleeping,Dormindo,Sleeping
+status.working,Trabalhando,Working
+status.building,Em obra,Building
+status.digging,Escavando,Digging
+status.hungry,Com fome,Hungry
+status.eating,Comendo,Eating
+status.resting,Descansando,Resting
+status.pedaling,Pedalando,Pedaling
+status.watering,Regando,Watering
+status.harvesting,Colhendo,Harvesting
+status.carrying,Levando cestos,Carrying baskets
+status.idle,À toa,Idling
+status.no_power,Sem energia,No power
+status.box_full,Caixa cheia,Box full
+status.busy,Ocupado {pct}%,Busy {pct}%
+tray.show,Mostrar,Show
+tray.collapse,Recolher,Collapse
+tray.reset,Resetar posição,Reset position
+tray.on_top,Sempre por cima,Always on top
+tray.quit,Sair,Quit
+ending.credits,Obrigado por esperar com Joaquim.,Thanks for waiting with Joaquim.
+buy.have,{cost} · tem {have},{cost} · have {have}
+opt.quit,Fechar o jogo,Close the game
+opt.quit.btn,Sair,Quit
+opt.quit.help,Salva sozinho antes de fechar.,Saves by itself before closing.
+opt.plates,Nomes dos cômodos,Room names
+opt.plates.help,As placas em cima de cada cômodo.,The signs above each room.

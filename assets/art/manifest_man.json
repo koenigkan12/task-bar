@@ -1,0 +1,180 @@
+{
+  "man_idle": {
+    "file": "man/man_idle.png",
+    "frame_w": 32,
+    "frame_h": 32,
+    "frames": 4,
+    "fps": 3,
+    "anchor": [
+      16,
+      31
+    ]
+  },
+  "man_walk": {
+    "file": "man/man_walk.png",
+    "frame_w": 32,
+    "frame_h": 32,
+    "frames": 6,
+    "fps": 8,
+    "anchor": [
+      16,
+      31
+    ],
+    "speed_px_s": 24.0
+  },
+  "man_carry": {
+    "file": "man/man_carry.png",
+    "frame_w": 32,
+    "frame_h": 32,
+    "frames": 6,
+    "fps": 8,
+    "anchor": [
+      16,
+      31
+    ],
+    "speed_px_s": 16.0
+  },
+  "man_crouch": {
+    "file": "man/man_crouch.png",
+    "frame_w": 32,
+    "frame_h": 32,
+    "frames": 4,
+    "fps": 4,
+    "anchor": [
+      16,
+      31
+    ]
+  },
+  "man_water": {
+    "file": "man/man_water.png",
+    "frame_w": 32,
+    "frame_h": 32,
+    "frames": 4,
+    "fps": 5,
+    "anchor": [
+      16,
+      31
+    ]
+  },
+  "man_hammer": {
+    "file": "man/man_hammer.png",
+    "frame_w": 32,
+    "frame_h": 32,
+    "frames": 4,
+    "fps": 6,
+    "anchor": [
+      16,
+      31
+    ]
+  },
+  "man_dig": {
+    "file": "man/man_dig.png",
+    "frame_w": 32,
+    "frame_h": 32,
+    "frames": 4,
+    "fps": 6,
+    "anchor": [
+      16,
+      31
+    ]
+  },
+  "man_pedal": {
+    "file": "man/man_pedal.png",
+    "frame_w": 32,
+    "frame_h": 32,
+    "frames": 4,
+    "fps": 8,
+    "anchor": [
+      16,
+      31
+    ]
+  },
+  "man_sleep": {
+    "file": "man/man_sleep.png",
+    "frame_w": 32,
+    "frame_h": 32,
+    "frames": 2,
+    "fps": 1,
+    "anchor": [
+      16,
+      31
+    ]
+  },
+  "man_sit_read": {
+    "file": "man/man_sit_read.png",
+    "frame_w": 32,
+    "frame_h": 32,
+    "frames": 4,
+    "fps": 2,
+    "anchor": [
+      16,
+      31
+    ]
+  },
+  "man_sit_listen": {
+    "file": "man/man_sit_listen.png",
+    "frame_w": 32,
+    "frame_h": 32,
+    "frames": 4,
+    "fps": 2,
+    "anchor": [
+      16,
+      31
+    ]
+  },
+  "man_nap": {
+    "file": "man/man_nap.png",
+    "frame_w": 32,
+    "frame_h": 32,
+    "frames": 2,
+    "fps": 1,
+    "anchor": [
+      16,
+      31
+    ]
+  },
+  "man_write": {
+    "file": "man/man_write.png",
+    "frame_w": 32,
+    "frame_h": 32,
+    "frames": 4,
+    "fps": 4,
+    "anchor": [
+      16,
+      31
+    ]
+  },
+  "man_photo": {
+    "file": "man/man_photo.png",
+    "frame_w": 32,
+    "frame_h": 32,
+    "frames": 2,
+    "fps": 1,
+    "anchor": [
+      16,
+      31
+    ]
+  },
+  "man_eat": {
+    "file": "man/man_eat.png",
+    "frame_w": 32,
+    "frame_h": 32,
+    "frames": 4,
+    "fps": 4,
+    "anchor": [
+      16,
+      31
+    ]
+  },
+  "man_look_up": {
+    "file": "man/man_look_up.png",
+    "frame_w": 32,
+    "frame_h": 32,
+    "frames": 2,
+    "fps": 1,
+    "anchor": [
+      16,
+      31
+    ]
+  }
+}

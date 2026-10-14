@@ -1,0 +1,115 @@
+key,pt_BR,en
+hud.ready,Comprar {name},Buy {name}
+hint.intro_build,Clique na meta lá em cima.,Click the goal up there.
+hint.intro_click,Clique nos vasos e na caixa.,Click the pots and the box.
+hud.box_sold,+{n} sucata,+{n} scrap
+hud.box_empty,Caixa vazia,Box is empty
+intro.1,Joaquim ficou sozinho num bunker. Ela ficou lá fora. O rádio é o único fio.,Joaquim was left alone in a bunker. She stayed outside. The radio is the only thread.
+intro.2,"Joaquim planta, rega e leva a colheita à caixa. A caixa vira sucata.","Joaquim plants, waters and hauls the harvest to the box. The box turns into scrap."
+intro.3,Você gasta a sucata em gambiarras e na antena. Cada nível traz uma voz.,You spend scrap on contraptions and the antenna. Each level brings a voice.
+intro.4,Joaquim precisa de você no começo: clique num vaso ou na caixa.,Joaquim needs you at first: click a pot or the box.
+intro.next,Próximo,Next
+intro.start,Começar,Start
+tut.1,1/4 Clique num vaso,1/4 Click a pot
+tut.2,2/4 Clique até ficar pronta,2/4 Click until it is ready
+tut.3,3/4 Clique na caixa,3/4 Click the box
+tut.4,4/4 Clique na meta,4/4 Click the goal
+plot.stage.0,Semente,Seed
+plot.stage.1,Brotando,Sprouting
+plot.stage.2,Crescendo,Growing
+plot.stage.3,Quase pronta,Almost ready
+plot.ready,Pronta,Ready
+plot.line,{crop} · {stage},{crop} · {stage}
+plot.eta,Colhe em ~{t},Harvest in ~{t}
+plot.gain,+1 cesto,+1 basket
+plot.asleep,Joaquim dorme,Joaquim is asleep
+plot.build,{item} · obra,{item} · building
+plot.build_eta,Pronto em {t},Ready in {t}
+plot.build_help,Clique: martelar,Click: hammer
+plot.dig_help,Clique: cavar,Click: dig
+plot.tend_help,Clique: cuidar,Click: tend
+hud.order_asleep,Joaquim dorme. Ajuda de manhã.,Joaquim is asleep. Help in the morning.
+hud.order_full,Fila cheia. Espere um pouco.,Queue full. Wait a moment.
+plot.helped,+{n}%,+{n}%
+plot.auto,Automático,Automatic
+hud.order_cap,Chega de ajuda por hoje.,Enough help for today.
+hud.order_auto,Já é automático.,Already automatic.
+man.name,Joaquim,Joaquim
+hud.scrap,{n} sucata,{n} scrap
+hud.missing,faltam {n},{n} to go
+hud.short,Faltam {n},{n} short
+hud.tip.ready,Clique: ver na gaveta,Click: open the drawer
+hud.tip.saving,Faltam {n} sucata,{n} more scrap
+card.wakes,Acorda {h}h,Wakes at {h}
+card.box.cap,Cabem {n},Holds {n}
+card.box.sell,Vender,Sell
+card.box.wait,Volta em {t},Back in {t}
+card.box.empty,Caixa vazia,Box empty
+card.box.off,Aguarde,Wait
+card.box.auto,Troca sozinho,Trades itself
+card.gen.ok,Sobra {n},{n} spare
+card.gen.lack,Falta {n}!,{n} short!
+card.gen.btn,Geradores,Generators
+card.antenna.max,Antena máxima,Top antenna
+card.antenna.btn,Melhorar,Upgrade
+hover.man,Joaquim · {act},Joaquim · {act}
+hover.radio_new,{n} novas,{n} new
+hover.box_sell,Vender {n} cestos,Sell {n} baskets
+hover.box_sell1,Vender 1 cesto,Sell 1 basket
+hover.box_empty,Sem cestos,No baskets
+hover.box_asleep,Joaquim dorme,Joaquim sleeps
+act.idle,à toa,idling
+act.sleep,dormindo,sleeping
+act.dig,escavando,digging
+act.hammer,martelando,hammering
+act.harvest,colhendo,harvesting
+act.pick,pegando cestos,picking baskets
+act.drop,levando cestos,hauling baskets
+act.water,regando,watering
+act.pedal,pedalando,pedaling
+act.eat,comendo,eating
+act.ler,lendo,reading
+act.cochilar,cochilando,napping
+act.ouvir_radio,ouvindo o rádio,listening
+act.escrever,escrevendo,writing
+act.olhar_foto,olhando a foto,looking at the photo
+act.sentar_junto,sentado,sitting
+act.despensa,na despensa,in the pantry
+time.now,agora,now
+time.h,{h}h,{h}h
+time.hm,{h}h{m},{h}h{m}
+time.min,{m}min,{m}min
+room.escotilha,Escotilha,Hatch
+room.horta,Horta,Garden
+room.oficina,Oficina,Workshop
+room.quarto,Quarto,Bedroom
+room.estufa,Estufa,Greenhouse
+room.quarto_dela,Quarto dela,Her room
+room.despensa,Despensa,Pantry
+card.now,Agora: {s},Now: {s}
+need.food,Comida,Food
+need.water,Água,Water
+need.sleep,Sono,Sleep
+need.food.ok,Come sozinho.,Eats on his own.
+need.food.warn,Acabando. Guarde cestos.,Running low. Keep baskets.
+need.food.bad,Sem comida! Colha cestos.,Out of food! Harvest baskets.
+need.water.ok,Bebe sozinho.,Drinks on his own.
+need.water.warn,Falta água. Veja a energia.,Water is short. Check the power.
+need.water.bad,Sem água! A bomba precisa de energia.,No water! The pump needs power.
+need.sleep.ok,Dorme à noite.,Sleeps at night.
+need.sleep.warn,Cansado. Dorme à noite.,Tired. Sleeps at night.
+need.sleep.bad,Exausto. Dorme à noite.,Worn out. Sleeps at night.
+need.left,Resolva em {t}.,Fix it in {t}.
+status.thirsty,Com sede,Thirsty
+hud.energy.ok,Energia: usa {use} de {have}.,Power: uses {use} of {have}.
+hud.energy.lack,Falta energia! Usa {use} e só tem {have}.,Out of power! Uses {use} but only {have}.
+hud.energy.bike,Ele pedala a bicicleta.,He pedals the bike.
+hud.energy.click,Clique: ver o gerador,Click: see the generator
+card.gen.bike,Ele pedala: gasta tempo dele.,He pedals: costs his time.
+card.gen.self,Gera sozinho.,Makes power on its own.
+card.gen.use,Usa {use} de {have},Uses {use} of {have}
+ending.death.title,Joaquim não aguentou.,Joaquim could not hold on.
+ending.death.line,Ele viveu {n} dias no bunker.,He lived {n} days in the bunker.
+ending.death.line.one,Ele viveu 1 dia no bunker.,He lived 1 day in the bunker.
+ending.death.restart,Recomeçar,Start over
+ending.death.diary,Ler o diário,Read the diary

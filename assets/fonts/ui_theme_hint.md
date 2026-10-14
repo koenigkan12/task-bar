@@ -1,0 +1,1 @@
+Carregar: `var f: FontFile = load("res://assets/fonts/PixelifySans.ttf")` (já importada sem suavização/hinting); no Theme: `theme.default_font = f` e `theme.default_font_size = 10`; nunca use tamanho fracionário nem `Control.scale` em Label.
