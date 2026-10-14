@@ -1,0 +1,94 @@
+{
+  "_comment": "Todo o balanceamento da vila. Tempos em segundos reais (o jogo usa o relógio real). Números de partida para o protótipo da torre 1 e 2.",
+  "map": { "w": 40, "h": 30, "seed": 7, "hatch": [18, 13], "tower": [22, 11], "gate": [36, 14], "road_row": 15, "clear_radius": 8.5 },
+  "time": {
+    "step_s": 0.25,
+    "offline_step_s": 4.0,
+    "offline_fraction": 0.2,
+    "offline_cap_h": 72,
+    "offline_min_s": 120,
+    "night_from_h": 22,
+    "night_to_h": 6,
+    "save_every_s": 30
+  },
+  "start": { "stock": { "comida": 16, "agua": 8, "madeira": 10, "sucata": 6 } },
+  "storage": { "hatch_cap": 40 },
+  "people": {
+    "speed_tiles_s": 2.4,
+    "carry": 4,
+    "eat_every_s": 240,
+    "drink_every_s": 200,
+    "hungry_speed": 0.5,
+    "rethink_s": 4
+  },
+  "forage": {
+    "madeira": { "work_s": 5, "yield": 3, "regrow_s": 900 },
+    "sucata": { "work_s": 6, "yield": 2 }
+  },
+  "rubble_amount": 8,
+  "horta_water_per_food": 0.5,
+  "no_water_horta_speed": 0.25,
+  "buildings": {
+    "torre": { "fp": [2, 2], "fixed": true },
+    "hatch": { "fp": [2, 2], "fixed": true, "beds": 1, "storage": true },
+    "gate": { "fp": [2, 2], "fixed": true, "walkable": true },
+    "poco": { "fp": [2, 2], "tower": 1, "res": "agua",
+      "levels": [ { "cost": { "madeira": 4, "sucata": 2 }, "time_s": 20, "slots": 1, "rate_s": 25 } ] },
+    "horta": { "fp": [2, 2], "tower": 1, "res": "comida",
+      "levels": [ { "cost": { "madeira": 6 }, "time_s": 40, "slots": 1, "rate_s": 45 },
+                  { "cost": { "madeira": 20, "sucata": 6 }, "time_s": 180, "slots": 2, "rate_s": 35, "tower": 2 } ] },
+    "deposito": { "fp": [2, 2], "tower": 1, "storage": true,
+      "levels": [ { "cost": { "madeira": 10, "sucata": 4 }, "time_s": 60, "cap": 80 },
+                  { "cost": { "madeira": 30, "sucata": 15 }, "time_s": 300, "cap": 200, "tower": 2 } ] },
+    "barraco": { "fp": [2, 2], "tower": 1,
+      "levels": [ { "cost": { "madeira": 12, "sucata": 6 }, "time_s": 90, "beds": 1 } ] },
+    "casa": { "fp": [3, 2], "tower": 2,
+      "levels": [ { "cost": { "madeira": 30, "sucata": 10 }, "time_s": 240, "beds": 2 } ] },
+    "fogueira": { "fp": [1, 1], "tower": 2,
+      "levels": [ { "cost": { "madeira": 8 }, "time_s": 45 } ] },
+    "serraria": { "fp": [3, 2], "tower": 2, "res": "madeira",
+      "levels": [ { "cost": { "madeira": 20, "sucata": 10 }, "time_s": 180, "slots": 2, "rate_s": 6 } ] },
+    "ferrovelho": { "fp": [3, 2], "tower": 2, "res": "sucata",
+      "levels": [ { "cost": { "madeira": 15, "sucata": 5 }, "time_s": 180, "slots": 2, "rate_s": 9 } ] }
+  },
+  "build_order": ["poco", "horta", "deposito", "barraco", "casa", "fogueira", "serraria", "ferrovelho"],
+  "tower": {
+    "2": { "cost": { "madeira": 18, "sucata": 10 }, "time_s": 300 },
+    "3": { "cost": { "madeira": 90, "sucata": 70 }, "time_s": 1800 }
+  },
+  "tower_unlocks": {
+    "2": ["casa", "fogueira", "serraria", "ferrovelho", "horta@2", "deposito@2"],
+    "3": ["praca", "oficina", "gerador", "galinheiro"]
+  },
+  "prototype_max_tower": 3,
+  "arrivals": {
+    "story_first": "ari",
+    "story_tower": 2,
+    "first_group_delay_s": 90,
+    "group_cooldown_s": 600,
+    "walk_in_from": [39, 15],
+    "pity_after_commons": 5,
+    "two_passives_chance": 0.3,
+    "brings_chance": 0.5,
+    "brings_amount": [4, 10]
+  },
+  "rarity": {
+    "comum": { "weight": 70, "bonus": 0.15 },
+    "rara": { "weight": 25, "bonus": 0.30 },
+    "excelente": { "weight": 5, "bonus": 0.50 }
+  },
+  "passives": {
+    "horta": { "job": "comida" },
+    "agua": { "job": "agua" },
+    "lenha": { "job": "madeira" },
+    "cata": { "job": "sucata" },
+    "obra": { "job": "build" },
+    "pernas": { "job": "walk" },
+    "come_pouco": { "job": "eat" }
+  },
+  "story_people": {
+    "ari": { "look": 1, "passives": [ { "id": "horta", "rar": "rara" } ] }
+  },
+  "names": ["Lia", "Téo", "Caio", "Nina", "Rosa", "Marta", "Bento", "Dora", "Ivo", "Clara", "Davi", "Zé", "Luana", "Otto", "Bia", "Raul"],
+  "bios": 8
+}

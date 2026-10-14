@@ -1,0 +1,123 @@
+keys,pt_BR,en
+RES_comida,comida,food
+RES_agua,água,water
+RES_madeira,madeira,wood
+RES_sucata,sucata,scrap
+B_poco,Poço,Well
+B_horta,Horta,Garden
+B_deposito,Depósito,Storehouse
+B_barraco,Barraco,Shack
+B_casa,Casa,House
+B_fogueira,Fogueira,Campfire
+B_serraria,Serraria,Sawmill
+B_ferrovelho,Ferro-velho,Scrapyard
+B_torre,Torre do rádio,Radio tower
+B_hatch,Bunker,Bunker
+B_gate,Estrada,Road
+B_praca,Praça,Square
+B_oficina,Oficina,Workshop
+B_gerador,Gerador,Generator
+B_galinheiro,Galinheiro,Coop
+BD_poco,Tira água do chão.,Draws water.
+BD_horta,Planta comida. Usa um pouco de água.,Grows food. Uses some water.
+BD_deposito,Guarda mais de cada coisa.,Stores more of everything.
+BD_barraco,Uma cama.,One bed.
+BD_casa,Duas camas.,Two beds.
+BD_fogueira,Onde a vila se junta à noite.,Where the village gathers at night.
+BD_serraria,Madeira bem mais rápido que cortar à mão.,Wood much faster than by hand.
+BD_ferrovelho,Sucata bem mais rápido que catar à mão.,Scrap much faster than by hand.
+BD_hatch,Onde o Joaquim morou sozinho. Guarda um pouco e tem uma cama.,Where Joaquim lived alone. Stores a little and has one bed.
+UI_DAY,Dia {n},Day {n}
+UI_BUILD,Construir,Build
+UI_CANCEL,Cancelar,Cancel
+UI_UPGRADE,Melhorar,Upgrade
+UI_UPGRADE_TO,Melhorar para nível {n},Upgrade to level {n}
+UI_LEVEL,Nível {n},Level {n}
+UI_WORKERS,Trabalham: {a}/{b},Workers: {a}/{b}
+UI_BUILDING,Em obra,Under construction
+UI_UPGRADING,Melhorando,Upgrading
+UI_WAITING_BUILDER,Esperando alguém livre,Waiting for someone free
+UI_BEDS,{n} camas,{n} beds
+UI_CAP,Guarda {n} de cada,Stores {n} of each
+UI_RATE,{n}/min por pessoa,{n}/min per person
+UI_PLACE,Clique para pôr · botão direito cancela,Click to place · right click cancels
+UI_NO_SPACE,Não cabe aqui,Doesn't fit here
+UI_LOCKED_TOWER,Torre {n},Tower {n}
+UI_TOWER_NEXT,Nível {n} libera:,Level {n} unlocks:
+UI_TOWER_UP,Subir a torre,Raise the tower
+UI_TOWER_MAX,A torre está no máximo deste protótipo.,The tower is at this prototype's max.
+UI_TOWER_PROTO,Fim do protótipo: o nível 3 ainda não traz nada.,End of prototype: level 3 brings nothing yet.
+UI_SOON,em breve,soon
+UI_TIME,Leva {t},Takes {t}
+UI_GATE_TITLE,Gente na estrada,People on the road
+UI_GATE_PICK,Escolha quem entra (há {n} cama livre),Pick who comes in ({n} free bed)
+UI_GATE_PICK_N,Escolha quem entra (há {n} camas livres),Pick who comes in ({n} free beds)
+UI_GATE_NOBED,Sem cama livre: construa um barraco ou uma casa,No free bed: build a shack or a house
+UI_GATE_NONE,Ninguém,No one
+UI_CHOOSE,Escolher,Choose
+UI_BRINGS,Traz {n} {r},Brings {n} {r}
+UI_GATE_BADGE,{n} no portão,{n} at the gate
+UI_HUNGRY,Com fome,Hungry
+UI_THIRSTY,Com sede,Thirsty
+UI_PASSIVES,Jeito,Knack
+UI_NO_PASSIVES,Sabe fazer de tudo um pouco.,Does a bit of everything.
+UI_WELCOME_BACK,Enquanto você não olhava ({t}),While you were away ({t})
+UI_OK,Certo,OK
+UI_NIGHT,A vila dorme,The village sleeps
+UI_SAVE_RESET,Recomeçar,Restart
+UI_SAVE_RESET_Q,Apagar a vila e começar de novo?,Erase the village and start over?
+UI_YES,Sim,Yes
+UI_NO,Não,No
+UI_CLOSE,Fechar,Close
+UI_JOINED,{name} chegou à vila,{name} joined the village
+UI_DONE,{b} pronto,{b} done
+UI_TOWER_DONE,A torre subiu para o nível {n},The tower reached level {n}
+UI_MISSING,Falta {list},Missing {list}
+UI_ENOUGH,Tem tudo,You have it all
+UI_FULL,cheio,full
+GOAL_build,Meta: construir {b},Goal: build {b}
+GOAL_tower,Meta: torre {n},Goal: tower {n}
+GOAL_tower_ready,Meta: torre {n} · pode subir!,Goal: tower {n} · ready!
+GOAL_tower_wait,A torre está subindo para o nível {n},The tower is rising to level {n}
+GOAL_more,{n} sem trabalho: construa mais {b},{n} idle: build another {b}
+GOAL_short,Acabando {r}: construa mais um {b},Running out of {r}: build another {b}
+GOAL_beds,Construa uma casa para chegar mais gente,Build a house so more people come
+GOAL_done,Fim do protótipo. Obrigado por testar!,End of the prototype. Thanks for testing!
+DO_idle,Sem nada pra fazer,Nothing to do
+DO_sleep,Dormindo,Sleeping
+DO_to_bed,Indo dormir,Going to bed
+DO_build,Construindo {b},Building {b}
+DO_work,Trabalhando: {b},Working: {b}
+DO_carry,Levando ao depósito,Carrying to storage
+DO_forage_madeira,Cortando lenha,Chopping wood
+DO_forage_sucata,Catando sucata,Scavenging scrap
+P_ari,Seu Ari,Mr. Ari
+P_joaquim,Joaquim,Joaquim
+PB_joaquim,Passei tempo demais lá embaixo. Alguém tem que começar.,I spent too long down there. Someone has to start.
+PB_ari,Ouvi teu rádio. Tem uma cama aí? Eu sei plantar.,I heard your radio. Got a bed? I know how to farm.
+BIO_0,Estou na estrada há semanas. Só quero um teto.,I've been on the road for weeks. I just want a roof.
+BIO_1,Meu marido morreu no inverno. Sou boa com as mãos.,My husband died in the winter. I'm good with my hands.
+BIO_2,Vim seguindo a fumaça da fogueira de vocês.,I followed your campfire smoke.
+BIO_3,Não falo muito. Mas trabalho.,I don't talk much. But I work.
+BIO_4,Perdi o grupo perto do rio. Posso ficar?,Lost my group by the river. Can I stay?
+BIO_5,Ouvi dizer que aqui ninguém passa fome.,Heard nobody goes hungry here.
+BIO_6,Carrego tudo o que tenho nas costas.,I carry everything I own on my back.
+BIO_7,Sabia que um dia alguém ia responder no rádio.,I knew someone would answer the radio one day.
+PAS_horta,Mão boa na horta,Green thumb
+PAS_agua,Acha água fácil,Water finder
+PAS_lenha,Lenhador,Woodcutter
+PAS_cata,Catador,Scavenger
+PAS_obra,Construtor,Builder
+PAS_pernas,Pernas longas,Long legs
+PAS_come_pouco,Come pouco,Light eater
+PASD_horta,+{p}% de comida,+{p}% food
+PASD_agua,+{p}% de água,+{p}% water
+PASD_lenha,+{p}% de madeira,+{p}% wood
+PASD_cata,+{p}% de sucata,+{p}% scrap
+PASD_obra,+{p}% de velocidade nas obras,+{p}% build speed
+PASD_pernas,+{p}% de velocidade andando,+{p}% walk speed
+PASD_come_pouco,Come {p}% menos,Eats {p}% less
+RAR_comum,comum,common
+RAR_rara,rara,rare
+RAR_excelente,excelente,excellent
+TIP_ZOOM,Roda do mouse: zoom · arrastar: mover,Mouse wheel: zoom · drag: move
