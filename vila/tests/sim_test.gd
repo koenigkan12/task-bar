@@ -151,12 +151,12 @@ func _init() -> void:
 	for i in 480:
 		clk.t += cyc / 480.0
 		var dh := clk.display_hour()
-		if (dh >= 19.0 or dh < 6.0) != clk.is_night() and absf(dh - 19.0) > 0.05 and absf(dh - 6.0) > 0.05:
+		if (dh >= 18.0 or dh < 6.0) != clk.is_night() and absf(dh - 18.0) > 0.05 and absf(dh - 6.0) > 0.05:
 			dark_ok = false
 		if prev >= 0.0 and fposmod(dh - prev, 24.0) > 0.5:
 			jumps += 1
 		prev = dh
-	_check(dark_ok and jumps == 0, "relógio: noite das 19h às 6h, sem pulos (%d)" % jumps)
+	_check(dark_ok and jumps == 0, "relógio: noite das 18h às 6h, sem pulos (%d)" % jumps)
 	# A noite para tudo.
 	var night := VilaSim.new()
 	night.setup(bal, start, 0)
