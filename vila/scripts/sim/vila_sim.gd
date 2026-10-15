@@ -1067,8 +1067,7 @@ func _pick_job(p: Dictionary) -> Dictionary:
 			sites.append(b)
 	sites.sort_custom(func(a: Dictionary, c: Dictionary) -> bool: return float(a["queued_t"]) < float(c["queued_t"]))
 	if not sites.is_empty():
-		# Se a pessoa está num trabalho de recurso que está faltando muito e há mais gente, deixa outra pegar.
-		return {"kind": "build", "b": int(sites[0]["id"])}
+		return {"kind": "build", "b": int(sites[0]["id"]), "why": "build"}
 	var best := {}
 	var best_v := 0.0
 	# Entulho ou árvore marcados pelo jogador são ordem: vão na frente de tudo menos obra
@@ -1076,11 +1075,21 @@ func _pick_job(p: Dictionary) -> Dictionary:
 	if not marked.is_empty():
 		for mres in ["sucata", "madeira"]:
 			if _has_forage(mres, true) and _assigned_to(mres, p) < maxi(1, people.size() / 2):
-				return {"kind": "forage", "res": mres, "clear": true}
+				return {"kind": "forage", "res": mres, "clear": true, "why": "marked"}
+	# Cada um prefere o que sabe fazer bem (passiva daquele recurso), enquanto ainda cabe no estoque;
+	# só larga quando comida ou água estão acabando de verdade.
+	var pref: float = float(bal["people"].get("skill_pref", 3.0))
 	for res in RES:
 		var u := urgency(res) / (1.0 + float(_assigned_to(res, p)))
 		if u <= 0.0:
 			continue
+		var skilled := bonus(p, res) > 1.0
+		var crit := (res == "comida" or res == "agua") and float(stock[res]) < float(bal["people"].get("critical_stock", 6.0))
+		if skilled:
+			u *= pref
+		if crit:
+			u *= pref * 1.5
+		var why := "need" if crit else ("skill" if skilled else ("need" if urgency(res) >= 0.6 else "free"))
 		# Prédio com vaga livre
 		for b in buildings:
 			if not _working(b) or String(def(String(b["type"])).get("res", "")) != res:
@@ -1099,7 +1108,7 @@ func _pick_job(p: Dictionary) -> Dictionary:
 			var v: float = u * rate * bonus(p, res)
 			if v > best_v:
 				best_v = v
-				best = {"kind": "work", "b": int(b["id"]), "res": res}
+				best = {"kind": "work", "b": int(b["id"]), "res": res, "why": why}
 		# Coleta à mão (madeira nas árvores, sucata no entulho)
 		if res == "madeira" or res == "sucata":
 			var f: Dictionary = bal["forage"][res]
@@ -1107,7 +1116,7 @@ func _pick_job(p: Dictionary) -> Dictionary:
 			var v2: float = u * rate_f * bonus(p, res)
 			if v2 > best_v and _has_forage(res):
 				best_v = v2
-				best = {"kind": "forage", "res": res}
+				best = {"kind": "forage", "res": res, "why": why}
 	if best.is_empty():
 		return {"kind": "idle"}
 	return best
@@ -2290,6 +2299,14 @@ func flow_per_min(res: String) -> Dictionary:
 			if String(p["job"].get("res", "")) == "comida" and String(p["job"].get("kind", "")) == "work":
 				use += 60.0 / 45.0 * float(bal["horta_water_per_food"])
 	return {"prod": prod, "use": use}
+
+
+## Por que a pessoa está nessa tarefa: build, marked, skill, need, free, order ("" = sem motivo).
+func why(p: Dictionary) -> String:
+	var j: Dictionary = p["job"]
+	if bool(j.get("manual", false)):
+		return "order"
+	return String(j.get("why", ""))
 
 
 func doing(p: Dictionary) -> String:

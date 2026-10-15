@@ -1318,6 +1318,10 @@ func _card_person() -> void:
 	var bio := I18n.t("PB_" + story) if story != "" else (I18n.t("BIO_%d" % int(p["bio"])) if int(p["bio"]) >= 0 else "")
 	_header("pessoa", pname(p), "\"" + bio + "\"" if bio != "" else "")
 	_card_box.add_child(_row([_icon_rect("relogio"), _label(_doing_text(p))]))
+	var wy := sim.why(p)
+	if wy != "":
+		var jr := String(p["job"].get("res", ""))
+		_card_box.add_child(_label(fmt("WHY_" + wy, {"r": I18n.t("RES_" + jr) if jr != "" else ""}), C_MUTED))
 	# Cansaço: cada noite virada tira 10% até descansar 2 noites por ela. Com o sono em dia não mostra nada.
 	var tired := int(p.get("tired", 0))
 	if tired > 0:

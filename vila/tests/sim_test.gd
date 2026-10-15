@@ -276,6 +276,18 @@ func _test_orders() -> void:
 	var poco := sim.building_at(cell)
 	sim._finish(poco)
 	var jo: Dictionary = sim.people[0]
+	# Quem é bom em água fica no poço (com comida em dia); com comida acabando, vai para a comida.
+	var old_pas: Array = jo["passives"]
+	jo["passives"] = [{"id": "agua", "rar": "rara"}]
+	sim.stock["comida"] = 40.0
+	sim.stock["agua"] = 10.0
+	sim._m_urg.clear()
+	var pj := sim._pick_job(jo)
+	_check(String(pj.get("res", "")) == "agua" and String(pj.get("why", "")) == "skill", "habilidade: bom em água prefere o poço (%s)" % str(pj))
+	jo["passives"] = old_pas
+	sim.stock["comida"] = 0.0
+	sim.stock["agua"] = 0.0
+	sim._m_urg.clear()
 	sim._set_job(jo, {"kind": "idle"})
 	var o := sim.order(int(jo["id"]), cell)
 	_check(bool(o["ok"]) and String(jo["job"]["kind"]) == "work" and bool(jo["job"]["manual"]), "ordens: clique direito no poço manda trabalhar lá")

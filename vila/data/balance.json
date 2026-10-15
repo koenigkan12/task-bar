@@ -116,6 +116,8 @@
  },
  "people": {
   "speed_tiles_s": 2.4,
+  "skill_pref": 3.0,
+  "critical_stock": 6.0,
   "carry": 4,
   "eat_every_s": 240,
   "drink_every_s": 200,
