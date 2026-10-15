@@ -359,3 +359,5 @@ TIP_POWER_FEEDS,Liga: {list},Runs: {list}
 TIP_POWER_NOT_YET,Quando tiver {b} construída, ela usa esta energia.,Once you build {b} it will use this power.
 TIP_HOME_WHO,"Dormem aqui: {names}. De noite o número em cima da casa mostra quantos já entraram.","Sleeping here: {names}. At night the number above the house shows how many are already in."
 TIP_HOME_EMPTY,Ninguém dorme aqui ainda.,Nobody sleeps here yet.
+UI_PLACE_cuts,"Fecharia o caminho do porto: quem chega de bote não conseguiria entrar.","It would close the path from the port: people arriving by boat couldn't get in."
+UI_PLACE_tight,"Muito colado em outro prédio: deixe uma casa livre em volta para o pessoal passar.","Too close to another building: leave one free tile around so people can pass."

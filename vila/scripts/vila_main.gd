@@ -259,6 +259,12 @@ func _open_test_card() -> void:
 						best = cc
 			_test_cell = best
 		"options": _show_options()
+		"merchant_boat":   # capturas: o barco do mascate chegando (a animação começa agora)
+			world._m_seen = true
+			sim._merchant_arrive(sim.t + 1800.0)
+			var g := sim._first("gate")
+			cam.position = Vector2(Vector2i(g["cell"])) * 16.0 + Vector2(16, 0)
+			_clamp_cam()
 		"merchant":
 			if not sim.merchant_here():
 				sim._merchant_arrive(sim.t + 1800.0)

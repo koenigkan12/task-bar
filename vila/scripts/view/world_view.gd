@@ -21,7 +21,7 @@ const ICON_FRAMES := 21                 # icons.png: 21 ícones de 8 px
 var _objects: Node2D
 var _floor: Node2D
 var _fx: VilaFx
-var _merchant_nodes: Array = []          # carroça e mascate na praça enquanto o mercador está lá
+var _merchant_nodes: Array = []          # banca, mascate e barco enquanto o mercador está por aqui
 var _overlay: Node2D
 var _zone: Node2D
 var _zone_level: int = -1
@@ -64,6 +64,8 @@ func setup(s: VilaSim) -> void:
 	_objects.y_sort_enabled = true
 	add_child(_objects)
 	_merchant_nodes = []
+	_m_state = ""
+	_m_seen = false
 	_fx = VilaFx.new()
 	add_child(_fx)
 	_fx.setup(world_size())
@@ -527,7 +529,7 @@ func _process(delta: float) -> void:
 	for o in _orders:
 		o["t"] = float(o["t"]) + delta
 	_orders = _orders.filter(func(o: Dictionary) -> bool: return float(o["t"]) < (2.2 if String(o["text"]) != "" else 0.6))
-	_sync_merchant()
+	_sync_merchant(delta)
 	_sync_acc += delta
 	if _sync_acc >= 0.25:
 		_sync_acc = 0.0
@@ -813,10 +815,11 @@ func _draw_overlay() -> void:
 		var t_ok := tex("ghost_ok")
 		var t_bad := tex("ghost_bad")
 		var bt := tex(_btex_name({"type": ghost_type, "level": 1, "state": "built"}))
+		var cuts := sim.place_reason(ghost_type, ghost_cell) in ["cuts", "tight"]   # fecharia caminho ou colado: tudo vermelho
 		for dy in fp2.y:
 			for dx in fp2.x:
 				var gc := ghost_cell + Vector2i(dx, dy)
-				var t := t_ok if sim.cell_ok(gc) else t_bad
+				var t := t_ok if sim.cell_ok(gc) and not cuts else t_bad
 				if t != null:
 					_overlay.draw_texture(t, Vector2(gc) * TILE)
 		if bt != null:
@@ -907,6 +910,10 @@ func _draw_yield(c: Vector2i) -> void:
 	var spr: Sprite2D = _terrain_nodes[c]
 	var top := _overlay.to_local(spr.to_global(spr.offset)).y
 	var at := Vector2(c.x * TILE + TILE / 2.0 - wdt / 2.0, top - 10.0).round()
+	# Perto da borda de cima a barra de recursos cobriria: vai para baixo da célula.
+	var bar_y := (_overlay.get_canvas_transform().affine_inverse() * Vector2(0, 16)).y
+	if at.y - 1.0 < bar_y:
+		at.y = roundf((c.y + 1) * TILE + 2.0)
 	_overlay.draw_rect(Rect2(at + Vector2(-1, -1), Vector2(wdt + 2, 10)), Color(0.26, 0.2, 0.33, 0.9))
 	if icons != null:
 		_overlay.draw_texture_rect_region(icons, Rect2(at, Vector2(8, 8)), Rect2(_res_icon(res) * 8, 0, 8, 8))
@@ -928,34 +935,170 @@ func _draw_brackets(r: Rect2, c: Color = Color(1, 1, 1, 0.7)) -> void:
 		_overlay.draw_line(corner, corner + Vector2(0, l * sy), c, 1.0)
 
 
-# ================================================================ mercador na praça
-func _sync_merchant() -> void:
-	var here := sim.merchant_here()
-	if here == not _merchant_nodes.is_empty():
-		return
-	for n in _merchant_nodes:
-		(n as Node).queue_free()
-	_merchant_nodes = []
-	if not here:
-		return
+# ================================================================ mercador (vem de barco)
+## O mascate chega de barco: o barco entra pelo mar até o píer, ele desce e anda até a praça, onde
+## monta a banca. Quando vai embora faz o caminho de volta e o barco some no mar. Só desenho: para a
+## simulação ele já está na praça desde que chegou (dá para clicar nele no caminho também).
+const M_SAIL_S := 5.0           # barco entrando ou saindo
+const M_WALK_TPS := 2.6         # passo do mascate (células por segundo)
+var _m_state := ""              # "", sail_in, walk_in, here, walk_out, sail_out
+var _m_t := 0.0
+var _m_path: PackedVector2Array = PackedVector2Array()
+var _m_seen := false            # primeiro quadro: se já estava aqui (jogo carregado), aparece pronto
+
+
+func _m_dock() -> Vector2:
+	var g := sim._first("gate")
+	if g.is_empty():
+		return Vector2.ZERO
+	var fp := sim._fp("gate")
+	return Vector2(Vector2i(g["cell"]).x * TILE - 30, (Vector2i(g["cell"]).y + fp.y) * TILE - 10)
+
+
+func _m_stand() -> Vector2:
 	var pr := sim._first("praca")
-	if pr.is_empty():
+	return Vector2(Vector2i(pr["cell"])) * TILE + Vector2(30, 40)
+
+
+func _m_route() -> PackedVector2Array:
+	var g := sim._first("gate")
+	var pr := sim._first("praca")
+	var out := PackedVector2Array()
+	if g.is_empty() or pr.is_empty():
+		return out
+	out.append(_m_dock() + Vector2(26, 20))   # desce do barco no píer
+	out.append(Vector2(Vector2i(g["cell"])) * TILE + Vector2(16, 20))
+	for c in sim._path(Vector2(sim._door(g)), sim._door(pr)):
+		out.append(c * TILE + Vector2(8, 12))
+	out.append(_m_stand())
+	return out
+
+
+func _m_make() -> void:
+	if not _merchant_nodes.is_empty():
 		return
-	var base := Vector2(Vector2i(pr["cell"])) * TILE
-	var cart := Sprite2D.new()
-	cart.texture = tex("carroca")
-	cart.centered = false
-	cart.position = base + Vector2(10, 12 + 24)
-	cart.offset = Vector2(0, -24)
-	_objects.add_child(cart)
+	var stall := Sprite2D.new()
+	stall.texture = tex("banca")
+	stall.centered = false
+	stall.offset = Vector2(0, -28)
+	stall.visible = false
+	_objects.add_child(stall)
 	var man := Sprite2D.new()
 	man.texture = tex("merchant")
 	man.hframes = 5
 	man.vframes = 3
 	man.offset = Vector2(0, -7)
-	man.position = base + Vector2(30, 40)
+	man.visible = false
 	_objects.add_child(man)
-	_merchant_nodes = [cart, man]
+	var boat := Sprite2D.new()
+	boat.texture = tex("barco_mascate")
+	boat.hframes = 2
+	boat.centered = false
+	boat.z_index = -5
+	boat.visible = false
+	add_child(boat)
+	_merchant_nodes = [stall, man, boat]
+
+
+func _m_clear() -> void:
+	for n in _merchant_nodes:
+		(n as Node).queue_free()
+	_merchant_nodes = []
+	_m_state = ""
+
+
+func _sync_merchant(delta: float) -> void:
+	var here := sim.merchant_here() and not sim._first("praca").is_empty()
+	if not _m_seen:
+		_m_seen = true
+		if here:
+			_m_make()
+			_m_state = "here"
+	if here and _m_state in ["", "walk_out", "sail_out"]:
+		_m_make()
+		_m_state = "sail_in" if _m_state == "" else "walk_in"
+		_m_t = 0.0
+		_m_path = _m_route()
+	elif not here and _m_state in ["sail_in", "walk_in", "here"]:
+		_m_state = "walk_out" if _m_state != "sail_in" else "sail_out"
+		_m_t = 0.0
+		_m_path = _m_route()
+		_m_path.reverse()
+	if _m_state == "":
+		return
+	_m_t += delta
+	var stall: Sprite2D = _merchant_nodes[0]
+	var man: Sprite2D = _merchant_nodes[1]
+	var boat: Sprite2D = _merchant_nodes[2]
+	var dock := _m_dock()
+	var away := dock + Vector2(-40, 150)
+	boat.frame = int(_anim_t * 2.0) % 2
+	var bob := Vector2(0, roundf(sin(_anim_t * 1.4)))
+	match _m_state:
+		"sail_in", "sail_out":
+			var k := clampf(_m_t / M_SAIL_S, 0.0, 1.0)
+			k = k * k * (3.0 - 2.0 * k)
+			var from := away if _m_state == "sail_in" else dock
+			var to := dock if _m_state == "sail_in" else away
+			boat.visible = true
+			boat.position = from.lerp(to, k).round() + bob
+			man.visible = false
+			stall.visible = false
+			if _m_t >= M_SAIL_S:
+				if _m_state == "sail_in":
+					_m_state = "walk_in"
+					_m_t = 0.0
+				else:
+					_m_clear()
+					return
+		"walk_in", "walk_out":
+			boat.visible = true
+			boat.position = dock.round() + bob
+			stall.visible = _m_state == "walk_out"
+			man.visible = true
+			var done := _m_walk(man, delta)
+			if done:
+				if _m_state == "walk_in":
+					_m_state = "here"
+				else:
+					_m_state = "sail_out"
+				_m_t = 0.0
+		"here":
+			boat.visible = true
+			boat.position = dock.round() + bob
+			stall.visible = true
+			man.visible = true
+			man.position = _m_stand()
+			man.frame = 0
+	var base := Vector2(Vector2i(sim._first("praca").get("cell", Vector2i.ZERO))) * TILE
+	stall.position = base + Vector2(9, 12 + 28)
+
+
+## Anda o mascate pelo caminho guardado; devolve true quando chegou ao fim.
+func _m_walk(man: Sprite2D, delta: float) -> bool:
+	if _m_path.is_empty():
+		return true
+	var pos := man.position if man.position != Vector2.ZERO else _m_path[0]
+	var dist := M_WALK_TPS * TILE * delta
+	var dir := Vector2.DOWN
+	while dist > 0.0 and not _m_path.is_empty():
+		var tgt := _m_path[0]
+		var d := pos.distance_to(tgt)
+		if d <= dist:
+			if d > 0.01:
+				dir = (tgt - pos) / d
+			pos = tgt
+			dist -= d
+			_m_path.remove_at(0)
+		else:
+			dir = (tgt - pos) / d
+			pos += dir * dist
+			dist = 0.0
+	man.position = pos
+	var row := 2 if absf(dir.x) > absf(dir.y) else (1 if dir.y < 0.0 else 0)
+	man.flip_h = row == 2 and dir.x < 0.0
+	man.frame = row * 5 + 1 + int(_anim_t * 8.0) % 4
+	return _m_path.is_empty()
 
 
 ## Onde o mascate está (para clicar nele e abrir o cartão do mercador).

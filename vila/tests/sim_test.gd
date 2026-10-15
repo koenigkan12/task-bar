@@ -40,11 +40,59 @@ func _init() -> void:
 	var hd := sim._door(sim._first("hatch"))
 	var pth := sim._path(Vector2(from), hd)
 	_check(pth.size() > 2 and Vector2i(pth[pth.size() - 1]) == hd, "porto: tem caminho a pé do píer até a escotilha")
+	# Nada que dê para construir fecha o caminho do porto.
+	var sc := VilaSim.new()
+	sc.setup(bal, start, 0)
+	sc.stock["madeira"] = 999.0
+	sc.stock["sucata"] = 999.0
+	var cut_seen := false
+	for i in range(1, pth.size() - 1):
+		var pc := Vector2i(pth[i])
+		for ty in ["poco", "deposito", "moradia"]:
+			var why := sc.place_reason(ty, pc)
+			cut_seen = cut_seen or why == "cuts"
+			if why == "" and sc.unlocked(ty) and not sc.at_limit(ty):
+				sc.build(ty, pc)
+	sc._rebuild_astar()
+	_check(not sc._path(Vector2(from), hd).is_empty(), "porto: construir na trilha nunca fecha o caminho%s" % (" (bloqueou %s)" % "cuts" if cut_seen else ""))
+	# Corredor: prédio grande não cola em outro (uma célula livre em volta).
+	var tent: Dictionary = sc._first("moradia")
+	_check(sc.place_reason("poco", Vector2i(tent["cell"]) + Vector2i(-2, 0)) == "tight", "prédio colado em outro não pode (corredor de 1 célula)")
+	_check(sc.place_reason("deco_vaso", Vector2i(tent["cell"]) + Vector2i(-1, 0)) != "tight", "enfeite pode encostar")
+	# Sem caminho até o alvo: não trabalha de longe, larga a tarefa.
+	var sw := VilaSim.new()
+	sw.setup(bal, start, 0)
+	var jw: Dictionary = sw.people[0]
+	jw["pos"] = Vector2(hd)
+	var tgt := hd + Vector2i(5, 0)
+	for o in [Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1), Vector2i(0, 1), Vector2i(-1, -1), Vector2i(1, 1), Vector2i(-1, 1), Vector2i(1, -1)]:
+		sw._astar.set_point_solid(tgt + o, true)
+	sw._set_job(jw, {"kind": "move", "cell": tgt})
+	var walked := false
+	for k in 40:
+		if String(jw["job"].get("kind", "idle")) == "idle":
+			break
+		walked = sw._walk(jw, 0.1) or walked
+	_check(not walked and Vector2(jw["pos"]).distance_to(Vector2(tgt)) > 1.0 and String(jw["job"].get("kind", "idle")) == "idle", "sem caminho: não chega de longe e larga a tarefa")
+	# Ilhado pela mata (como no porto): abre trilha até a escotilha.
+	var sr := VilaSim.new()
+	sr.setup(bal, start, 0)
+	var jr: Dictionary = sr.people[0]
+	var at := hd + Vector2i(0, 4)
+	for dy in range(-2, 3):
+		for dx in range(-2, 3):
+			var cc := at + Vector2i(dx, dy)
+			if (absi(dx) == 2 or absi(dy) == 2) and sr.terrain_at(cc) != VilaSim.T_WATER and sr.building_at(cc).is_empty():
+				sr.terrain[sr._i(cc)] = VilaSim.T_TREE
+	sr._rebuild_astar()
+	jr["pos"] = Vector2(at)
+	sr._set_job(jr, {"kind": "move", "cell": hd})
+	_check(not (jr["path"] as PackedVector2Array).is_empty(), "cercado pela mata: abre trilha e sai andando")
 	_check(sim._count_any("moradia") == 1 and sim.beds_total() == 1, "começa com uma barraca de uma cama")
 	_check(sim.home_of(sim.people[0]) == int(sim._first("moradia")["id"]), "Joaquim dorme na barraca")
 	var free0 := sim._free_build_cells()
 	print("chão livre no começo: ", free0)
-	_check(free0 >= 60 and free0 <= 110, "clareira do começo cabe o que a torre 1 libera (60 a 110 células livres)")
+	_check(free0 >= 100 and free0 <= 200, "clareira do começo cabe o que a torre 1 libera (100 a 200 células livres)")
 	_check(not sim.is_night(), "começa de dia")
 	var t_tower2 := -1.0
 	var t_ari := -1.0

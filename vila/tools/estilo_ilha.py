@@ -344,6 +344,56 @@ def bote():
     return im
 
 
+def barco_mascate():
+    """O barco do mascate (maior que o bote): casco, caixotes no convés, mastro com vela e bandeirinha.
+    Folha de 2 quadros (a vela enfunada muda um pouco)."""
+    W, H = 36, 34
+    quadros = []
+    for k in range(2):
+        im = Image.new('RGBA', (W, H))
+        d = ImageDraw.Draw(im)
+        d.ellipse([1, 22, 34, 33], AE + (255,))          # sombra na água
+        d.ellipse([2, 19, 33, 31], ME + (255,))          # casco
+        d.ellipse([4, 20, 31, 28], MC + (255,))
+        d.line([(5, 26), (30, 26)], ME + (255,))         # tábuas
+        d.rectangle([7, 21, 12, 25], ME + (255,))        # caixotes
+        d.rectangle([8, 21, 11, 23], Y + (255,))
+        d.rectangle([22, 21, 27, 25], ME + (255,))
+        d.rectangle([23, 21, 26, 23], G + (255,))
+        d.line([(17, 3), (17, 24)], D + (255,))          # mastro
+        b = k                                             # vela enfunando
+        d.polygon([(18, 4), (18, 19), (28 + b, 19)], CR + (255,))
+        d.line([(18, 19), (28 + b, 19)], LC + (255,))
+        d.line([(19, 12), (23 + b, 16)], LC + (255,))
+        d.polygon([(16, 6), (16, 18), (9 - b, 18)], LC + (255,))
+        d.line([(17, 1), (17, 3)], D + (255,))
+        d.line([(18, 1), (21 + b, 2)], VM + (255,))       # bandeirinha
+        d.line([(18, 2), (20 + b, 2)], VM + (255,))
+        quadros.append(im)
+    return folha(quadros, W, H)
+
+
+def banca():
+    """A banca do mascate na praça: dois postes, toldo listrado e balcão de caixotes com mercadoria."""
+    im = Image.new('RGBA', (30, 28))
+    d = ImageDraw.Draw(im)
+    d.ellipse([1, 23, 28, 27], GS + (255,))              # sombra
+    d.rectangle([3, 8, 4, 24], ME + (255,))              # postes
+    d.rectangle([25, 8, 26, 24], ME + (255,))
+    for i in range(7):                                   # toldo listrado
+        c = VM if i % 2 == 0 else CR
+        d.rectangle([1 + i * 4, 3, 4 + i * 4, 9], c + (255,))
+    d.line([(1, 9), (28, 9)], ME + (255,))
+    for i in range(7):                                   # franja
+        im.putpixel((2 + i * 4, 10), (VM if i % 2 == 0 else CR) + (255,))
+    d.rectangle([4, 16, 25, 24], ME + (255,))            # balcão
+    d.rectangle([5, 16, 24, 19], MC + (255,))
+    d.line([(14, 16), (14, 24)], ME + (255,))
+    for x, c in ((7, Y), (10, VM), (17, AC), (20, G), (23, Y)):   # mercadoria
+        d.rectangle([x, 13, x + 1, 15], c + (255,))
+    return im
+
+
 # ---------------------------------------------------------------- chão da ilha
 def chao_ilha(rows, seed=3):
     import numpy as np
@@ -458,7 +508,7 @@ def chao_ilha(rows, seed=3):
 
 # ---------------------------------------------------------------- tudo
 TROCA = {'tree': arvores, 'tree_sombra': sombra_arvore, 'stump': toco, 'rubble': entulho,
-         'fogueira': fogueira, 'bote': bote,
+         'fogueira': fogueira, 'bote': bote, 'barco_mascate': barco_mascate, 'banca': banca,
          'hatch': lambda: peca('bunker'), 'moradia_1': lambda: peca('barraca'), 'gate': lambda: peca('pier')}
 MANTER = ('icons', 'light', 'ghost_ok', 'ghost_bad', 'selecao', 'ui_button', 'ui_button_off', 'ui_panel',
           'ground', 'person_sleep')

@@ -48,6 +48,7 @@ var stats: Dictionary = {"commons_in_row": 0, "joined": 0, "built": 0}
 var offline: bool = false        # durante o alcance offline: produção e consumo pela fração
 var _next_id: int = 1
 var _astar: AStarGrid2D
+var _reach_main := {}   # células alcançáveis a pé da escotilha (cache; vazio = refazer)
 var _rng := RandomNumberGenerator.new()
 var _group_ready_t: float = -1.0
 var _story_done: Dictionary = {}
@@ -378,7 +379,88 @@ func place_reason(type: String, cell: Vector2i) -> String:
 				return "road"
 	if door_for(type, cell).x < 0:
 		return "closed"
+	if _too_tight(type, cell):
+		return "tight"
+	if _cuts_port(type, cell):
+		return "cuts"
 	return ""
+
+
+## Prédio grande precisa de uma célula livre em volta (corredor para o pessoal passar e a vila
+## respirar). Fogueira, enfeites e a praça (que se anda por cima) não contam.
+func _spaced(type: String) -> bool:
+	var d := def(type)
+	return _fp(type) != Vector2i(1, 1) and not bool(d.get("open", false)) and not bool(d.get("walkable", false)) and not bool(d.get("deco", false))
+
+
+func _too_tight(type: String, cell: Vector2i) -> bool:
+	if not _spaced(type):
+		return false
+	var fp := _fp(type)
+	for dy in range(-1, fp.y + 1):
+		for dx in range(-1, fp.x + 1):
+			var c := cell + Vector2i(dx, dy)
+			if not _inside(c) or occ[_i(c)] < 0:
+				continue
+			var ob := by_id(occ[_i(c)])
+			if not ob.is_empty() and _spaced(String(ob["type"])):
+				return true
+	return false
+
+
+func _hatch_door() -> Vector2i:
+	var hb := _first("hatch")
+	return Vector2i(-1, -1) if hb.is_empty() else _door(hb)
+
+
+## O prédio ali deixaria alguém sem chegar (o porto, a porta de outro prédio ou a dele mesmo)?
+## Conta só o que hoje dá para alcançar a partir da escotilha.
+func _cuts_port(type: String, cell: Vector2i) -> bool:
+	if _first("hatch").is_empty() or _astar == null or bool(def(type).get("open", false)):
+		return false
+	var doors0: Array[Vector2i] = []
+	for b in buildings:
+		doors0.append(_door(b))
+	var reach0 := _reach(_hatch_door())
+	var fp := _fp(type)
+	var was: Array[Vector2i] = []
+	for dy in fp.y:
+		for dx in fp.x:
+			var c := cell + Vector2i(dx, dy)
+			if _inside(c) and occ[_i(c)] < 0:
+				occ[_i(c)] = 1 << 30   # ocupado de mentira, só para a conta
+				was.append(c)
+				if not _astar.is_point_solid(c):
+					_astar.set_point_solid(c, true)
+	var reach1 := _reach(_hatch_door())
+	var cut := not reach1.has(door_for(type, cell))
+	for i in buildings.size():
+		if cut:
+			break
+		if reach0.has(doors0[i]) and not reach1.has(_door(buildings[i])):
+			cut = true
+	for c in was:
+		occ[_i(c)] = -1
+		var k := terrain[_i(c)]
+		_astar.set_point_solid(c, k == T_TREE or k == T_RUBBLE or k == T_WATER)
+	return cut
+
+
+## Células que dá para alcançar a pé a partir de `from` (4 vizinhos, como o A* anda).
+func _reach(from: Vector2i) -> Dictionary:
+	var seen := {}
+	if not _inside(from):
+		return seen
+	seen[from] = true
+	var q: Array[Vector2i] = [from]
+	while not q.is_empty():
+		var c: Vector2i = q.pop_back()
+		for o in [Vector2i(0, 1), Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1)]:
+			var n: Vector2i = c + o
+			if _inside(n) and not seen.has(n) and not _astar.is_point_solid(n):
+				seen[n] = true
+				q.append(n)
+	return seen
 
 
 ## Por que cada célula da pegada não serve (para o fantasma pintar só a que bloqueia).
@@ -595,7 +677,7 @@ func can_place(type: String, cell: Vector2i) -> bool:
 		for dx in fp.x:
 			if not cell_ok(cell + Vector2i(dx, dy)):
 				return false
-	return door_for(type, cell).x >= 0
+	return door_for(type, cell).x >= 0 and not _too_tight(type, cell) and not _cuts_port(type, cell)
 
 
 func tower_next() -> Dictionary:
@@ -805,6 +887,7 @@ func _mark(b: Dictionary, on: bool) -> void:
 # ================================================================ caminhos
 func _rebuild_astar() -> void:
 	_invalidate()
+	_reach_main = {}
 	_astar = AStarGrid2D.new()
 	_astar.region = Rect2i(0, 0, w, h)
 	_astar.cell_size = Vector2(1, 1)
@@ -830,6 +913,24 @@ func _path(from: Vector2, to: Vector2i) -> PackedVector2Array:
 	var pts := _astar.get_point_path(a, to, true)
 	_astar.set_point_solid(a, solid_a)
 	_astar.set_point_solid(to, solid_b)
+	if not pts.is_empty() and Vector2i(pts[pts.size() - 1]) != to:
+		pts = PackedVector2Array()   # só um pedaço do caminho: não serve (antes ela "chegava" de longe)
+	if pts.is_empty() and solid_a and a != to:
+		# Parada em célula ocupada (ergueram uma obra onde ela estava): sai pela célula livre
+		# mais perto que tenha caminho até o alvo.
+		var best := PackedVector2Array()
+		for r in range(1, 4):
+			for dy in range(-r, r + 1):
+				for dx in range(-r, r + 1):
+					var n := a + Vector2i(dx, dy)
+					if maxi(absi(dx), absi(dy)) != r or not _inside(n) or _astar.is_point_solid(n):
+						continue
+					var sub := _path(Vector2(n), to)
+					if not sub.is_empty() and (best.is_empty() or sub.size() + r < best.size()):
+						best = sub
+						best.insert(0, Vector2(a))
+			if not best.is_empty():
+				return best
 	return pts
 
 
@@ -1069,11 +1170,18 @@ func _has_forage(res: String, only_marked: bool = false) -> bool:
 
 
 func _reachable_neighbor(c: Vector2i) -> bool:
+	var rm := main_reach()
 	for o in [Vector2i(0, 1), Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1)]:
 		var n: Vector2i = c + o
-		if _inside(n) and not _astar.is_point_solid(n):
+		if rm.has(n):
 			return true
 	return false
+
+
+func main_reach() -> Dictionary:
+	if _reach_main.is_empty():
+		_reach_main = _reach(_hatch_door())
+	return _reach_main
 
 
 func _free_neighbor(c: Vector2i, from: Vector2) -> Vector2i:
@@ -1081,7 +1189,7 @@ func _free_neighbor(c: Vector2i, from: Vector2) -> Vector2i:
 	var bd := 1e9
 	for o in [Vector2i(0, 1), Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1)]:
 		var n: Vector2i = c + o
-		if _inside(n) and not _astar.is_point_solid(n):
+		if main_reach().has(n):
 			var d := from.distance_squared_to(Vector2(n))
 			if d < bd:
 				bd = d
@@ -1138,6 +1246,7 @@ func _set_job(p: Dictionary, job: Dictionary) -> void:
 	p["target_cell"] = Vector2i(-1, -1)
 	p["job"] = job
 	p["path"] = PackedVector2Array()
+	p.erase("goal")
 	p["work_t"] = 0.0
 	p["asleep"] = false
 	var k := String(job.get("kind", "idle"))
@@ -1231,9 +1340,19 @@ func _assign_homes() -> void:
 
 func _go(p: Dictionary, cell: Vector2i) -> void:
 	var path := _path(p["pos"], cell)
+	if path.is_empty() and Vector2(p["pos"]).distance_to(Vector2(cell)) > 1.0 and _hatch_door().x >= 0:
+		# Sem caminho: se nem até a escotilha ela chega, está ilhada pela mata (quem desce do bote
+		# num porto cercado). Abre uma trilha até a escotilha e tenta de novo.
+		var at := Vector2i(Vector2(p["pos"]).round())
+		if _path(p["pos"], _hatch_door()).is_empty():
+			_carve_trail(at, _hatch_door())
+			_rebuild_astar()
+			path = _path(p["pos"], cell)
 	if path.size() > 0:
 		path.remove_at(0)
 	p["path"] = path
+	p["goal"] = Vector2(cell)
+	p["stuck_t"] = 0.0
 
 
 ## Anda `dist` tiles pelo caminho. Devolve true quando chegou.
@@ -1257,6 +1376,15 @@ func _walk(p: Dictionary, dt: float) -> bool:
 			dist = 0.0
 	p["pos"] = pos
 	p["path"] = path
+	if path.is_empty() and p.has("goal") and pos.distance_to(Vector2(p["goal"])) > 1.0:
+		# Não tem caminho até o alvo (cercado por prédio ou mata): não faz o trabalho de longe.
+		# Espera um pouco (pode abrir) e depois larga a tarefa para escolher outra.
+		p["moving"] = false
+		p["stuck_t"] = float(p.get("stuck_t", 0.0)) + dt
+		if float(p["stuck_t"]) >= 3.0:
+			_set_job(p, {"kind": "idle"})
+			p["phase"] = "idle"
+		return false
 	return path.size() == 0
 
 
@@ -1374,10 +1502,26 @@ func _regrow() -> void:
 				if Vector2i(Vector2(p["pos"]).round()) == c:
 					busy = true
 			if not busy:
+				# Árvore que fecharia um caminho (porto, porta de prédio) espera mais um pouco.
+				var doors0: Array[Vector2i] = [_hatch_door()]
+				for b in buildings:
+					doors0.append(_door(b))
+				var r0 := main_reach()
+				_astar.set_point_solid(c, true)
+				_reach_main = {}
+				var r1 := main_reach()
+				var cut := false
+				for d in doors0:
+					if r0.has(d) and not r1.has(d) and d != c:
+						cut = true
+				if cut or r0.has(c) and doors0.has(c):
+					_astar.set_point_solid(c, false)
+					_reach_main = r0
+					regrow[c] = t + 120.0
+					continue
 				terrain[_i(c)] = T_TREE
 				_fdirty = true
 				regrow.erase(c)
-				_astar.set_point_solid(c, true)
 
 
 ## Quem chega pelo porto. Grupos vêm desde a antena 1, sempre que sobra cama; a antena só encurta a
@@ -2033,6 +2177,7 @@ func _do_forage(p: Dictionary, dt: float) -> void:
 					else:
 						regrow[c] = t + float(f["regrow_s"])
 					_astar.set_point_solid(c, false)
+					_reach_main = {}
 				else:
 					var left: int = int(rubble.get(c, 0)) - int(y)
 					if left <= 0:
@@ -2041,6 +2186,7 @@ func _do_forage(p: Dictionary, dt: float) -> void:
 						terrain[_i(c)] = T_GROUND
 						_fdirty = true
 						_astar.set_point_solid(c, false)
+						_reach_main = {}
 					else:
 						rubble[c] = left
 				p["target_cell"] = Vector2i(-1, -1)
