@@ -6,6 +6,8 @@ extends Node2D
 const TILE := 16
 const ART := "res://assets/art/"
 const MARGEM := 192                     # ilha.png tem água desenhada além do mapa (tools/estilo_ilha.py)
+const RUBBLE_FRAMES := 10              # rubble.png (tools/estilo_ilha.py): 8 de terra + 2 de beira d'água
+const RUBBLE_SHORE := 2
 const CREME := Color8(204, 198, 186)     # destaque de 1 px no hover (estilo da ilha)
 
 var sim: VilaSim
@@ -225,8 +227,14 @@ func _sync_terrain(all: bool) -> void:
 				sh.z_index = -1   # no chão, embaixo de todas as copas
 				spr.add_child(sh)
 			VilaSim.T_RUBBLE:
-				spr = _frame_sprite("rubble", 3, _hash(c) % 3, 24)
-				spr.offset = Vector2(-4, -22)
+				# Resto do mundo de antes: na beira do rio, o que a água trouxe (barco encalhado, boia).
+				var shore := false
+				for d: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+					if sim.terrain_at(c + d) == VilaSim.T_WATER:
+						shore = true
+				var fr := RUBBLE_FRAMES - RUBBLE_SHORE + _hash(c) % RUBBLE_SHORE if shore else _hash(c) % (RUBBLE_FRAMES - RUBBLE_SHORE)
+				spr = _frame_sprite("rubble", RUBBLE_FRAMES, fr, 28)
+				spr.offset = Vector2(-7, -25)
 			VilaSim.T_STUMP:
 				spr = _frame_sprite("stump", 1, 0, 16)
 		if spr != null:
@@ -645,17 +653,48 @@ func _draw_orders() -> void:
 func _timer_text(left_mid: Vector2, sec: float, col: Color) -> void:
 	if sec < 0.0:
 		return
-	if _timer_font == null:
-		_timer_font = load("res://assets/fonts/DotGothic16-Regular.ttf")
 	var cam := get_viewport().get_camera_2d()
 	var k := 1.0 / cam.zoom.x if cam != null and cam.zoom.x < 0.99 else 1.0
 	var txt := VilaHud.fmt_clock(sec)
-	var sz := 8
-	var wdt := _timer_font.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, sz).x
+	var wdt := _tiny_width(txt)
 	_overlay.draw_set_transform(left_mid.round(), 0.0, Vector2(k, k))
-	_overlay.draw_rect(Rect2(Vector2(0, -4), Vector2(wdt + 2, 8)), Color(0.05, 0.04, 0.06, 0.8))
-	_overlay.draw_string(_timer_font, Vector2(1, 3), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, sz, col)
+	_overlay.draw_rect(Rect2(Vector2(0, -4), Vector2(wdt + 2, 7)), Color(0.05, 0.04, 0.06, 0.8))
+	_tiny_text(Vector2(1, -3), txt, col)
 	_overlay.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+
+## Algarismos de 3x5 px desenhados à mão: o relógio das obras fica pequeno sem borrar (a fonte de 8 px
+## era grande demais para ficar em cima de cada obra e de cada pessoa).
+const TINY := {
+	"0": ["111", "101", "101", "101", "111"], "1": ["010", "110", "010", "010", "111"],
+	"2": ["111", "001", "111", "100", "111"], "3": ["111", "001", "011", "001", "111"],
+	"4": ["101", "101", "111", "001", "001"], "5": ["111", "100", "111", "001", "111"],
+	"6": ["111", "100", "111", "101", "111"], "7": ["111", "001", "010", "010", "010"],
+	"8": ["111", "101", "111", "101", "111"], "9": ["111", "101", "111", "001", "111"],
+	":": ["0", "1", "0", "1", "0"],
+}
+
+
+func _tiny_width(txt: String) -> float:
+	var w := 0.0
+	for ch in txt:
+		w += float(String(TINY.get(ch, ["000"])[0]).length() + 1)
+	return maxf(0.0, w - 1.0)
+
+
+func _tiny_text(at: Vector2, txt: String, col: Color) -> void:
+	var x := at.x
+	for ch in txt:
+		var rows: Array = TINY.get(ch, [])
+		if rows.is_empty():
+			x += 4.0
+			continue
+		for y in rows.size():
+			var r := String(rows[y])
+			for i in r.length():
+				if r[i] == "1":
+					_overlay.draw_rect(Rect2(Vector2(x + i, at.y + y), Vector2.ONE), col)
+		x += float(String(rows[0]).length() + 1)
 
 
 func _draw_overlay() -> void:

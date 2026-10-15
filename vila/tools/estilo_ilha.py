@@ -235,8 +235,59 @@ def toco():
     return im
 
 
+def pneu_solto():
+    """Pneu deitado que o rio largou."""
+    im = Image.new('RGBA', (16, 10))
+    d = ImageDraw.Draw(im)
+    d.ellipse([1, 2, 15, 9], GS + (255,))      # sombra
+    d.ellipse([0, 0, 14, 8], D + (255,))
+    d.ellipse([1, 0, 13, 6], LI + (255,))
+    d.ellipse([4, 2, 10, 5], D + (255,))
+    return im
+
+
+def barco_encalhado():
+    """Casco de barco virado e furado, encalhado na beira (não navega: é resto do mundo de antes)."""
+    im = Image.new('RGBA', (28, 16))
+    d = ImageDraw.Draw(im)
+    d.ellipse([2, 6, 27, 15], GS + (255,))     # sombra
+    d.polygon([(1, 7), (5, 2), (20, 1), (26, 5), (24, 11), (6, 12)], ME + (255,))
+    d.polygon([(3, 7), (6, 3), (19, 2), (24, 5), (22, 9), (7, 10)], MC + (255,))
+    for x in (8, 12, 16, 20):                  # tábuas do casco
+        d.line([(x, 3), (x - 1, 10)], ME + (255,))
+    d.polygon([(11, 4), (15, 4), (14, 7), (11, 7)], D + (255,))   # furo
+    d.line([(13, 5), (14, 6)], LI + (255,))
+    d.line([(24, 10), (27, 13)], CR + (255,))  # corda solta
+    d.point((26, 14), CR + (255,))
+    return im
+
+
+def com(*partes, w=30, h=28):
+    """Junta peças num quadro: (imagem, x, y) com y medido de baixo."""
+    im = Image.new('RGBA', (w, h))
+    for p, x, y in partes:
+        im.alpha_composite(p, (x, h - p.height - y))
+    return im
+
+
+# Quadros do entulho (rubble.png, 30x28 cada). Os 2 últimos são de beira d'água: a vista usa eles nas
+# células encostadas no rio (o que o rio trouxe), os outros no resto da ilha.
+ENTULHO_BEIRA = 2
+
+
 def entulho():
-    return folha([peca('sucata'), peca('chapa_ondulada'), peca('caixa_e_chapa')], 24, 24)
+    pn = pneu_solto()
+    quadros = [
+        peca('sucata'), peca('chapa_ondulada'), peca('caixa_e_chapa'), peca('sucata_nova'), peca('pneus'),
+        com((peca('barril'), 4, 2), (pn, 12, 0)),
+        com((pn, 2, 6), (pn.transpose(Image.FLIP_LEFT_RIGHT), 11, 0)),
+        com((peca('chapa_ondulada'), 0, 4), (peca('barril'), 19, 0)),
+        # beira d'água
+        barco_encalhado(),
+        com((peca('boia_2'), 3, 1), (pn, 13, 0)),
+    ]
+    assert ENTULHO_BEIRA == 2
+    return folha(quadros, 30, 28)
 
 
 def fogueira():

@@ -135,6 +135,8 @@ func _gen_map() -> void:
 					k = T_TREE
 				elif r < float(m.get("ring_rubble", 0.16)):
 					k = T_RUBBLE
+			elif _shore(x, y) and r < float(m.get("shore_rubble", 0.0)):
+				k = T_RUBBLE   # o que o rio trouxe e largou na beira
 			else:
 				if trees or r < 0.06:
 					k = T_TREE
@@ -143,6 +145,10 @@ func _gen_map() -> void:
 			terrain[i] = k
 			if k == T_RUBBLE:
 				rubble[Vector2i(x, y)] = int(bal["rubble_amount"])
+
+
+func _shore(x: int, y: int) -> bool:
+	return not _island(x - 1, y) or not _island(x + 1, y) or not _island(x, y - 1) or not _island(x, y + 1)
 
 
 ## Terra ou água pela máscara da ilha (sem máscara: tudo terra).
