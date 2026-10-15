@@ -841,7 +841,7 @@ func food_mult() -> float:
 	var m := 1.0 + perk_bonus("sementes")
 	for b in buildings:
 		if _working(b):
-			m += float(def(String(b["type"])).get("food_bonus", 0.0))
+			m += float(level_def(b).get("food_bonus", def(String(b["type"])).get("food_bonus", 0.0)))
 	return m
 
 

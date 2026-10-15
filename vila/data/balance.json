@@ -165,7 +165,11 @@
     2,
     2
    ],
-   "tower": 1, "limit": {"base": 2, "per_tower": 1},
+   "tower": 1,
+   "limit": {
+    "base": 2,
+    "per_tower": 1
+   },
    "res": "agua",
    "levels": [
     {
@@ -186,6 +190,17 @@
      "slots": 1,
      "rate_s": 18,
      "tower": 2
+    },
+    {
+     "cost": {
+      "madeira": 40,
+      "sucata": 25,
+      "pecas": 5
+     },
+     "time_s": 900,
+     "slots": 2,
+     "rate_s": 14,
+     "tower": 4
     }
    ]
   },
@@ -194,7 +209,11 @@
     2,
     2
    ],
-   "tower": 1, "limit": {"base": 2, "per_tower": 1},
+   "tower": 1,
+   "limit": {
+    "base": 2,
+    "per_tower": 1
+   },
    "res": "comida",
    "levels": [
     {
@@ -231,7 +250,11 @@
     2,
     2
    ],
-   "tower": 1, "limit": {"base": 2, "per_tower": 1},
+   "tower": 1,
+   "limit": {
+    "base": 2,
+    "per_tower": 1
+   },
    "storage": true,
    "levels": [
     {
@@ -276,7 +299,8 @@
     1,
     1
    ],
-   "tower": 1, "limit": 1,
+   "tower": 1,
+   "limit": 1,
    "levels": [
     {
      "cost": {
@@ -302,6 +326,27 @@
      "time_s": 180,
      "slots": 2,
      "rate_s": 6
+    },
+    {
+     "cost": {
+      "madeira": 40,
+      "sucata": 20
+     },
+     "time_s": 600,
+     "slots": 2,
+     "rate_s": 4.5,
+     "tower": 3
+    },
+    {
+     "cost": {
+      "madeira": 80,
+      "sucata": 40,
+      "pecas": 8
+     },
+     "time_s": 1500,
+     "slots": 3,
+     "rate_s": 3.5,
+     "tower": 4
     }
    ]
   },
@@ -321,6 +366,27 @@
      "time_s": 180,
      "slots": 2,
      "rate_s": 9
+    },
+    {
+     "cost": {
+      "madeira": 35,
+      "sucata": 15
+     },
+     "time_s": 600,
+     "slots": 2,
+     "rate_s": 7,
+     "tower": 3
+    },
+    {
+     "cost": {
+      "madeira": 70,
+      "sucata": 35,
+      "pecas": 8
+     },
+     "time_s": 1500,
+     "slots": 3,
+     "rate_s": 5.5,
+     "tower": 4
     }
    ]
   },
@@ -329,7 +395,8 @@
     3,
     3
    ],
-   "tower": 3, "limit": 1,
+   "tower": 3,
+   "limit": 1,
    "open": true,
    "levels": [
     {
@@ -346,7 +413,8 @@
     3,
     2
    ],
-   "tower": 3, "limit": 1,
+   "tower": 3,
+   "limit": 1,
    "res": "pecas",
    "power_use": 2,
    "levels": [
@@ -375,6 +443,20 @@
       "sucata": 2
      },
      "tower": 4
+    },
+    {
+     "cost": {
+      "madeira": 140,
+      "sucata": 100,
+      "pecas": 25
+     },
+     "time_s": 3600,
+     "slots": 3,
+     "rate_s": 24,
+     "input": {
+      "sucata": 2
+     },
+     "tower": 5
     }
    ]
   },
@@ -442,6 +524,18 @@
      "rate_s": 32,
      "no_water": true,
      "tower": 4
+    },
+    {
+     "cost": {
+      "madeira": 100,
+      "sucata": 50,
+      "pecas": 15
+     },
+     "time_s": 2700,
+     "slots": 3,
+     "rate_s": 26,
+     "no_water": true,
+     "tower": 5
     }
    ]
   },
@@ -460,6 +554,16 @@
       "pecas": 10
      },
      "time_s": 1800
+    },
+    {
+     "cost": {
+      "madeira": 120,
+      "sucata": 80,
+      "pecas": 25
+     },
+     "time_s": 3000,
+     "food_bonus": 0.5,
+     "tower": 5
     }
    ]
   },
@@ -481,6 +585,17 @@
      "time_s": 2400,
      "slots": 2,
      "rate_s": 20
+    },
+    {
+     "cost": {
+      "madeira": 120,
+      "sucata": 80,
+      "pecas": 25
+     },
+     "time_s": 3000,
+     "slots": 3,
+     "rate_s": 15,
+     "tower": 5
     }
    ]
   }
@@ -552,7 +667,9 @@
    "praca",
    "oficina",
    "gerador",
-   "galinheiro"
+   "galinheiro",
+   "serraria@2",
+   "ferrovelho@2"
   ],
   "4": [
    "area",
@@ -561,11 +678,18 @@
    "estufa",
    "painel",
    "oficina@2",
-   "galinheiro@2"
+   "galinheiro@2",
+   "serraria@3",
+   "ferrovelho@3",
+   "poco@3"
   ],
   "5": [
    "area",
-   "ela"
+   "ela",
+   "oficina@3",
+   "galinheiro@3",
+   "cozinha@2",
+   "estufa@2"
   ]
  },
  "prototype_max_tower": 5,
@@ -580,8 +704,29 @@
   ],
   "pity_after_commons": 15,
   "two_passives_chance": 0.2,
-  "power_points": {"comum": 1, "rara": 2, "excelente": 3},
-  "brings_by_power": {"1": [[10, 16], [4, 8]], "2": [[5, 10]]},
+  "power_points": {
+   "comum": 1,
+   "rara": 2,
+   "excelente": 3
+  },
+  "brings_by_power": {
+   "1": [
+    [
+     10,
+     16
+    ],
+    [
+     4,
+     8
+    ]
+   ],
+   "2": [
+    [
+     5,
+     10
+    ]
+   ]
+  },
   "excelente_eat_mult": 1.25
  },
  "rarity": {
@@ -752,7 +897,56 @@
    }
   }
  },
- "names": ["Ivo", "Clara", "Davi", "Zé", "Luana", "Otto", "Bia", "Raul", "Iara", "Jonas", "Cida", "Neto", "Lúcia", "Beto", "Tânia", "Edu", "Rita", "Caco", "Dalva", "Tião", "Nair", "Gil", "Lena", "Juca", "Sônia", "Dito", "Vera", "Nando", "Zuza", "Ciro", "Mara", "Tonho", "Ilda", "Paulo", "Rosi", "Quim", "Selma", "Lauro", "Dida", "Fábio", "Inês", "Valter", "Gina", "Mauro", "Elza", "Duda", "Alice", "Sérgio"],
+ "names": [
+  "Ivo",
+  "Clara",
+  "Davi",
+  "Zé",
+  "Luana",
+  "Otto",
+  "Bia",
+  "Raul",
+  "Iara",
+  "Jonas",
+  "Cida",
+  "Neto",
+  "Lúcia",
+  "Beto",
+  "Tânia",
+  "Edu",
+  "Rita",
+  "Caco",
+  "Dalva",
+  "Tião",
+  "Nair",
+  "Gil",
+  "Lena",
+  "Juca",
+  "Sônia",
+  "Dito",
+  "Vera",
+  "Nando",
+  "Zuza",
+  "Ciro",
+  "Mara",
+  "Tonho",
+  "Ilda",
+  "Paulo",
+  "Rosi",
+  "Quim",
+  "Selma",
+  "Lauro",
+  "Dida",
+  "Fábio",
+  "Inês",
+  "Valter",
+  "Gina",
+  "Mauro",
+  "Elza",
+  "Duda",
+  "Alice",
+  "Sérgio"
+ ],
  "bios": 8,
  "story_order": [
   "ari",

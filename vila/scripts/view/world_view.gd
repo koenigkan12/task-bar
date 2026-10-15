@@ -271,12 +271,16 @@ func _frame_sprite(name: String, frames: int, frame: int, height: int) -> Sprite
 func _btex_name(b: Dictionary) -> String:
 	var tp := String(b["type"])
 	var lvl: int = int(b["level"])
-	var maxl := {"moradia": 4, "horta": 3, "poco": 2, "deposito": 3, "oficina": 2, "galinheiro": 2}
+	var maxl := {"moradia": 4, "horta": 3, "poco": 3, "deposito": 3, "oficina": 3, "galinheiro": 3}
+	# Estes têm o nível 1 sem número no nome do arquivo.
+	var plain := {"serraria": 3, "ferrovelho": 3, "cozinha": 2, "estufa": 2}
 	match tp:
 		"torre":
 			return "tower_%d" % mini(5, lvl)
 		"moradia", "horta", "poco", "deposito", "oficina", "galinheiro":
 			return "%s_%d" % [tp, mini(int(maxl[tp]), lvl)]
+	if plain.has(tp) and lvl >= 2:
+		return "%s_%d" % [tp, mini(int(plain[tp]), lvl)]
 	return tp
 
 

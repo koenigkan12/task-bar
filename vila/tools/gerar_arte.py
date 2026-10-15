@@ -3632,6 +3632,8 @@ def main():
     art['estufa'] = estufa()
     art['praca'] = praca()
     art['carroca'] = carroca()
+    import gerar_niveis   # níveis novos: desenho do nível anterior + peças por cima
+    art.update(gerar_niveis.main(art))
     art['people'] = people()
     art['sleep'] = person_sleep()
     art['icons'] = icons()

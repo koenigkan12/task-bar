@@ -989,6 +989,9 @@ func _card_building() -> void:
 	for r in inp:
 		var short := float(sim.stock[r]) < float(inp[r])
 		_card_box.add_child(_stats([_stat(r, "-%d" % int(inp[r]), fmt("UI_NO_INPUT", {"r": I18n.t("RES_" + r)}) if short else fmt("UI_INPUT", {"n": inp[r], "r": I18n.t("RES_" + r)}), C_WARN if short else C_TEXT)]))
+	var fb := float(lv.get("food_bonus", d.get("food_bonus", 0.0)))
+	if fb > 0.0:
+		_card_box.add_child(_stats([_stat("comida", "+%d%%" % int(round(fb * 100.0)), fmt("TIP_FOOD_BONUS", {"n": int(round(fb * 100.0))}))]))
 	var beds := int(lv.get("beds", d.get("beds", 0)))
 	if beds > 0:
 		_card_box.add_child(_stats([_stat("cama", str(beds), fmt("UI_BEDS", {"n": beds, "used": sim.people.size(), "total": sim.beds_total()}))]))
@@ -1014,6 +1017,8 @@ func _card_building() -> void:
 				gain.append(_stat("cama", str(int(nd["beds"])), fmt("UI_GAIN_BEDS", {"n": nd["beds"]})))
 			elif nd.has("cap"):
 				gain.append(_stat("check", "+%d" % int(nd["cap"]), fmt("UI_GAIN_CAP", {"n": nd["cap"]})))
+			elif nd.has("food_bonus"):
+				gain.append(_stat("comida", "+%d%%" % int(round(float(nd["food_bonus"]) * 100.0)), fmt("TIP_FOOD_BONUS", {"n": int(round(float(nd["food_bonus"]) * 100.0))})))
 			elif nd.has("rate_s"):
 				var nr := "%.1f" % (60.0 / float(nd["rate_s"]))
 				gain.append(_stat(String(d.get("res", "seta")), nr + "/min", fmt("UI_GAIN_RATE", {"n": nr})))

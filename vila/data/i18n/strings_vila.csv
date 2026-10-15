@@ -189,7 +189,7 @@ BD_oficina,Transforma sucata em peças. Gasta energia.,Turns scrap into parts. U
 BD_gerador,Dá energia para oficina e estufa.,Powers the workshop and greenhouse.
 BD_painel,"Energia sem barulho, do sol.","Quiet power, from the sun."
 BD_galinheiro,Comida sem gastar água.,Food without using water.
-BD_cozinha,Toda comida rende 30% mais.,All food goes 30% further.
+BD_cozinha,Toda comida rende mais.,All food goes further.
 BD_estufa,"Muita comida, com energia.","Lots of food, with power."
 UI_POWER,Energia,Power
 UI_POWER_LINE,"Energia: gera {out}, gasta {use}","Power: makes {out}, uses {use}"
@@ -325,3 +325,17 @@ ORD_blocked,Não dá pra chegar,Can't get there
 ORD_no_work,Aqui não tem trabalho,No work here
 ORD_gone,,
 TIP_EATS_MORE,"Come {n}% a mais que os outros: quem é muito bom no que faz chega sem nada e com fome.","Eats {n}% more than others: someone this good arrives empty-handed and hungry."
+TIP_FOOD_BONUS,Toda comida da vila rende {n}% mais.,All of the village's food goes {n}% further.
+B_poco_3,Cisterna,Cistern
+B_oficina_3,Fábrica de peças,Parts factory
+B_galinheiro_3,Granja,Poultry farm
+B_serraria_1,Serraria,Sawmill
+B_serraria_2,Serraria grande,Big sawmill
+B_serraria_3,Serraria a motor,Motor sawmill
+B_ferrovelho_1,Ferro-velho,Scrapyard
+B_ferrovelho_2,Ferro-velho com prensa,Scrapyard with press
+B_ferrovelho_3,Ferro-velho com guindaste,Crane scrapyard
+B_cozinha_1,Cozinha,Kitchen
+B_cozinha_2,Cozinha comunitária,Community kitchen
+B_estufa_1,Estufa,Greenhouse
+B_estufa_2,Estufa irrigada,Irrigated greenhouse
