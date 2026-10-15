@@ -184,6 +184,19 @@ func _init() -> void:
 	var n_b: int = sim.buildings.size()
 	_check(bool(sim.demolish(int(pc["id"]))["ok"]) and sim.buildings.size() == n_b - 1 and sim.building_at(cell0).is_empty(), "desmontar tira o prédio e libera o chão")
 	_check(not bool(sim.demolish(int(sim._first("hatch")["id"]))["ok"]) and not bool(sim.demolish(int(sim.tower_building()["id"]))["ok"]), "bunker e torre não desmontam")
+	# Ninguém passa das camas: moradia ocupada não desmonta e a pessoa da história espera vaga.
+	var sb := VilaSim.new()
+	sb.setup(bal, start, 0)
+	var tent0: Dictionary = sb._first("moradia")
+	_check(not sb.can_demolish(tent0) and not bool(sb.demolish(int(tent0["id"]))["ok"]), "camas: moradia com morador não desmonta se faltar cama")
+	sb.tower = 2
+	for k in 5:
+		sb._arrivals()
+	_check(sb.people.size() == 1 and sb.beds_total() == 1 and sb.beds_free() < 0, "camas: pessoa da história espera cama livre")
+	tent0["level"] = 2
+	sb._invalidate()
+	sb._arrivals()
+	_check(sb.people.size() == 2 and String(sb.people[1]["story"]) == "ari", "camas: com cama livre a pessoa da história entra")
 	# Save e load
 	var d := sim.to_dict()
 	var txt := JSON.stringify(d)

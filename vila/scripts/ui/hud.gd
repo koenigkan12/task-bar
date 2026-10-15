@@ -628,6 +628,9 @@ func refresh() -> void:
 	_merchant_btn.position = Vector2(lx, 33 if _gate_btn.visible else 17)
 	_merchant_btn.size = Vector2.ZERO
 	_people_label.text = "%d/%d" % [sim.people.size(), sim.beds_total()]
+	var homeless := sim.people.size() - sim.beds_total()
+	_people_label.add_theme_color_override("font_color", C_WARN if homeless > 0 else C_TEXT)
+	_people_label.tooltip_text = I18n.t("TIP_PEOPLE") + (("\n" + fmt("TIP_PEOPLE_OVER", {"n": homeless})) if homeless > 0 else "")
 	var hr := sim.local_hour()
 	# Círculo que enche durante o período (dia ou noite); o horário e quanto falta vão na dica.
 	var nf: float = float(sim.bal["time"]["night_from_h"])
@@ -1183,7 +1186,15 @@ func _card_building() -> void:
 					toast(I18n.t("UI_MISSING").format({"list": ""}))
 				_rebuild_card())
 			_card_box.add_child(up)
-	if sim.can_demolish(b):
+	if String(b["state"]) == "built" and sim.demolish_leaves_homeless(b):
+		var dn := Button.new()
+		dn.text = I18n.t("UI_DEMOLISH")
+		dn.theme_type_variation = "FlatButton"
+		dn.disabled = true
+		dn.tooltip_text = I18n.t("UI_DEMOLISH_NO_BEDS")
+		dn.size_flags_horizontal = Control.SIZE_SHRINK_END
+		_card_box.add_child(dn)
+	elif sim.can_demolish(b):
 		var dm := Button.new()
 		dm.text = I18n.t("UI_DEMOLISH")
 		dm.theme_type_variation = "FlatButton"

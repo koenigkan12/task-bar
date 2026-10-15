@@ -59,6 +59,7 @@ var _day_flow_t := 0.0
 var _reach_main := {}   # células alcançáveis a pé da escotilha (cache; vazio = refazer)
 var _rng := RandomNumberGenerator.new()
 var _group_ready_t: float = -1.0
+var _story_wait := false          # pessoa da história pronta esperando cama: a próxima vaga é dela
 var _story_done: Dictionary = {}
 var tower_t: Dictionary = {}       # nível da torre -> quando chegou (o rádio conta os dias a partir daí)
 var perks: Dictionary = {}         # melhorias compradas do mercador: id -> quantas
@@ -643,8 +644,10 @@ func beds_total() -> int:
 	return n
 
 
+## Camas sobrando para quem chega pelo porto. Se uma pessoa da história está esperando, a próxima
+## cama já é dela.
 func beds_free() -> int:
-	return beds_total() - people.size()
+	return beds_total() - people.size() - (1 if _story_wait else 0)
 
 
 ## Prédio pronto e não está em melhoria.
@@ -868,7 +871,14 @@ func can_demolish(b: Dictionary) -> bool:
 	var tp := String(b["type"])
 	if bool(def(tp).get("fixed", false)) or tp == "torre" or tp == "hatch" or tp == "gate":
 		return false
-	return not (tp == "praca" and merchant_here())
+	if tp == "praca" and merchant_here():
+		return false
+	return not demolish_leaves_homeless(b)
+
+
+## Desmontar esta moradia deixaria gente sem cama?
+func demolish_leaves_homeless(b: Dictionary) -> bool:
+	return _beds_of(b) > 0 and beds_total() - _beds_of(b) < people.size()
 
 
 ## Desmonta um prédio pronto: devolve parte do que custou (balance "demolish_refund") e libera o chão.
@@ -1636,12 +1646,17 @@ func _regrow() -> void:
 ## Quem chega pelo porto. Grupos vêm desde a antena 1, sempre que sobra cama; a antena só encurta a
 ## espera (group_cooldown). As vozes do rádio continuam presas ao nível da antena de cada uma.
 func _arrivals() -> void:
-	# Pessoas da história (vozes do rádio): chegam sozinhas, fora do sorteio, quando a condição fecha,
-	# e sempre entram (mesmo sem cama livre: dormem perto da fogueira até sobrar uma).
+	# Pessoas da história (vozes do rádio): chegam sozinhas, fora do sorteio, quando a condição fecha
+	# e tem cama livre. Ninguém entra sem cama.
+	_story_wait = false
 	for sid in bal.get("story_order", []):
 		var story := String(sid)
 		if _story_done.has(story) or not _story_ready(story):
 			continue
+		# Espera uma cama vagar (e segura a vaga: nenhum grupo entra na frente).
+		if beds_total() - people.size() <= 0:
+			_story_wait = true
+			return
 		_story_done[story] = true
 		var sd: Dictionary = bal["story_people"][story]
 		var from := _v(bal["arrivals"]["walk_in_from"])
