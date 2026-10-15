@@ -84,7 +84,8 @@
   "step_s": 0.25,
   "offline_step_s": 60.0,
   "offline_rethink_s": 120.0,
-  "offline_fraction": 0.2,
+  "offline_fraction": 1.0,
+  "offline_prod_h": 4,
   "offline_cap_h": 72,
   "offline_min_s": 120,
   "night_from_h": 22,
@@ -121,7 +122,8 @@
  "vines_after_s": 1500,
  "demolish_refund": 0.5,
  "storage": {
-  "hatch_cap": 20
+  "hatch_cap": 20,
+  "box_mult": 2
  },
  "people": {
   "speed_tiles_s": 2.4,
@@ -146,7 +148,7 @@
   "sick_until": 60,
   "grave_below": 15,
   "weak_mult": 0.7,
-  "offline_floor": 20,
+  "offline_floor": 45,
   "at_zero": "die"
  },
  "defense": {
@@ -208,7 +210,8 @@
    "wall_k": 0.6,
    "wall_chip": 0.3,
    "splash_k": 2.0,
-   "max_broken": 1
+   "loot_frac": 0.03,
+   "loot_max": 0.1
   },
   "max_lost_night": 2,
   "hatch_gun": {

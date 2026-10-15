@@ -445,7 +445,7 @@ TIP_RAID_NEXT,Próxima noite: {n} zumbis,Next night: {n} zombies
 TIP_RAID_HORDE,Noite de horda: vêm de dois lados.,Horde night: they come from two sides.
 TIP_RAID_BOSS,Com {n} chefão: bate forte em muro.,With {n} boss: hits walls hard.
 TIP_RAID_HORDE_TOMORROW,Amanhã é noite de horda.,Tomorrow is a horde night.
-TIP_RAID_HOW,"Ninguém da vila luta: só muros, torres e minas. De manhã eles voltam para a água.","Nobody in the village fights: only walls, towers and mines. At dawn they go back to the water."
+TIP_RAID_HOW,"Ninguém da vila luta: só muros, torres e minas. De manhã eles voltam para a água. Com o jogo fechado nada quebra, e horda e chefão esperam você.","Nobody in the village fights: only walls, towers and mines. At dawn they go back to the water. With the game closed nothing breaks, and hordes and bosses wait for you."
 UI_RAID_WARN,Zumbis esta noite: {n},Zombies tonight: {n}
 UI_RAID_HORDE,"Horda esta noite: {n} zumbis, de dois lados","Horde tonight: {n} zombies, from two sides"
 UI_RAID_BOSS,Horda com chefão esta noite: {n} zumbis,Horde with a boss tonight: {n} zombies
@@ -454,6 +454,10 @@ UI_RAID_OVER,"Amanheceu: {k} zumbis caíram, nada perdido","Dawn: {k} zombies do
 UI_RAID_OVER_LOST,"Amanheceu: {k} zumbis caíram, {n} prédios avariados","Dawn: {k} zombies down, {n} buildings damaged"
 TIP_AWAY_RAIDS,Noites com zumbi enquanto você estava fora: {n},Zombie nights while you were away: {n}
 TIP_AWAY_KILLED,Zumbis derrubados pelas defesas: {n},Zombies taken down by the defenses: {n}
-TIP_AWAY_BROKEN,Prédios avariados (fora do jogo é no máximo 1): {n},Buildings damaged (at most 1 while away): {n}
 GOAL_repair,Conserte: {b},Repair: {b}
 GOAL_rebuild,Reconstrua: {b},Rebuild: {b}
+UI_BOX,Caixa do turno,Shift box
+TIP_BOX,O que a vila juntou com o jogo fechado e não coube no depósito. Coletar põe no depósito o que couber.,What the village gathered while the game was closed that didn't fit in storage. Collect moves what fits into storage.
+UI_COLLECT,Coletar,Collect
+UI_BOX_FULL,Depósito cheio: gaste ou aumente o depósito para coletar,Storage full: spend or expand storage to collect
+TIP_AWAY_LOOT,Levado pelos zumbis nas noites em que a defesa não deu conta (no máximo 10% por volta). Nada quebra com o jogo fechado.,Taken by zombies on nights the defense fell short (at most 10% per absence). Nothing breaks while the game is closed.

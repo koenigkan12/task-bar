@@ -17,7 +17,10 @@ var _zdirty := true
 var _next := 1
 var _cool: Dictionary = {}            # id do prédio de defesa -> segundos até o próximo tiro
 var _warned_day := -1
-var offline_broken := 0               # prédios avariados nesta volta offline (teto: offline.max_broken)
+var offline_lost: Dictionary = {}     # recursos que os zumbis levaram nesta volta fechada (teto: offline.loot_max)
+var _loot_base: Dictionary = {}       # estoque no começo da volta (o teto é uma fração dele)
+var owed_horde := false               # horda que caiu com o jogo fechado: vem na próxima noite aberta
+var owed_boss := 0
 
 
 func _init(s: VilaSim) -> void:
@@ -42,6 +45,10 @@ func forecast(day: int) -> Dictionary:
 	var boss := 0
 	if day % int(d["boss_every"]) == 0:
 		boss = int(d["boss"]["base"]) + day / int(d["boss"]["per_days"])
+	# Horda e chefão que caíram com o jogo fechado esperam a próxima noite com você olhando.
+	if not sim.offline and (owed_horde or owed_boss > 0) and day >= sim.day_number() - 1:
+		horde = true
+		boss = maxi(boss, owed_boss)
 	var n: int
 	if horde:
 		var hd: Dictionary = d["horde"]
@@ -72,6 +79,14 @@ func zstats(kind: String) -> Dictionary:
 func night_start() -> void:
 	var day := sim.day_number()
 	tonight = forecast(day)
+	if sim.offline and (bool(tonight["horde"]) or int(tonight["boss"]) > 0):
+		owed_horde = owed_horde or bool(tonight["horde"])
+		owed_boss = maxi(owed_boss, int(tonight["boss"]))
+		var dd: Dictionary = D()["daily"]
+		tonight = {"n": int(dd["base"]) + day / int(dd["per_days"]), "horde": false, "boss": 0, "day": day}
+	elif not sim.offline and int(tonight["n"]) > 0:
+		owed_horde = false
+		owed_boss = 0
 	report = {"day": day, "came": int(tonight["n"]) + int(tonight["boss"]), "killed": 0, "broke": [], "ruined": [],
 			"walls": 0, "horde": bool(tonight["horde"]), "boss": int(tonight["boss"]), "mines": 0, "offline": sim.offline}
 	pending.clear()
@@ -460,7 +475,7 @@ func _ruin(b: Dictionary) -> void:
 	sim.changed.emit()
 
 
-## Muros: no amanhecer voltam inteiros pagando o conserto, se o estoque der (como no Clash).
+## Muros: no amanhecer voltam inteiros pagando o conserto, se o estoque der (fechado, de graça).
 func _repair_walls() -> int:
 	var n := 0
 	for b in sim.buildings:
@@ -470,7 +485,9 @@ func _repair_walls() -> int:
 		var h := hp(b)
 		if h >= mh:
 			continue
-		var cost := repair_cost(b)
+		# Com o jogo fechado a base volta inteira de graça (como no Clash): o custo da noite é só o
+		# que os zumbis levaram, com teto.
+		var cost := repair_cost(b) if not sim.offline else {}
 		if sim.can_afford(cost):
 			sim._pay(cost)
 			b["hp"] = mh
@@ -676,20 +693,21 @@ func _resolve_offline() -> void:
 		return
 	report["killed"] = int(floor(float(came) * defense / maxf(1.0, attack)))
 	_chip_walls(walls)
-	# Teto: no máximo `max_broken` prédios avariados em toda a volta fora do jogo, nunca ruína.
-	var cands: Array[Dictionary] = []
-	for b in sim.buildings:
-		if attackable(b) and not bool(b.get("broken", false)):
-			cands.append(b)
-	if cands.is_empty():
-		return
-	var shore := _spawn_spots(1)
-	var from := Vector2(shore[0]) if not shore.is_empty() else sim.center()
-	cands.sort_custom(func(a: Dictionary, c: Dictionary) -> bool: return center_of(a).distance_to(from) < center_of(c).distance_to(from))
-	var nb := mini(int(od["max_broken"]) - offline_broken, int(ceil((attack - defense) / maxf(1.0, float(hz["hp"]) * 4.0))))
-	for i in mini(maxi(0, nb), cands.size()):
-		_break(cands[i])
-		offline_broken += 1
+	# Como o ataque do Clash: nada quebra; os zumbis levam um pouco do estoque, com teto por volta.
+	var lf := float(od["loot_frac"]) * minf(1.0, (attack - defense) / maxf(1.0, attack))
+	for r in ["comida", "agua", "madeira", "sucata"]:
+		var room := float(od["loot_max"]) * float(_loot_base.get(r, 0.0)) - float(offline_lost.get(r, 0.0))
+		var take := minf(room, float(sim.stock[r]) * lf)
+		if take >= 1.0:
+			take = floorf(take)
+			sim.stock[r] = float(sim.stock[r]) - take
+			offline_lost[r] = float(offline_lost.get(r, 0.0)) + take
+
+
+## Começo de uma volta fechada: zera o que foi levado e guarda a base do teto.
+func offline_start() -> void:
+	offline_lost = {}
+	_loot_base = sim.stock.duplicate()
 
 
 func _chip_walls(amount: float) -> void:
@@ -715,12 +733,15 @@ func to_dict() -> Dictionary:
 	var ps: Array = []
 	for pd in pending:
 		ps.append({"kind": pd["kind"], "cell": [Vector2i(pd["cell"]).x, Vector2i(pd["cell"]).y], "at": pd["at"]})
-	return {"zombies": zs, "pending": ps, "tonight": tonight, "report": report, "last": last_report, "warned": _warned_day}
+	return {"zombies": zs, "pending": ps, "tonight": tonight, "report": report, "last": last_report, "warned": _warned_day,
+			"owed_horde": owed_horde, "owed_boss": owed_boss}
 
 
 func from_dict(d: Dictionary) -> void:
 	zombies.clear()
 	pending.clear()
+	owed_horde = bool(d.get("owed_horde", false))
+	owed_boss = int(d.get("owed_boss", 0))
 	for e in d.get("zombies", []):
 		zombies.append({"id": _next, "kind": String(e["kind"]), "pos": Vector2(float(e["pos"][0]), float(e["pos"][1])),
 				"hp": float(e["hp"]), "max": float(e["max"]), "path": PackedVector2Array(), "tgt": -1, "hit_t": 0.0,

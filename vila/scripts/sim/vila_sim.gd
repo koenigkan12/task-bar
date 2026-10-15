@@ -58,6 +58,8 @@ var defense: VilaDefense         # zumbis, torres, muros e minas (scripts/sim/de
 var mine_credits: int = 0         # minas compradas do mascate: as próximas saem de graça
 var died_ids: Array[int] = []    # quem morreu e a tela ainda não mostrou caindo (a vista consome)
 var offline: bool = false        # durante o alcance offline: produção e consumo pela fração
+var offline_el := 0.0            # segundos já simulados nesta volta fechada (rende só até time.offline_prod_h)
+var box: Dictionary = {}         # caixa do turno: o que rendeu fechado e passou do depósito (coleta na volta)
 var _next_id: int = 1
 var _astar: AStarGrid2D
 var _m_builders := -1     # cache por passo: quantos bons de obra estão livres
@@ -704,12 +706,37 @@ func day_number() -> int:
 func cap(res: String) -> float:
 	if _m_cap.has(res):
 		return _m_cap[res]
+	var c := cap_base()
+	if offline:
+		c *= float(bal["storage"].get("box_mult", 1.0))   # fechado: o que passa do depósito vai para a caixa
+	_m_cap[res] = c
+	return c
+
+
+## Teto do depósito (bunker + depósitos), sem contar a caixa do turno.
+func cap_base() -> float:
 	var c: float = float(bal["storage"]["hatch_cap"])
 	for b in buildings:
 		if String(b["type"]) == "deposito" and String(b["state"]) != "site":
 			c += float(level_def(b).get("cap", 0))
-	_m_cap[res] = c
 	return c
+
+
+## Coleta a caixa do turno: o que couber no depósito entra, o resto continua na caixa.
+func collect_box() -> Dictionary:
+	var got := {}
+	for r in box.keys():
+		var room := maxf(0.0, cap(r) - float(stock[r]))
+		var n := minf(room, float(box[r]))
+		if n <= 0.0:
+			continue
+		stock[r] = float(stock[r]) + n
+		box[r] = float(box[r]) - n
+		got[r] = int(n)
+		if float(box[r]) < 0.5:
+			box.erase(r)
+	changed.emit()
+	return got
 
 
 func beds_total() -> int:
@@ -1806,6 +1833,9 @@ func advance(seconds: float) -> void:
 			if jump > step:
 				t += jump - 0.01
 				left -= jump - 0.01
+				if offline:
+					offline_el += jump - 0.01
+					_offline_build(jump - 0.01)
 				_regrow()
 				_radio_step()
 				continue
@@ -1830,6 +1860,9 @@ func _secs_to_morning() -> float:
 
 func _step(dt: float) -> void:
 	t += dt
+	if offline:
+		offline_el += dt
+		_offline_build(dt)
 	_m_urg.clear()   # o estoque muda a cada passo; limite e camas só mudam com prédio (_invalidate)
 	_m_builders = -1
 	var night := is_night()
@@ -1864,7 +1897,60 @@ func _step(dt: float) -> void:
 
 
 func _prod_frac() -> float:
-	return float(bal["time"]["offline_fraction"]) if offline else 1.0
+	if not offline:
+		return 1.0
+	if offline_el >= _offline_prod_s():
+		return 0.0   # passou da janela: a vila fica em pausa até você voltar
+	return float(bal["time"]["offline_fraction"])
+
+
+func _offline_prod_s() -> float:
+	return float(bal["time"].get("offline_prod_h", 4.0)) * 3600.0
+
+
+## Fechado, a obra mais antiga sem ninguém nela anda sozinha (como o timer do Clash).
+func _offline_build(dt: float) -> void:
+	var best: Dictionary = {}
+	for b in buildings:
+		var st := String(b["state"])
+		if (st == "site" or st == "upgrade") and int(b.get("builder", -1)) < 0:
+			if best.is_empty() or float(b.get("queued_t", 0.0)) < float(best.get("queued_t", 0.0)):
+				best = b
+	if best.is_empty():
+		return
+	best["progress"] = float(best["progress"]) + dt
+	if float(best["progress"]) >= float(best["total"]):
+		_finish(best)
+
+
+## Depois da janela de produção: só o relógio, as obras, as noites (contas de defesa) e o rádio.
+## Ninguém anda nem come; é rápido, então 72 h fechado não pesam.
+func _offline_pause(seconds: float) -> void:
+	var left := seconds
+	while left > 1e-6:
+		var dt := minf(240.0, left)   # menor que a noite (~375 s): nenhuma noite passa sem ser vista
+		t += dt
+		left -= dt
+		offline_el += dt
+		var night := is_night()
+		if _was_night and not night:
+			_night_end()
+		elif night and not _was_night:
+			_night_start()
+		_was_night = night
+		_offline_build(dt)
+		_regrow()
+		_radio_step()
+
+
+## Avança fechado: primeiro a janela que rende (o mesmo código do jogo aberto), depois a pausa.
+func _offline_advance(seconds: float) -> void:
+	var prod_left := maxf(0.0, _offline_prod_s() - offline_el)
+	var a := minf(seconds, prod_left)
+	if a > 0.0:
+		advance(a)
+	if seconds - a > 0.0:
+		_offline_pause(seconds - a)
 
 
 func _needs(dt: float, night: bool) -> void:
@@ -2341,8 +2427,12 @@ func _person_step(p: Dictionary, dt: float, night: bool, rethink: bool) -> void:
 	elif not night and (kind == "sleep" or kind == "guard"):
 		_set_job(p, {"kind": "idle"})
 		kind = "idle"
-	# Doente: larga tudo e vai descansar em casa até melhorar.
-	if not night:
+	# Doente: larga tudo e vai descansar em casa até melhorar. Com o jogo fechado não: quem está
+	# fraco segue trabalhando devagar (senão a vila inteira deitava sem comida e ninguém produzia).
+	if offline and kind == "rest":
+		_set_job(p, {"kind": "idle"})
+		kind = "idle"
+	elif not night:
 		var hs := health_state(p)
 		if (hs == "sick" or hs == "grave") and kind != "rest":
 			_set_job(p, {"kind": "rest"})
@@ -2932,7 +3022,7 @@ func to_dict() -> Dictionary:
 			"rng": _rng.state, "tower_t": tower_t, "perks": perks, "merchant": merchant, "auto_sell": auto_sell, "auto_pick": auto_pick,
 			"radio": radio_heard, "ela_t": ela_t, "merchant_key": _merchant_key,
 			"cycle_t0": cycle_t0, "work_tonight": work_tonight, "fog_next": fog_next, "fog_now": fog_now,
-			"fog_bonus_until": fog_bonus_until, "defense": defense.to_dict(), "mine_credits": mine_credits}
+			"fog_bonus_until": fog_bonus_until, "defense": defense.to_dict(), "mine_credits": mine_credits, "box": box}
 
 
 func from_dict(d: Dictionary, balance: Dictionary, tz_bias: int = 0) -> void:
@@ -3032,6 +3122,10 @@ func from_dict(d: Dictionary, balance: Dictionary, tz_bias: int = 0) -> void:
 	fog_bonus_until = float(d.get("fog_bonus_until", 0.0))
 	defense.from_dict(d.get("defense", {}))
 	mine_credits = int(d.get("mine_credits", 0))
+	box = {}
+	var bx: Dictionary = d.get("box", {})
+	for r in bx:
+		box[String(r)] = float(bx[r])
 	_was_night = is_night()
 	_lines_dirty = true
 	_invalidate()
@@ -3050,7 +3144,7 @@ func catch_up(now_unix: float) -> Dictionary:
 	var ctx := catch_up_start(now_unix)
 	if ctx.is_empty():
 		return {}
-	advance(float(ctx["left"]))
+	_offline_advance(float(ctx["left"]))
 	return catch_up_finish(ctx, now_unix)
 
 
@@ -3065,7 +3159,9 @@ func catch_up_start(now_unix: float) -> Dictionary:
 		return {}
 	elapsed = minf(elapsed, float(tb["offline_cap_h"]) * 3600.0)
 	offline = true
-	defense.offline_broken = 0
+	offline_el = 0.0
+	_m_cap.clear()
+	defense.offline_start()
 	return {"seconds": elapsed, "left": elapsed, "before": stock.duplicate(), "built0": int(stats["built"]),
 			"joined0": int(stats["joined"]), "radio0": radio_heard.size(), "tower0": tower, "fogs0": int(stats.get("fogs", 0)), "left0": int(stats.get("left", 0)),
 			"raids0": int(stats.get("nights_def", 0)), "zk0": int(stats.get("z_killed", 0))}
@@ -3074,21 +3170,27 @@ func catch_up_start(now_unix: float) -> Dictionary:
 func catch_up_chunk(ctx: Dictionary, seconds: float) -> bool:
 	var d := minf(seconds, float(ctx["left"]))
 	offline = true
-	advance(d)
+	_offline_advance(d)
 	ctx["left"] = float(ctx["left"]) - d
 	return float(ctx["left"]) <= 0.0
 
 
 func catch_up_finish(ctx: Dictionary, now_unix: float) -> Dictionary:
 	offline = false
+	_m_cap.clear()
 	t = maxf(t, now_unix)
 	var delta := {}
 	for r in RES:
 		delta[r] = int(round(float(stock[r]) - float(ctx["before"][r])))
+		# O que passou do depósito fica na caixa do turno (o jogador coleta).
+		var over := float(stock[r]) - cap(r)
+		if over > 0.0:
+			box[r] = float(box.get(r, 0.0)) + over
+			stock[r] = cap(r)
 	return {"seconds": float(ctx["seconds"]), "delta": delta, "built": int(stats["built"]) - int(ctx["built0"]),
 			"joined": int(stats["joined"]) - int(ctx["joined0"]), "group": not gate_group.is_empty(),
 			"radio": radio_heard.size() - int(ctx["radio0"]), "tower": tower, "tower_up": tower - int(ctx.get("tower0", tower)),
 			"fogs": int(stats.get("fogs", 0)) - int(ctx.get("fogs0", 0)),
 			"left": int(stats.get("left", 0)) - int(ctx.get("left0", 0)), "sick": sick_count(),
 			"raids": int(stats.get("nights_def", 0)) - int(ctx.get("raids0", 0)), "z_killed": int(stats.get("z_killed", 0)) - int(ctx.get("zk0", 0)),
-			"raid_broken": defense.offline_broken}
+			"lost": defense.offline_lost.duplicate(), "box": box.duplicate()}

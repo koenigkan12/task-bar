@@ -985,9 +985,14 @@ func show_welcome(summary: Dictionary) -> void:
 	if int(summary.get("raids", 0)) > 0:
 		var rr := _stats([_stat("zumbi", "x%d" % int(summary["raids"]), fmt("TIP_AWAY_RAIDS", {"n": summary["raids"]})),
 				_stat("espada", str(int(summary.get("z_killed", 0))), fmt("TIP_AWAY_KILLED", {"n": summary.get("z_killed", 0)}), C_GOOD)])
-		if int(summary.get("raid_broken", 0)) > 0:
-			rr.add_child(_stat("avariado", str(int(summary["raid_broken"])), fmt("TIP_AWAY_BROKEN", {"n": summary["raid_broken"]}), C_WARN))
 		_card_box.add_child(rr)
+		var lost: Dictionary = summary.get("lost", {})
+		if not lost.is_empty():
+			var lr: Array = [_icon_rect("zumbi")]
+			for r in lost:
+				lr.append(_stat(r, "-%d" % int(lost[r]), I18n.t("TIP_AWAY_LOOT"), C_WARN))
+			_card_box.add_child(_row(lr))
+	_box_lines()
 	var ok := Button.new()
 	ok.text = I18n.t("UI_OK")
 	ok.pressed.connect(close_card)
@@ -1143,6 +1148,8 @@ func _card_building() -> void:
 	var lv := sim.level_def(b)
 	if _damage_lines(b):
 		return
+	if tp == "hatch":
+		_box_lines()
 	if d.has("defense") or tp == "muro" or tp == "mina":
 		_card_box.add_child(_stats(_defense_stats(tp, lv, b)))
 	if tp == "muro":
@@ -1697,6 +1704,33 @@ func _build_row(type: String) -> HBoxContainer:
 
 
 # ================================================================ defesa
+## Caixa do turno: o que rendeu com o jogo fechado e não coube no depósito, com o botão de coletar.
+func _box_lines() -> void:
+	if sim.box.is_empty():
+		return
+	var items: Array = []
+	for r in VilaSim.RES:
+		if sim.box.has(r) and float(sim.box[r]) >= 1.0:
+			items.append(_stat(r, "+%d" % int(sim.box[r]), I18n.t("TIP_BOX")))
+	if items.is_empty():
+		return
+	var cb := Button.new()
+	cb.text = I18n.t("UI_COLLECT")
+	cb.icon = icon("check")
+	cb.tooltip_text = I18n.t("TIP_BOX")
+	cb.pressed.connect(func() -> void:
+		var got := sim.collect_box()
+		if got.is_empty():
+			toast(I18n.t("UI_BOX_FULL"))
+		elif sim.box.is_empty():
+			cb.disabled = true   # cartão de boas-vindas não se refaz sozinho
+		refresh()
+		_rebuild_card())
+	_card_box.add_child(_label(I18n.t("UI_BOX"), C_AMBER))
+	_card_box.add_child(_stats(items))
+	_card_box.add_child(cb)
+
+
 ## Avariado ou em ruína: a linha que diz e o botão de consertar/reconstruir com o custo. Devolve true
 ## quando o resto do cartão não vale (ruína não produz nem sobe de nível).
 func _damage_lines(b: Dictionary) -> bool:

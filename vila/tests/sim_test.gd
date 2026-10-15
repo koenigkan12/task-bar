@@ -623,20 +623,36 @@ func _test_defense() -> void:
 	_check(bool(sim.rebuild(int(house["id"]))["ok"]) and String(house["state"]) == "upgrade", "defesa: ruína vira obra para reconstruir")
 	sim._finish(house)
 	_check(not bool(house.get("ruin", false)) and String(house["state"]) == "built", "defesa: reconstruída volta no mesmo nível")
-	# Offline: noite pesada sem defesa avaria no máximo um prédio na volta toda, nunca ruína.
+	# Offline: noite pesada sem defesa não avaria nada; os zumbis levam no máximo loot_max do estoque.
 	for b in sim.buildings.duplicate():
 		if String(b["type"]) in ["torre_arq", "muro"]:
 			sim._remove_building(b)
 	sim.offline = true
-	df.offline_broken = 0
-	for k in 3:
+	df.offline_start()
+	var wood0 := float(sim.stock["madeira"])
+	for k in 6:
 		df.tonight = df.forecast(10)
 		df.report = {"broke": [], "ruined": [], "killed": 0}
 		df._resolve_offline()
 	var broken := 0
-	var ruins := 0
 	for b in sim.buildings:
-		broken += 1 if bool(b.get("broken", false)) else 0
-		ruins += 1 if bool(b.get("ruin", false)) else 0
-	_check(broken <= int(sim.bal["defense"]["offline"]["max_broken"]) and ruins == 0, "defesa: offline avaria no máximo %d e não arruína" % int(sim.bal["defense"]["offline"]["max_broken"]))
+		broken += 1 if bool(b.get("broken", false)) or bool(b.get("ruin", false)) else 0
+	var lmax := float(sim.bal["defense"]["offline"]["loot_max"])
+	_check(broken == 0, "defesa: com o jogo fechado nada avaria")
+	_check(float(df.offline_lost.get("madeira", 0.0)) > 0.0 and wood0 - float(sim.stock["madeira"]) <= wood0 * lmax + 0.01, "defesa: fechado os zumbis levam no máximo %d%% do estoque" % int(lmax * 100.0))
+	# Horda que cai com o jogo fechado vira noite comum e espera a próxima noite aberta.
+	var dn := sim.day_number()
+	var hday := dn
+	while not bool(df.forecast(hday)["horde"]):
+		hday += 1
+	sim.t += float(hday - dn) * float(sim.bal["night"]["cycle_s"])   # vai para o dia da horda
+	sim.offline = true
+	df.owed_horde = false
+	df.owed_boss = 0
+	df.night_start()
+	_check(not bool(df.tonight["horde"]) and df.owed_horde, "defesa: horda com o jogo fechado vira noite comum")
 	sim.offline = false
+	var nf := df.forecast(sim.day_number() + 1)
+	_check(bool(nf["horde"]), "defesa: a horda perdida vem na próxima noite aberta")
+	df.owed_horde = false
+	df.report = {}
