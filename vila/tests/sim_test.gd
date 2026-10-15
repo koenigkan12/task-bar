@@ -320,6 +320,19 @@ func _test_orders() -> void:
 	sim._m_urg.clear()
 	var pj := sim._pick_job(jo)
 	_check(String(pj.get("res", "")) == "agua" and String(pj.get("why", "")) == "skill", "habilidade: bom em água prefere o poço (%s)" % str(pj))
+	# Degraus: com comida baixa (mas não acabando) ela continua na água; água cheia, vai para outra coisa.
+	sim.stock["comida"] = 9.0
+	sim._m_urg.clear()
+	var pj2 := sim._pick_job(jo)
+	_check(String(pj2.get("res", "")) == "agua", "degraus: comida baixa não tira da habilidade (%s)" % str(pj2))
+	sim.stock["agua"] = sim.cap("agua")
+	sim.stock["madeira"] = 0.0
+	sim._m_urg.clear()
+	var pj3 := sim._pick_job(jo)
+	_check(String(pj3.get("res", "")) != "agua" and String(pj3.get("kind", "")) != "idle", "degraus: água cheia, faz outra coisa (%s)" % str(pj3))
+	sim.stock["agua"] = 10.0
+	sim.stock["comida"] = 40.0
+	sim._m_urg.clear()
 	# Obra nova: vai quem é bom de obra; o bom em água fica no poço.
 	var bq: Dictionary = sim._add_person("Teste", 0, [{"id": "obra", "rar": "rara"}], Vector2i(cell) + Vector2i(0, 3))
 	var c2 := AutoPlayer.spot(sim, "poco")

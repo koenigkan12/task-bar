@@ -1160,8 +1160,15 @@ func _pick_job(p: Dictionary) -> Dictionary:
 		var wait: float = float(bal["people"].get("site_wait_s", 90.0))
 		if mine or sites.size() > builders or t - float(sites[0]["queued_t"]) > wait:
 			return {"kind": "build", "b": int(sites[0]["id"]), "why": "skill" if mine else "build"}
+	# Três degraus (o Vinícius pediu assim): 1) obra; 2) o recurso da habilidade, enquanto não
+	# enche e tem onde trabalhar; 3) o que a vila mais precisa. Comida ou água acabando de verdade
+	# passa na frente da habilidade.
 	var best := {}
 	var best_v := 0.0
+	var best_s := {}
+	var best_sv := 0.0
+	var best_c := {}
+	var best_cv := 0.0
 	# Entulho ou árvore marcados pelo jogador são ordem: vão na frente de tudo menos obra
 	# (até metade da vila ao mesmo tempo, para o resto não parar).
 	if not marked.is_empty():
@@ -1198,17 +1205,36 @@ func _pick_job(p: Dictionary) -> Dictionary:
 				continue
 			var rate: float = 1.0 / float(lv["rate_s"])
 			var v: float = u * rate * bonus(p, res)
+			var job := {"kind": "work", "b": int(b["id"]), "res": res, "why": why}
 			if v > best_v:
 				best_v = v
-				best = {"kind": "work", "b": int(b["id"]), "res": res, "why": why}
+				best = job
+			if skilled and v > best_sv:
+				best_sv = v
+				best_s = job
+			if crit and v > best_cv:
+				best_cv = v
+				best_c = job
 		# Coleta à mão (madeira nas árvores, sucata no entulho)
 		if res == "madeira" or res == "sucata":
 			var f: Dictionary = bal["forage"][res]
 			var rate_f: float = float(f["yield"]) / (float(f["work_s"]) + 8.0) / 3.0
 			var v2: float = u * rate_f * bonus(p, res)
-			if v2 > best_v and _has_forage(res):
-				best_v = v2
-				best = {"kind": "forage", "res": res, "why": why}
+			if (v2 > best_v or (skilled and v2 > best_sv) or (crit and v2 > best_cv)) and _has_forage(res):
+				var jf := {"kind": "forage", "res": res, "why": why}
+				if v2 > best_v:
+					best_v = v2
+					best = jf
+				if skilled and v2 > best_sv:
+					best_sv = v2
+					best_s = jf
+				if crit and v2 > best_cv:
+					best_cv = v2
+					best_c = jf
+	if not best_c.is_empty():
+		return best_c
+	if not best_s.is_empty():
+		return best_s
 	if best.is_empty():
 		return {"kind": "idle"}
 	return best
@@ -2487,7 +2513,7 @@ func goal() -> Dictionary:
 		if mt.has("pecas") and _count_any("oficina") == 0 and unlocked("oficina"):
 			# Sem lugar onde ela caiba: primeiro abrir chão.
 			return {"kind": "build", "type": "oficina"} if has_spot("oficina") else {"kind": "space"}
-	if tower >= 2 and beds_free() <= 0 and _count_any("moradia") < 6:
+	if tower >= 2 and beds_free() <= 0 and (_count_any("moradia") < 6 or _story_wait):
 		# Só pede cama quando dá para fazer: melhorar uma barraca ou ter chão para outra.
 		if _can_add_beds():
 			return {"kind": "beds"}

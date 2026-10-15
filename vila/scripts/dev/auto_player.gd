@@ -81,14 +81,15 @@ static func play(sim: VilaSim) -> void:
 		# Nada para limpar e a meta é chão: desmonta a horta ou o barril mais simples (sobra pelo menos 2).
 		elif String(g["kind"]) == "space" and sim.marked.is_empty() and sim._count_any("oficina") == 0:
 			_free_one(sim)
-	if sim.tower >= 2 and sim.beds_free() <= 0:
+	# Até 6 moradias para os grupos; passando disso, só cama para quem é da história.
+	if sim.tower >= 2 and sim.beds_free() <= 0 and (sim._count_any("moradia") <= 6 or sim._story_wait):
 		var up := false
 		for b in sim.buildings:
 			if String(b["type"]) == "moradia" and String(b["state"]) == "built" and sim.unlocked("moradia", int(b["level"]) + 1):
 				if bool(sim.upgrade(int(b["id"]))["ok"]):
 					up = true
 					break
-		if not up and sim._count_any("moradia") < 6:
+		if not up and (sim._count_any("moradia") < 6 or sim._story_wait):
 			_try(sim, "moradia")
 	if sim.tower >= 2:
 		for tp in ["serraria", "ferrovelho"]:
