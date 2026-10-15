@@ -550,23 +550,49 @@ func _process(delta: float) -> void:
 			_toast.visible = false
 
 
+## Explica de onde vêm os números de entra/sai (quem trabalha, quem come, noite).
+func _flow_tip(r: String, fl: Dictionary) -> String:
+	var lines: Array[String] = []
+	if bool(fl.get("night", false)):
+		lines.append(I18n.t("TIP_FLOW_NIGHT"))
+	var w := int(fl.get("workers", 0))
+	lines.append(fmt("TIP_FLOW_IN", {"n": "%.1f" % float(fl["prod"]), "w": w}) if w > 0 else fmt("TIP_FLOW_IN_NONE", {"n": "%.1f" % float(fl["prod"])}))
+	if float(fl["use"]) > 0.0:
+		lines.append(fmt("TIP_FLOW_OUT_" + ("eat" if r == "comida" or r == "agua" else "make"), {"n": "%.1f" % float(fl["use"]), "e": int(fl.get("eaters", 0))}))
+	return "\n".join(lines)
+
+
+## +entra, -sai, quantos trabalham nisso e a lua de noite (números do dia, apagados).
+func _flow_stats(r: String, fl: Dictionary, per_min: bool) -> Array:
+	var night := bool(fl.get("night", false))
+	var tip := _flow_tip(r, fl)
+	var suf := "/min" if per_min else ""
+	var out: Array = [_stat("seta", "+%.1f%s" % [float(fl["prod"]), suf], tip, C_MUTED if night else C_GOOD)]
+	if float(fl["use"]) > 0.0:
+		var net := float(fl["prod"]) - float(fl["use"])
+		out.append(_stat("alerta", "-%.1f%s" % [float(fl["use"]), suf], tip, C_MUTED if night else (C_WARN if net < 0.0 else C_TEXT)))
+	out.append(_stat("pessoa", str(int(fl.get("workers", 0))), tip, C_MUTED if night else C_TEXT))
+	if night:
+		out.append(_stat("lua", "", tip, C_MUTED))
+	return out
+
+
 ## Dica do recurso na barra de cima: estoque/limite e quanto entra e sai por minuto,
 ## o mesmo que o cartão mostra ao clicar. LiveTip remonta isto enquanto a dica está aberta.
 func _res_tip_rows(r: String) -> Array:
 	var v := int(floor(float(sim.stock[r])))
 	var cap := int(sim.cap(r))
-	var fl := sim.flow_per_min(r)
+	var fl := sim.rate(r)
 	var st: Array = [_label(I18n.t("RES_" + r).capitalize(), C_AMBER),
-		_stat(r, "%d/%d" % [v, cap], "", C_AMBER if v >= cap else C_TEXT),
-		_stat("seta", "+%.1f/min" % float(fl["prod"]), "", C_GOOD)]
-	if float(fl["use"]) > 0.0:
-		st.append(_stat("alerta", "-%.1f/min" % float(fl["use"]), "", C_WARN))
+		_stat(r, "%d/%d" % [v, cap], "", C_AMBER if v >= cap else C_TEXT)]
+	st.append_array(_flow_stats(r, fl, true))
 	var row := _row(st)
 	row.add_theme_constant_override("separation", 5)
 	var out: Array = [row]
 	if v >= cap:
 		out.append(_label(I18n.t("UI_FULL"), C_AMBER))
-	out.append(_wrap(I18n.t("TIP_RES_CLICK"), C_MUTED, 150.0))
+	out.append(_wrap(_flow_tip(r, fl), C_TEXT, 160.0))
+	out.append(_wrap(I18n.t("TIP_RES_CLICK"), C_MUTED, 160.0))
 	return out
 
 
@@ -857,12 +883,12 @@ func _card_res() -> void:
 		return
 	_header(r, I18n.t("RES_" + r))
 	var v := int(floor(float(sim.stock[r])))
-	var fl := sim.flow_per_min(r)
-	var st: Array = [_stat(r, "%d/%d" % [v, int(sim.cap(r))], fmt("UI_RES_HAVE", {"n": v, "cap": int(sim.cap(r))})),
-		_stat("seta", "+%.1f/min" % float(fl["prod"]), fmt("UI_RES_IN", {"n": "%.1f" % float(fl["prod"])}), C_GOOD)]
-	if float(fl["use"]) > 0.0:
-		st.append(_stat("alerta", "-%.1f/min" % float(fl["use"]), fmt("UI_RES_OUT", {"n": "%.1f" % float(fl["use"])}), C_WARN))
+	var fl := sim.rate(r)
+	var st: Array = [_stat(r, "%d/%d" % [v, int(sim.cap(r))], fmt("UI_RES_HAVE", {"n": v, "cap": int(sim.cap(r))}))]
+	st.append_array(_flow_stats(r, fl, true))
 	_card_box.add_child(_stats(st))
+	if bool(fl.get("night", false)):
+		_card_box.add_child(_wrap(I18n.t("TIP_FLOW_NIGHT"), C_MUTED))
 	_card_box.add_child(_wrap(I18n.t("RD_" + r), C_MUTED))
 	# De onde vem: cada prédio que produz (quantos e gente/vagas) e quem está catando à mão.
 	# No mapa eles ficam contornados enquanto este cartão está aberto.
@@ -1685,18 +1711,16 @@ func _rebuild_manage() -> void:
 	for r in VilaSim.RES:
 		if r == "pecas" and sim.tower < 3 and float(sim.stock[r]) <= 0.0:
 			continue
-		var fl := sim.flow_per_min(r)
-		var net := float(fl["prod"]) - float(fl["use"])
+		var fl := sim.rate(r)
 		var row := _row([_icon_rect(r), _label("%d/%d" % [int(sim.stock[r]), int(sim.cap(r))])])
 		var sp := Control.new()
 		sp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_child(sp)
-		row.add_child(_label("+%.1f" % float(fl["prod"]), C_GOOD))
-		row.add_child(_label("-%.1f" % float(fl["use"]), C_WARN if net < 0.0 else C_MUTED))
-		if net < 0.0:
-			row.add_child(_icon_rect("alerta"))
+		for c: Control in _flow_stats(r, fl, false):
+			row.add_child(c)
+		row.add_theme_constant_override("separation", 3)
 		row.mouse_filter = Control.MOUSE_FILTER_PASS
-		row.tooltip_text = I18n.t("RD_" + r)
+		row.tooltip_text = _flow_tip(r, fl)
 		b.add_child(row)
 	var pw := sim.power()
 	if float(pw["out"]) > 0.0 or float(pw["use"]) > 0.0:

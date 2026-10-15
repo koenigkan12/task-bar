@@ -361,3 +361,8 @@ TIP_HOME_WHO,"Dormem aqui: {names}. De noite o número em cima da casa mostra qu
 TIP_HOME_EMPTY,Ninguém dorme aqui ainda.,Nobody sleeps here yet.
 UI_PLACE_cuts,"Fecharia o caminho do porto: quem chega de bote não conseguiria entrar.","It would close the path from the port: people arriving by boat couldn't get in."
 UI_PLACE_tight,"Muito colado em outro prédio: deixe uma casa livre em volta para o pessoal passar.","Too close to another building: leave one free tile around so people can pass."
+TIP_FLOW_NIGHT,"Noite: todo mundo dormindo, nada entra nem sai. Os números são do dia.","Night: everyone is asleep, nothing comes in or goes out. These are the daytime numbers."
+TIP_FLOW_IN,"+{n} por minuto: {w} trabalhando nisso.","+{n} per minute: {w} working on it."
+TIP_FLOW_IN_NONE,"+{n} por minuto: ninguém trabalhando nisso agora.","+{n} per minute: nobody working on it right now."
+TIP_FLOW_OUT_eat,"-{n} por minuto: as {e} pessoas comem e bebem (quem chega já gasta, mesmo antes de trabalhar).","-{n} per minute: all {e} people eat and drink (newcomers use it right away, even before working)."
+TIP_FLOW_OUT_make,"-{n} por minuto: o que as oficinas gastam para fazer outra coisa.","-{n} per minute: what workshops use to make something else."

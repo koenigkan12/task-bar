@@ -48,6 +48,8 @@ var stats: Dictionary = {"commons_in_row": 0, "joined": 0, "built": 0}
 var offline: bool = false        # durante o alcance offline: produção e consumo pela fração
 var _next_id: int = 1
 var _astar: AStarGrid2D
+var _day_flow := {}       # ritmo de cada recurso no último trecho de dia (de noite ninguém trabalha nem come)
+var _day_flow_t := 0.0
 var _reach_main := {}   # células alcançáveis a pé da escotilha (cache; vazio = refazer)
 var _rng := RandomNumberGenerator.new()
 var _group_ready_t: float = -1.0
@@ -1438,6 +1440,12 @@ func _step(dt: float) -> void:
 		_night_end()
 	_was_night = night
 	night = night and not work_tonight   # virando a noite: todo mundo segue como se fosse dia
+	if not night:
+		_day_flow_t -= dt
+		if _day_flow_t <= 0.0:
+			_day_flow_t = 5.0
+			for r in RES:
+				_day_flow[r] = rate_now(r)
 	_needs(dt, night)
 	_regrow()
 	_arrivals()
@@ -2235,6 +2243,30 @@ func balance_per_min(res: String) -> float:
 
 
 ## Quanto entra (quem está produzindo agora) e quanto sai por minuto (bocas, horta bebendo água).
+## Ritmo para mostrar: de dia o de agora; de noite (todo mundo dormindo, nada entra nem sai) o do
+## último trecho de dia, marcado com night = true.
+func rate(res: String) -> Dictionary:
+	if is_night() and not work_tonight:
+		var d: Dictionary = _day_flow.get(res, rate_now(res)).duplicate()
+		d["night"] = true
+		return d
+	return rate_now(res)
+
+
+## Ritmo agora, com quantas pessoas produzem (workers) e quantas consomem (eaters).
+func rate_now(res: String) -> Dictionary:
+	var fl := flow_per_min(res)
+	var wk := 0
+	for p in people:
+		var j: Dictionary = p["job"]
+		if String(j.get("res", "")) == res and String(j.get("kind", "")) in ["work", "forage"]:
+			wk += 1
+	fl["workers"] = wk
+	fl["eaters"] = people.size() if res == "comida" or res == "agua" else 0
+	fl["night"] = false
+	return fl
+
+
 func flow_per_min(res: String) -> Dictionary:
 	var prod := 0.0
 	for p in people:
