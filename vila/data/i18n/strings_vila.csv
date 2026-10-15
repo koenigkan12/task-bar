@@ -339,3 +339,5 @@ B_cozinha_1,Cozinha,Kitchen
 B_cozinha_2,Cozinha comunitária,Community kitchen
 B_estufa_1,Estufa,Greenhouse
 B_estufa_2,Estufa irrigada,Irrigated greenhouse
+UI_AUTO_PICK,Escolher sozinho no portão,Pick at the gate for me
+TIP_AUTO_PICK,"Quando chegar gente no portão, entra quem mais ajuda no que está faltando. Liga e desliga aqui ou no painel da vila, na lista de pessoas.","When people reach the gate, whoever helps most with what's missing comes in. Turn it on or off here or in the village panel, by the people list."

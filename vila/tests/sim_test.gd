@@ -316,3 +316,21 @@ func _test_rarity() -> void:
 	_check(fr > 0.25 and fr < 0.5, "raridade: raro ou melhor em menos da metade dos grupos (era ~75%)")
 	_check(fe < 0.12, "raridade: excelente em menos de 12% dos grupos")
 	_check(fair, "raridade: fraco traz recursos, forte não traz, excelente come mais")
+	# Escolher sozinho: com cama livre, o grupo entra sem esperar o jogador.
+	sim.auto_pick = true
+	sim.tower = 2
+	sim._make_group()
+	var pick := sim.best_pick()
+	var nm := String(sim.gate_group[pick]["name"])
+	sim.stock["madeira"] = 0.0
+	for b in sim.buildings:
+		if String(b["type"]) == "moradia":
+			b["level"] = 3
+	sim._invalidate()
+	for k in 5:   # pessoas da história chegam antes, uma por vez
+		if not sim.gate_group.is_empty():
+			sim._arrivals()
+	var joined := false
+	for p in sim.people:
+		joined = joined or String(p["name"]) == nm
+	_check(sim.gate_group.is_empty() and joined, "portão: escolher sozinho põe quem mais ajuda pra dentro")

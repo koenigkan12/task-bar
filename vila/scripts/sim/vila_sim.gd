@@ -53,6 +53,7 @@ var _story_done: Dictionary = {}
 var tower_t: Dictionary = {}       # nível da torre -> quando chegou (o rádio conta os dias a partir daí)
 var perks: Dictionary = {}         # melhorias compradas do mercador: id -> quantas
 var merchant: Dictionary = {}      # visita atual: {key, until, prices, offers, bought, request}; vazio = longe
+var auto_pick: bool = false        # o portão escolhe sozinho quem entra (melhor para o que falta)
 var auto_sell: bool = true         # o mercador vende a sobra sozinho quando ninguém está olhando
 var radio_heard: Array = []        # ids das falas do rádio já ouvidas, em ordem (o caderno do rádio)
 var ela_t: float = -1.0            # quando ela chegou (fim); -1 = ainda não
@@ -724,6 +725,27 @@ func choose(index: int) -> void:
 	changed.emit()
 
 
+## Quem do portão mais ajuda agora: passiva no recurso que mais falta pesa mais; o que a pessoa
+## traz conta um pouco; comer mais conta contra.
+func best_pick() -> int:
+	var best := 0
+	var bv := -1e9
+	for i in gate_group.size():
+		var c: Dictionary = gate_group[i]
+		var v := 0.0
+		for ps in c["passives"]:
+			var job := String(bal["passives"].get(String(ps["id"]), {}).get("job", ""))
+			var b := float(bal["rarity"][String(ps["rar"])]["bonus"])
+			v += b * (1.0 + 2.0 * urgency(job)) if job in RES else b
+		for r in c.get("brings", {}):
+			v += float(c["brings"][r]) * 0.01 * (1.0 + urgency(r))
+		v -= (float(c.get("eat_mult", 1.0)) - 1.0) * (0.5 + urgency("comida"))
+		if v > bv:
+			bv = v
+			best = i
+	return best
+
+
 ## Espera até o próximo grupo no portão. A fogueira acesa é vista de longe: com ela pronta, a espera cai.
 func group_cooldown() -> float:
 	var cd := float(bal["arrivals"]["group_cooldown_s"])
@@ -1298,6 +1320,9 @@ func _arrivals() -> void:
 		if _group_ready_t < 0.0 or _group_ready_t < t + float(bal["arrivals"]["first_group_delay_s"]):
 			_group_ready_t = t + float(bal["arrivals"]["first_group_delay_s"])
 		changed.emit()
+		return
+	if auto_pick and not gate_group.is_empty() and beds_free() > 0:
+		choose(best_pick())
 		return
 	if beds_free() <= 0 or not gate_group.is_empty():
 		return
@@ -2162,7 +2187,7 @@ func to_dict() -> Dictionary:
 			"buildings": bs, "people": ps, "regrow": rg, "rubble": rb, "gate": gate_group,
 			"marked": marked.keys().map(func(c: Vector2i) -> Array: return [c.x, c.y]),
 			"stats": stats, "next_id": _next_id, "group_t": _group_ready_t, "story": _story_done.keys(),
-			"rng": _rng.state, "tower_t": tower_t, "perks": perks, "merchant": merchant, "auto_sell": auto_sell,
+			"rng": _rng.state, "tower_t": tower_t, "perks": perks, "merchant": merchant, "auto_sell": auto_sell, "auto_pick": auto_pick,
 			"radio": radio_heard, "ela_t": ela_t, "merchant_key": _merchant_key,
 			"cycle_t0": cycle_t0, "work_tonight": work_tonight}
 
@@ -2239,6 +2264,7 @@ func from_dict(d: Dictionary, balance: Dictionary, tz_bias: int = 0) -> void:
 		merchant["bought"] = bought
 		merchant["until"] = float(merchant["until"])
 	auto_sell = bool(d.get("auto_sell", true))
+	auto_pick = bool(d.get("auto_pick", false))
 	radio_heard = (d.get("radio", []) as Array).duplicate()
 	ela_t = float(d.get("ela_t", -1.0))
 	_merchant_key = int(d.get("merchant_key", -1))
