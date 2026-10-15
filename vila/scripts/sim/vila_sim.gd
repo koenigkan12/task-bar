@@ -1990,8 +1990,16 @@ func _make_group() -> void:
 		var passives: Array = []
 		var n := 2 if _rng.randf() < float(bal["arrivals"]["two_passives_chance"]) else 1
 		var used := {}
+		# A primeira é sempre uma especialidade (um recurso ou obra): é a tag que aparece no portão
+		# e o trabalho que a pessoa faz primeiro. A segunda pode ser qualquer uma.
+		var specs: Array = []
+		for id in ids:
+			var job := String(bal["passives"][id].get("job", ""))
+			if (job in RES and (job != "pecas" or unlocked("oficina"))) or job == "build":
+				specs.append(id)
 		for i in n:
-			var pid: String = String(ids[_rng.randi_range(0, ids.size() - 1)])
+			var pool: Array = specs if i == 0 else ids
+			var pid: String = String(pool[_rng.randi_range(0, pool.size() - 1)])
 			while used.has(pid):
 				pid = String(ids[_rng.randi_range(0, ids.size() - 1)])
 			used[pid] = true

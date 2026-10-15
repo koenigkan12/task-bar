@@ -443,11 +443,14 @@ func _test_rarity() -> void:
 	var with_rare := 0
 	var with_exc := 0
 	var fair := true
+	var all_spec := true
 	for g in groups:
 		sim._make_group()
 		var gr := false
 		var ge := false
 		for c in sim.gate_group:
+			var j0 := String(sim.bal["passives"][String(c["passives"][0]["id"])]["job"])
+			all_spec = all_spec and (j0 in ["comida", "agua", "madeira", "sucata", "build"])
 			var power := 0
 			var exc := false
 			for ps in c["passives"]:
@@ -460,6 +463,7 @@ func _test_rarity() -> void:
 				fair = false
 		with_rare += 1 if gr else 0
 		with_exc += 1 if ge else 0
+	_check(all_spec, "especialidade: todo mundo do portão tem uma (recurso ou obra)")
 	var fr := float(with_rare) / groups
 	var fe := float(with_exc) / groups
 	print("grupos com raro ou melhor: %.0f%%, com excelente: %.0f%%" % [fr * 100.0, fe * 100.0])
@@ -496,13 +500,14 @@ func _test_rarity() -> void:
 	sim.auto_pick = true
 	sim.tower = 2
 	sim._make_group()
-	var pick := sim.best_pick()
-	var nm := String(sim.gate_group[pick]["name"])
 	sim.stock["madeira"] = 0.0
 	for b in sim.buildings:
 		if String(b["type"]) == "moradia":
 			b["level"] = 3
 	sim._invalidate()
+	sim._m_urg.clear()
+	var pick := sim.best_pick()
+	var nm := String(sim.gate_group[pick]["name"])
 	for k in 5:   # pessoas da história chegam antes, uma por vez
 		if not sim.gate_group.is_empty():
 			sim._arrivals()
