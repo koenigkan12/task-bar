@@ -35,6 +35,11 @@ func _init() -> void:
 	_check(wat > 0 and sim.terrain_at(Vector2i(0, 0)) == VilaSim.T_WATER and not sim.cell_ok(Vector2i(0, 0)), "ilha: água em volta, não se constrói nela")
 	var gd := sim._door(sim._first("gate"))
 	_check(sim.terrain_at(gd) != VilaSim.T_WATER, "o porto tem saída por terra")
+	# Quem chega pelo bote precisa conseguir andar do píer até a vila (antes ficava preso na mata).
+	var from := Vector2i(int(sim.bal["arrivals"]["walk_in_from"][0]), int(sim.bal["arrivals"]["walk_in_from"][1]))
+	var hd := sim._door(sim._first("hatch"))
+	var pth := sim._path(Vector2(from), hd)
+	_check(pth.size() > 2 and Vector2i(pth[pth.size() - 1]) == hd, "porto: tem caminho a pé do píer até a escotilha")
 	_check(sim._count_any("moradia") == 1 and sim.beds_total() == 1, "começa com uma barraca de uma cama")
 	_check(sim.home_of(sim.people[0]) == int(sim._first("moradia")["id"]), "Joaquim dorme na barraca")
 	var free0 := sim._free_build_cells()

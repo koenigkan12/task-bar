@@ -92,6 +92,7 @@ func setup(balance: Dictionary, now_unix: float, tz_bias: int = 0) -> void:
 	_place_fixed("moradia", _v(m["tent"]))
 	# O porto: é por ele que o bote traz quem chega (existe desde o começo).
 	_place_fixed("gate", _v(m["gate"]))
+	_carve_trail(_door(_first("gate")), _door(_first("hatch")))
 	_rebuild_astar()
 	var hatch: Dictionary = _first("hatch")
 	_add_person("Joaquim", 0, [], _door(hatch), "joaquim")
@@ -149,6 +150,29 @@ func _gen_map() -> void:
 
 func _shore(x: int, y: int) -> bool:
 	return not _island(x - 1, y) or not _island(x + 1, y) or not _island(x, y - 1) or not _island(x, y + 1)
+
+
+## Trilha do porto até a clareira: o caminho mais curto por terra vira chão (árvore e entulho no meio
+## saem). Sem ela, quem chegava pelo bote ficava preso no píer cercado de mata.
+func _carve_trail(from: Vector2i, to: Vector2i) -> void:
+	var ag := AStarGrid2D.new()
+	ag.region = Rect2i(0, 0, w, h)
+	ag.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_NEVER
+	ag.update()
+	for y in h:
+		for x in w:
+			var k := terrain[y * w + x]
+			var o := occ[y * w + x]
+			if k == T_WATER or (o >= 0 and not bool(def(String(by_id(o).get("type", ""))).get("walkable", false))):
+				ag.set_point_solid(Vector2i(x, y), true)
+			elif k == T_TREE or k == T_RUBBLE:
+				ag.set_point_weight_scale(Vector2i(x, y), 4.0)   # contorna a mata quando dá
+	for c in ag.get_id_path(from, to):
+		var k := terrain[_i(c)]
+		if k == T_TREE or k == T_RUBBLE:
+			terrain[_i(c)] = T_GROUND
+			rubble.erase(c)
+			_fdirty = true
 
 
 ## Terra ou água pela máscara da ilha (sem máscara: tudo terra).
@@ -2334,6 +2358,9 @@ func from_dict(d: Dictionary, balance: Dictionary, tz_bias: int = 0) -> void:
 	_was_night = is_night()
 	_lines_dirty = true
 	_invalidate()
+	# Saves de antes da trilha: abre o caminho do porto (quem já chegou fica livre para sair).
+	if not _first("gate").is_empty():
+		_carve_trail(_door(_first("gate")), _door(_first("hatch")))
 	_rebuild_astar()
 	# Quem estava carregando entrega no depósito ao voltar (não se perde nada).
 	for p in people:
