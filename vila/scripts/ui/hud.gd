@@ -1322,6 +1322,19 @@ func _passive_lines(passives: Array, box: Container, width: float = 92.0) -> voi
 		box.add_child(_wrap(txt, RAR_COLOR[rar], width))
 
 
+## Ícone do que a habilidade rende: o recurso, o martelo para obra, a seta para andar.
+func _passive_icon(id: String) -> String:
+	var job := String(sim.bal["passives"].get(id, {}).get("job", ""))
+	match job:
+		"build":
+			return "martelo"
+		"walk":
+			return "seta"
+		"eat":
+			return "comida"
+	return job if ICON.has(job) else "estrela"
+
+
 ## Versão curta das habilidades: nome na cor da raridade e o número; a frase inteira vai na dica.
 func _passive_short(passives: Array, box: Container) -> void:
 	if passives.is_empty():
@@ -1330,7 +1343,7 @@ func _passive_short(passives: Array, box: Container) -> void:
 		var rar := String(ps["rar"])
 		var id := String(ps["id"])
 		var pct := int(round(float(sim.bal["rarity"][rar]["bonus"]) * 100.0))
-		var row := _row([_label(I18n.t("PAS_" + id), RAR_COLOR[rar]), _label(("-%d%%" if id == "come_pouco" else "+%d%%") % pct, RAR_COLOR[rar])])
+		var row := _row([_icon_rect(_passive_icon(id)), _label(I18n.t("PAS_" + id), RAR_COLOR[rar]), _label(("-%d%%" if id == "come_pouco" else "+%d%%") % pct, RAR_COLOR[rar])])
 		row.tooltip_text = "%s %s: %s" % [I18n.t("PAS_" + id), I18n.t("RAR_" + rar), fmt("PASD_" + id, {"p": pct})]
 		row.mouse_filter = Control.MOUSE_FILTER_PASS
 		box.add_child(row)
@@ -1432,7 +1445,10 @@ func _card_gate() -> void:
 		face.texture = at
 		face.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
 		face.custom_minimum_size = Vector2(16, 16)
-		var nr := _row([face, _label(String(c["name"]), C_AMBER)])
+		var tags: Array[Control] = [face, _label(String(c["name"]), C_AMBER)]
+		for ps in c["passives"]:
+			tags.append(_icon_rect(_passive_icon(String(ps["id"]))))
+		var nr := _row(tags)
 		nr.tooltip_text = bio
 		nr.mouse_filter = Control.MOUSE_FILTER_PASS
 		v.add_child(nr)
