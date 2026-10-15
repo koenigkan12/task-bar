@@ -756,9 +756,10 @@ func best_pick() -> int:
 	return best
 
 
-## Espera até o próximo grupo no portão. A fogueira acesa é vista de longe: com ela pronta, a espera cai.
+## Espera até o próximo grupo no porto (menor a cada nível da antena). A fogueira acesa é vista de longe: com ela pronta, a espera cai.
 func group_cooldown() -> float:
-	var cd := float(bal["arrivals"]["group_cooldown_s"])
+	var by: Dictionary = bal["arrivals"].get("group_cooldown_by_tower", {})
+	var cd := float(by.get(str(tower), bal["arrivals"]["group_cooldown_s"]))
 	var f := _first("fogueira")
 	if not f.is_empty() and String(f["state"]) == "built":
 		cd *= float(bal["arrivals"]["fire_cooldown_mult"])
@@ -1355,9 +1356,9 @@ func _regrow() -> void:
 				_astar.set_point_solid(c, true)
 
 
+## Quem chega pelo porto. Grupos vêm desde a antena 1, sempre que sobra cama; a antena só encurta a
+## espera (group_cooldown). As vozes do rádio continuam presas ao nível da antena de cada uma.
 func _arrivals() -> void:
-	if tower < int(bal["arrivals"]["story_tower"]):
-		return
 	# Pessoas da história (vozes do rádio): chegam sozinhas, fora do sorteio, quando a condição fecha,
 	# e sempre entram (mesmo sem cama livre: dormem perto da fogueira até sobrar uma).
 	for sid in bal.get("story_order", []):
@@ -1700,13 +1701,17 @@ func _roll_rarity() -> String:
 	if int(stats["commons_in_row"]) >= pity:
 		r = "rara" if _rng.randf() < 0.83 else "excelente"
 	else:
+		# Antena mais alta alcança mais longe: mais chance de raro e excelente (comum fica igual).
+		var mult: Dictionary = bal["arrivals"].get("rarity_mult_by_tower", {}).get(str(tower), {})
+		var wt := {}
 		var total := 0.0
 		for k in bal["rarity"]:
-			total += float(bal["rarity"][k]["weight"])
+			wt[k] = float(bal["rarity"][k]["weight"]) * float(mult.get(k, 1.0))
+			total += float(wt[k])
 		var x := _rng.randf() * total
 		r = "comum"
 		for k in ["excelente", "rara", "comum"]:
-			x -= float(bal["rarity"][k]["weight"])
+			x -= float(wt[k])
 			if x <= 0.0:
 				r = k
 				break

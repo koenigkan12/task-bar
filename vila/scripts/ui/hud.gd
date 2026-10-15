@@ -1672,7 +1672,7 @@ func _rebuild_manage() -> void:
 	if not any:
 		b.add_child(_label(I18n.t("UI_MANAGE_NONE"), C_MUTED))
 	b.add_child(_label(I18n.t("UI_MANAGE_PEOPLE") + " %d/%d" % [sim.people.size(), sim.beds_total()], C_AMBER))
-	if sim.tower >= int(sim.bal["arrivals"]["story_tower"]):
+	if true:   # o porto recebe gente desde a antena 1
 		var ap := CheckBox.new()
 		ap.text = I18n.t("UI_AUTO_PICK")
 		ap.tooltip_text = I18n.t("TIP_AUTO_PICK")

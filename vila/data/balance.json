@@ -842,7 +842,6 @@
  },
  "prototype_max_tower": 5,
  "arrivals": {
-  "story_tower": 2,
   "first_group_delay_s": 90,
   "group_cooldown_s": 600,
   "fire_cooldown_mult": 0.5,
@@ -875,7 +874,33 @@
     ]
    ]
   },
-  "excelente_eat_mult": 1.25
+  "excelente_eat_mult": 1.25,
+  "group_cooldown_by_tower": {
+   "1": 600,
+   "2": 480,
+   "3": 390,
+   "4": 300,
+   "5": 240
+  },
+  "rarity_mult_by_tower": {
+   "1": {
+    "rara": 0.5,
+    "excelente": 0.3
+   },
+   "2": {},
+   "3": {
+    "rara": 1.5,
+    "excelente": 1.6
+   },
+   "4": {
+    "rara": 2.0,
+    "excelente": 2.4
+   },
+   "5": {
+    "rara": 2.6,
+    "excelente": 3.4
+   }
+  }
  },
  "rarity": {
   "comum": {

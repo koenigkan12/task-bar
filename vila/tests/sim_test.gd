@@ -306,6 +306,7 @@ func _test_rarity() -> void:
 	var sim := VilaSim.new()
 	var start := 1760000000.0 - fposmod(1760000000.0, 86400.0) + 7.0 * 3600.0
 	sim.setup(_bal(), start, 0)
+	sim.tower = 2   # referência: antena 2 tem os pesos do balance sem multiplicar
 	var groups := 2000
 	var with_rare := 0
 	var with_exc := 0
@@ -333,6 +334,32 @@ func _test_rarity() -> void:
 	_check(fr > 0.25 and fr < 0.5, "raridade: raro ou melhor em menos da metade dos grupos (era ~75%)")
 	_check(fe < 0.12, "raridade: excelente em menos de 12% dos grupos")
 	_check(fair, "raridade: fraco traz recursos, forte não traz, excelente come mais")
+	# A antena melhora quem chega: na 5 vem mais raro que na 1.
+	var rare_at := {}
+	for tw in [1, 5]:
+		sim.tower = tw
+		var n := 0
+		for g in 1500:
+			sim._make_group()
+			for c in sim.gate_group:
+				for ps in c["passives"]:
+					if String(ps["rar"]) != "comum":
+						n += 1
+		rare_at[tw] = n
+	print("passivas raras ou melhores em 1500 grupos: antena 1 = %d, antena 5 = %d" % [rare_at[1], rare_at[5]])
+	_check(int(rare_at[5]) > int(rare_at[1]) * 2, "raridade: antena 5 traz bem mais raro que a antena 1")
+	# Chega gente desde a antena 1, com espera menor a cada nível.
+	sim.tower = 1
+	var cd1 := sim.group_cooldown()
+	sim.tower = 5
+	_check(sim.group_cooldown() < cd1, "porto: antena mais alta encurta a espera entre grupos")
+	var s1 := VilaSim.new()
+	s1.setup(_bal(), start, 0)
+	s1.set_cycle_hour(8.0)
+	s1._first("moradia")["level"] = 2   # sobra cama já na antena 1
+	s1._invalidate()
+	s1.advance(240.0)
+	_check(s1.tower == 1 and s1.beds_free() > 0 and not s1.gate_group.is_empty(), "porto: com cama livre chega gente já na antena 1")
 	# Escolher sozinho: com cama livre, o grupo entra sem esperar o jogador.
 	sim.auto_pick = true
 	sim.tower = 2
