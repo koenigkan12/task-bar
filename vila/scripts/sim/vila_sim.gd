@@ -454,6 +454,32 @@ func _cuts_port(type: String, cell: Vector2i) -> bool:
 	return cut
 
 
+## Fechar a célula c não separa nada? Os vizinhos livres dela continuam ligados entre si por um
+## desvio curto (caixa de 7x7 em volta). Evita a conta da ilha inteira na maioria dos casos.
+func _local_bypass(c: Vector2i) -> bool:
+	var ns: Array[Vector2i] = []
+	for o in [Vector2i(0, 1), Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1)]:
+		var n: Vector2i = c + o
+		if _inside(n) and not _astar.is_point_solid(n):
+			ns.append(n)
+	if ns.size() <= 1:
+		return true
+	var seen := {ns[0]: true}
+	var q: Array[Vector2i] = [ns[0]]
+	while not q.is_empty():
+		var a: Vector2i = q.pop_back()
+		for o in [Vector2i(0, 1), Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1)]:
+			var n: Vector2i = a + o
+			if n == c or seen.has(n) or not _inside(n) or absi(n.x - c.x) > 3 or absi(n.y - c.y) > 3 or _astar.is_point_solid(n):
+				continue
+			seen[n] = true
+			q.append(n)
+	for n in ns:
+		if not seen.has(n):
+			return false
+	return true
+
+
 ## Células que dá para alcançar a pé a partir de `from` (4 vizinhos, como o A* anda).
 func _reach(from: Vector2i) -> Dictionary:
 	var seen := {}
@@ -1582,19 +1608,26 @@ func _regrow() -> void:
 				var doors0: Array[Vector2i] = [_hatch_door()]
 				for b in buildings:
 					doors0.append(_door(b))
-				var r0 := main_reach()
-				_astar.set_point_solid(c, true)
-				_reach_main = {}
-				var r1 := main_reach()
-				var cut := false
-				for d in doors0:
-					if r0.has(d) and not r1.has(d) and d != c:
-						cut = true
-				if cut or r0.has(c) and doors0.has(c):
-					_astar.set_point_solid(c, false)
-					_reach_main = r0
+				if doors0.has(c):
 					regrow[c] = t + 120.0
 					continue
+				if not _local_bypass(c):
+					var r0 := main_reach()
+					_astar.set_point_solid(c, true)
+					_reach_main = {}
+					var r1 := main_reach()
+					var cut := false
+					for d in doors0:
+						if r0.has(d) and not r1.has(d) and d != c:
+							cut = true
+					if cut:
+						_astar.set_point_solid(c, false)
+						_reach_main = r0
+						regrow[c] = t + 120.0
+						continue
+				else:
+					_astar.set_point_solid(c, true)
+					_reach_main = {}
 				terrain[_i(c)] = T_TREE
 				_fdirty = true
 				regrow.erase(c)

@@ -224,8 +224,8 @@
    ],
    "tower": 1,
    "limit": {
-    "base": 2,
-    "per_tower": 1
+    "base": 3,
+    "per_tower": 2
    },
    "res": "agua",
    "levels": [
@@ -268,8 +268,8 @@
    ],
    "tower": 1,
    "limit": {
-    "base": 2,
-    "per_tower": 1
+    "base": 3,
+    "per_tower": 2
    },
    "res": "comida",
    "levels": [
@@ -308,10 +308,6 @@
     2
    ],
    "tower": 1,
-   "limit": {
-    "base": 2,
-    "per_tower": 1
-   },
    "storage": true,
    "levels": [
     {
