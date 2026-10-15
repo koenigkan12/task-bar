@@ -16,6 +16,7 @@ var ghost_type: String = ""          # prédio sendo posicionado ("" = nenhum)
 var ghost_cell: Vector2i = Vector2i(-1, -1)
 
 var _ground: Sprite2D
+var _flora: VilaFlora                  # flores da mata que brilham de noite
 var _water: VilaWater                  # ondas, vento, peixe e o farol do porto
 var _boat: Sprite2D                     # bote no porto enquanto tem gente esperando para entrar
 const ICON_FRAMES := 21                 # icons.png: 21 ícones de 8 px
@@ -77,6 +78,9 @@ func setup(s: VilaSim) -> void:
 	_modulate = CanvasModulate.new()
 	add_child(_modulate)
 	_terrain_cache = PackedByteArray()
+	_flora = VilaFlora.new()
+	add_child(_flora)
+	_flora.setup(sim, tex("flor_brilho"))
 	_water = VilaWater.new()
 	add_child(_water)
 	_water.setup(sim, tex("farol"), _objects)
@@ -375,8 +379,28 @@ func _make_building(b: Dictionary) -> Dictionary:
 		warn.position = Vector2(fp.x * TILE / 2.0, -fp.y * TILE - 10)
 		warn.visible = false
 		root.add_child(warn)
+	# Trepadeira (prédio largado): dois tufos pendendo dos cantos de cima e um subindo do chão.
+	var vines: Node2D = null
+	var vt := tex("trepadeira")
+	if st == "built" and vt != null and spr.texture != null:
+		vines = Node2D.new()
+		vines.visible = false
+		var fw2 := spr.texture.get_width() / spr.hframes
+		var top := spr.offset.y + 2.0
+		for k in 3:
+			var v := Sprite2D.new()
+			v.texture = vt
+			v.hframes = 3
+			v.frame = k
+			v.centered = false
+			match k:
+				0: v.position = Vector2(spr.offset.x, top)
+				1: v.position = Vector2(spr.offset.x + fw2 - 16, top)
+				2: v.position = Vector2(spr.offset.x + fw2 * 0.55 - 8, -22)
+			vines.add_child(v)
+		root.add_child(vines)
 	return {"root": root, "sprite": spr, "overlay": ov, "crops": crops, "lights": lights, "key": "", "warn": warn, "tex_lit": tex_lit, "tex_dia": tex_dia,
-			"electric": sim.def(tp).has("power_use")}
+			"electric": sim.def(tp).has("power_use"), "vines": vines}
 
 
 func _input_of(b: Dictionary) -> Dictionary:
@@ -430,6 +454,9 @@ func _light_specs(tp: String, level: int, st: String) -> Array:
 
 func _update_building(b: Dictionary, node: Dictionary) -> void:
 	var tp := String(b["type"])
+	var vn: Node2D = node.get("vines")
+	if vn != null:
+		vn.visible = sim.overgrown(b)
 	var warn: Sprite2D = node.get("warn")
 	if warn != null:
 		var bad := false
@@ -548,6 +575,7 @@ func _process(delta: float) -> void:
 	_sync_boat()
 	_update_light()
 	_water.update_water(delta, _night_k)
+	_flora.update_flora(delta, _night_k)
 	_fx.update_fx(delta, sim, _night_k)
 	if _zone_level != sim.tower:
 		_zone_level = sim.tower

@@ -408,6 +408,54 @@ def farol():
     return folha([on, off], on.width, on.height)
 
 
+def trepadeira():
+    """Trepadeira que toma prédio largado: 3 tufos de 16x22 (0 pende do canto esquerdo, 1 do direito,
+    2 sobe do chão), folha verde com florzinha lilás."""
+    R = random.Random(11)
+    quadros = []
+    for k in range(3):
+        im = Image.new('RGBA', (16, 22))
+        px = im.load()
+        fios = 7 if k < 2 else 7
+        for f in range(fios):
+            if k == 2:
+                x, y, dy = R.randrange(2, 14), 21, -1
+                comp = R.randrange(9, 20)
+            else:
+                x, y, dy = (R.randrange(0, 7) if k == 0 else R.randrange(9, 16)), 0, 1
+                comp = R.randrange(6, 19)
+            for i in range(comp):
+                if 0 <= x < 16 and 0 <= y < 22:
+                    px[x, y] = (D if R.random() < .15 else GS) + (255,)
+                    if R.random() < .7:                     # folha
+                        lx = x + R.choice((-1, 1))
+                        if 0 <= lx < 16:
+                            px[lx, y] = G + (255,)
+                    if R.random() < .1:                      # flor
+                        px[x, y] = LC + (255,)
+                y += dy
+                if R.random() < .3:
+                    x += R.choice((-1, 1))
+        quadros.append(im)
+    return folha(quadros, 16, 22)
+
+
+def flor_brilho():
+    """Flor da Floração que brilha de noite: 2 quadros de 7x7 (lilás e creme)."""
+    quadros = []
+    for petala, miolo in ((LC, Y), (CR, Y)):
+        im = Image.new('RGBA', (7, 7))
+        px = im.load()
+        px[3, 6] = GS + (255,)
+        px[3, 5] = GS + (255,)
+        px[2, 5] = G + (255,)
+        for x, y in ((3, 1), (2, 2), (4, 2), (3, 3)):
+            px[x, y] = petala + (255,)
+        px[3, 2] = miolo + (255,)
+        quadros.append(im)
+    return folha(quadros, 7, 7)
+
+
 # ---------------------------------------------------------------- chão da ilha
 def chao_ilha(rows, seed=3):
     import numpy as np
@@ -523,7 +571,7 @@ def chao_ilha(rows, seed=3):
 
 # ---------------------------------------------------------------- tudo
 TROCA = {'tree': arvores, 'tree_sombra': sombra_arvore, 'stump': toco, 'rubble': entulho,
-         'fogueira': fogueira, 'bote': bote, 'barco_mascate': barco_mascate, 'banca': banca, 'farol': farol,
+         'fogueira': fogueira, 'bote': bote, 'barco_mascate': barco_mascate, 'banca': banca, 'farol': farol, 'trepadeira': trepadeira, 'flor_brilho': flor_brilho,
          'hatch': lambda: peca('bunker'), 'moradia_1': lambda: peca('barraca'), 'gate': lambda: peca('pier')}
 MANTER = ('icons', 'light', 'ghost_ok', 'ghost_bad', 'selecao', 'ui_button', 'ui_button_off', 'ui_panel',
           'ground', 'person_sleep')

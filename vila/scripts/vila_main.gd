@@ -285,6 +285,9 @@ func _open_test_card() -> void:
 				cam.position = Vector2(Vector2i(pr["cell"])) * 16.0 + Vector2(90, 24)
 				_clamp_cam()
 		"radio": hud.show_radio()
+		"vines":   # capturas: todo prédio largado há muito tempo (trepadeira)
+			for b in sim.buildings:
+				b["care_t"] = sim.t - 99999.0
 		"fog":   # capturas: noite de névoa de pólen
 			sim.fog_now = true
 		"tired":   # capturas: todo mundo com 2 noites viradas

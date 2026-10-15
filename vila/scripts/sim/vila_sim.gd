@@ -551,6 +551,9 @@ func _night_end() -> void:
 				p["rest"] = 0.0
 				p["tired"] = int(p["tired"]) - 1
 	work_tonight = false
+	for b in buildings:   # casa com gente dormindo é casa cuidada
+		if String(b["type"]) == "moradia" and not residents(b).is_empty():
+			b["care_t"] = t
 	if fog_now:
 		fog_now = false
 		fog_bonus_until = t + float(bal["fog"]["bonus_s"])
@@ -567,6 +570,17 @@ func _night_start() -> void:
 	fog_now = true
 	work_tonight = false
 	fog_started.emit()
+
+
+## A mata volta: prédio que ninguém usa há um tempo (balance "vines_after_s") fica tomado de
+## trepadeira. Só aparência; some quando alguém volta a usar.
+func overgrown(b: Dictionary) -> bool:
+	var tp := String(b["type"])
+	var d := def(tp)
+	if String(b["state"]) != "built" or bool(d.get("fixed", false)) or bool(d.get("deco", false)) \
+			or bool(d.get("open", false)) or tp == "torre" or tp == "fogueira":
+		return false
+	return t - float(b.get("care_t", t)) > float(bal.get("vines_after_s", 1500))
 
 
 ## Dias da vila (ciclo de ~25 min), virando a cada amanhecer. Antes contava dias de verdade do
@@ -2115,6 +2129,7 @@ func _do_build(p: Dictionary, dt: float) -> void:
 
 
 func _finish(b: Dictionary) -> void:
+	b["care_t"] = t
 	b["builder"] = -1
 	b["helpers"] = []
 	var tp := String(b["type"])
@@ -2149,6 +2164,7 @@ func _do_work(p: Dictionary, dt: float) -> void:
 		"working":
 			p["moving"] = false
 			p["facing"] = Vector2.UP
+			b["care_t"] = t
 			var lv := level_def(b)
 			var d := def(String(b["type"]))
 			var m := bonus(p, res) * _work_mult(p) * _prod_frac()
@@ -2278,6 +2294,9 @@ func _deliver(p: Dictionary) -> void:
 	var res := String(p["carry_res"])
 	if res == "":
 		return
+	var sb := _storage_door(p["pos"], res)
+	if not sb.is_empty():
+		sb["care_t"] = t
 	var room: float = cap(res) - float(stock[res])
 	var amt: float = minf(float(p["carry"]), maxf(0.0, room))
 	stock[res] = float(stock[res]) + amt
@@ -2489,7 +2508,8 @@ func to_dict() -> Dictionary:
 	var bs: Array = []
 	for b in buildings:
 		bs.append({"id": b["id"], "type": b["type"], "cell": [b["cell"].x, b["cell"].y], "level": b["level"],
-				"state": b["state"], "progress": b["progress"], "total": b["total"], "queued_t": b.get("queued_t", 0.0)})
+				"state": b["state"], "progress": b["progress"], "total": b["total"], "queued_t": b.get("queued_t", 0.0),
+				"care_t": b.get("care_t", t)})
 	var ps: Array = []
 	for p in people:
 		ps.append({"id": p["id"], "name": p["name"], "look": p["look"], "passives": p["passives"],
@@ -2534,7 +2554,8 @@ func from_dict(d: Dictionary, balance: Dictionary, tz_bias: int = 0) -> void:
 	for e in d["buildings"]:
 		var b := {"id": int(e["id"]), "type": String(e["type"]), "cell": Vector2i(int(e["cell"][0]), int(e["cell"][1])),
 				"level": int(e["level"]), "state": String(e["state"]), "progress": float(e["progress"]),
-				"total": float(e["total"]), "workers": [], "builder": -1, "acc": 0.0, "queued_t": float(e.get("queued_t", 0.0))}
+				"total": float(e["total"]), "workers": [], "builder": -1, "acc": 0.0, "queued_t": float(e.get("queued_t", 0.0)),
+				"care_t": float(e.get("care_t", d["t"]))}
 		buildings.append(b)
 		if not bool(def(String(b["type"])).get("walkable", false)):
 			_mark(b, true)

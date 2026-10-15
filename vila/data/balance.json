@@ -118,6 +118,7 @@
   "bonus_s": 1125,
   "warn_h": 3
  },
+ "vines_after_s": 1500,
  "demolish_refund": 0.5,
  "storage": {
   "hatch_cap": 20
