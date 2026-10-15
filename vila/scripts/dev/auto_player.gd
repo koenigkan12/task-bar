@@ -36,6 +36,10 @@ static func play(sim: VilaSim) -> void:
 		"improve":
 			sim.upgrade(int(g["id"]))
 			return
+		"repair":
+			sim.repair(int(g["id"]))
+		"rebuild":
+			sim.rebuild(int(g["id"]))
 		"power":
 			var pt := "painel" if sim.unlocked("painel") and sim.can_afford(sim.def("painel")["levels"][0]["cost"]) else "gerador"
 			if spot(sim, pt).x < 0:
@@ -111,6 +115,16 @@ static func play(sim: VilaSim) -> void:
 			for b in sim.buildings:
 				if String(b["type"]) == tp and String(b["state"]) == "built" and sim.unlocked(tp, int(b["level"]) + 1):
 					sim.upgrade(int(b["id"]))
+					break
+	# Defesa: uma torre arqueira por nível da antena, canhão na 3, melhora as que dá.
+	if sim.day_number() >= 2:
+		if sim._count_any("torre_arq") < sim.limit("torre_arq") and spot(sim, "torre_arq").x >= 0:
+			_try(sim, "torre_arq")
+		if sim.tower >= 3 and sim._count_any("canhao") < 1 and spot(sim, "canhao").x >= 0:
+			_try(sim, "canhao")
+		for b in sim.buildings:
+			if String(b["type"]) in ["torre_arq", "canhao"] and String(b["state"]) == "built" and sim.unlocked(String(b["type"]), int(b["level"]) + 1):
+				if bool(sim.upgrade(int(b["id"]))["ok"]):
 					break
 	# Mercador: vende madeira sobrando e compra peças quando a sucata está alta.
 	if sim.merchant_here():

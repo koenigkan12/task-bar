@@ -102,6 +102,20 @@ func _make_hud() -> void:
 	sim.person_left.connect(func(nm: String, died: bool) -> void: hud.toast(hud.fmt("UI_DIED" if died else "UI_LEFT", {"name": nm})))
 	sim.fog_ended.connect(func() -> void: hud.toast(hud.fmt("UI_FOG_END", {"pct": int(round(float(sim.bal["fog"]["food_bonus"]) * 100.0))})))
 	sim.group_arrived.connect(func() -> void: hud.toast(hud.fmt("UI_GATE_BADGE", {"n": sim.gate_group.size()})))
+	sim.raid_warning.connect(func(f: Dictionary, nxt: Dictionary) -> void:
+		if int(f["boss"]) > 0:
+			hud.toast(hud.fmt("UI_RAID_BOSS", {"n": f["n"]}))
+		elif bool(f["horde"]):
+			hud.toast(hud.fmt("UI_RAID_HORDE", {"n": f["n"]}))
+		elif int(f["n"]) > 0:
+			hud.toast(hud.fmt("UI_RAID_WARN", {"n": f["n"]}))
+		else:
+			hud.toast(I18n.t("UI_RAID_HORDE_TOMORROW")))
+	sim.raid_over.connect(func(rep: Dictionary) -> void:
+		if sim.offline:
+			return
+		var lost: int = (rep["broke"] as Array).size() + (rep["ruined"] as Array).size()
+		hud.toast(hud.fmt("UI_RAID_OVER_LOST" if lost > 0 else "UI_RAID_OVER", {"k": rep["killed"], "n": lost})))
 	sim.radio.connect(func(l: Dictionary) -> void:
 		if hud != null and not sim.offline:
 			hud.quiet = _tut != null and _tut.active()
@@ -228,6 +242,40 @@ func _close_options() -> void:
 		_title.focus_first()
 
 
+## Capturas (--open=raid): torre arqueira, canhão e um muro na frente da escotilha, uma casa
+## avariada e zumbis já andando. O tiro sai sozinho nos quadros seguintes.
+func _test_raid() -> void:
+	sim.tower = maxi(sim.tower, 3)
+	for r in ["madeira", "sucata", "pecas"]:
+		sim.stock[r] = 999.0
+	for tp in ["torre_arq", "canhao", "holofote"]:
+		var res := sim.build(tp, AutoPlayer.spot(sim, tp))
+		if bool(res.get("ok", false)):
+			sim._finish(sim.buildings[sim.buildings.size() - 1])
+	var hc := Vector2i(sim._first("hatch")["cell"])
+	var row := hc.y + 5
+	var n := 0
+	for x in range(hc.x - 6, hc.x + 9):
+		var res2 := sim.build("muro", Vector2i(x, row))
+		if bool(res2.get("ok", false)):
+			var w: Dictionary = sim.buildings[sim.buildings.size() - 1]
+			w["level"] = 1 + (n / 4) % 4
+			if n == 5:
+				w["hp"] = sim.defense.max_hp(w) * 0.3
+			n += 1
+	var house := sim._first("moradia")
+	if not house.is_empty():
+		if not sim.defense.report.has("broke"):
+			sim.defense.report = {"broke": [], "ruined": []}
+		sim.defense._break(house)
+	sim.defense.dirty()
+	for i in 6:
+		sim.defense._spawn("fraco" if i < 5 else "chefe", Vector2i(hc.x - 4 + i * 3, row + 3 + (i % 2)))
+	sim.defense.zombies[0]["hp"] = 3.0
+	cam.position = Vector2(hc) * 16.0 + Vector2(40, 40)
+	_clamp_cam()
+
+
 func _open_test_card() -> void:
 	var op := String(Game.args.get("open", ""))
 	if op.begins_with("res:"):
@@ -303,6 +351,14 @@ func _open_test_card() -> void:
 			_start_moving(int(mb["id"]))
 			_test_cell = AutoPlayer.spot(sim, "moradia")
 		"ending": _show_ending()
+		"raid", "raid_build", "raid_card", "raid_wall":   # capturas: noite de ataque com muro, torres e zumbis chegando
+			_test_raid()
+			if op == "raid_build":
+				hud.show_build_menu()
+			elif op == "raid_card":
+				hud.show_building(int(sim._first("moradia").get("id", sim._first("torre_arq")["id"])))
+			elif op == "raid_wall":
+				hud.show_building(int(sim._first("muro")["id"]))
 		var o:
 			# --open=b:deposito abre o cartão do primeiro prédio desse tipo.
 			if String(o).begins_with("b:"):
@@ -387,7 +443,36 @@ func _start_placing(type: String) -> void:
 	_placing = type
 	world.ghost_type = type
 	hud.close_card()
-	hud.toast(I18n.t("UI_PLACE"))
+	hud.toast(I18n.t("UI_PLACE_PAINT" if _paintable(type) else "UI_PLACE"))
+
+
+## Muro e mina saem na hora: segurando o botão e arrastando, faz uma fileira (Esc ou botão direito para).
+func _paintable(type: String) -> bool:
+	return bool(sim.def(type).get("instant", false))
+
+
+var _painting := false
+var _last_paint := Vector2i(-99, -99)
+
+
+func _paint_at(screen: Vector2) -> void:
+	var c := world.cell_at(_screen_to_world(screen))
+	if c == _last_paint:
+		return
+	_last_paint = c
+	var tp := _placing
+	var r := sim.build(tp, c)
+	if bool(r["ok"]):
+		return
+	match String(r["reason"]):
+		"limit":
+			hud.toast(hud._limit_tip(tp))
+			_painting = false
+			_stop_placing()
+		"cost":
+			hud.toast(I18n.t("UI_NO_MONEY"))
+			_painting = false
+			_stop_placing()
 
 
 func _stop_placing() -> void:
@@ -525,13 +610,23 @@ func _unhandled_input(ev: InputEvent) -> void:
 			if mb.pressed:
 				if hud.mouse_over_ui(mb.position):
 					return
+				if mb.button_index == MOUSE_BUTTON_LEFT and _placing != "" and _moving < 0 and _paintable(_placing):
+					_painting = true
+					_last_paint = Vector2i(-99, -99)
+					_paint_at(mb.position)
+					return
 				_press_pos = mb.position
 				_dragging = false
 			else:
+				if _painting:
+					_painting = false
+					return
 				if _press_pos.x >= 0.0 and not _dragging and mb.button_index == MOUSE_BUTTON_LEFT:
 					_click(mb.position)
 				_press_pos = Vector2(-1, -1)
 				_dragging = false
+	elif ev is InputEventMouseMotion and _painting:
+		_paint_at((ev as InputEventMouseMotion).position)
 	elif ev is InputEventMouseMotion and _press_pos.x >= 0.0:
 		var mm := ev as InputEventMouseMotion
 		if _dragging or mm.position.distance_to(_press_pos) > 3.0:

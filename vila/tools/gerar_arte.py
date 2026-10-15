@@ -1993,6 +1993,51 @@ ICONS = [
      ".m.m.m..",
      "..mmm...",
      "...m...."],
+    # 23 zumbi (cabeça verde, olho vermelho)
+    ["........",
+     "..zzzz..",
+     ".zZzzzz.",
+     ".zzzzrz.",
+     ".zzzzzz.",
+     "..zxxz..",
+     "..zzzz..",
+     "........"],
+    # 24 avariado (chave inglesa)
+    ["......m.",
+     ".....mm.",
+     "....mM..",
+     "...mm...",
+     "..mm....",
+     ".mm.....",
+     "mm......",
+     "m.......",],
+    # 25 ruína (tijolos caídos)
+    ["........",
+     "........",
+     "...bb...",
+     "..bBbb..",
+     ".bbbbbb.",
+     "bBbbBbbb",
+     "........",
+     "........"],
+    # 26 escudo
+    ["........",
+     ".ssssss.",
+     ".sSSSSs.",
+     ".sSssSs.",
+     ".sSSSSs.",
+     "..sSSs..",
+     "...ss...",
+     "........"],
+    # 27 espada (dano)
+    ["......M.",
+     ".....Mm.",
+     "....Mm..",
+     "...Mm...",
+     ".o.m....",
+     "..o.....",
+     ".o.o....",
+     "........"],
 ]
 ICON_COLORS = {
     'r': OR2, 'R': OR, 'd': '#a03a20', 'g': '#5ad6a0', 'c': CY2, 'C': CY, 'b': '#2a8aa0',
@@ -2012,7 +2057,12 @@ def icons():
              19: {'t': ROPE, 'b': W3, 'B': W4, 'y': '#d8a830', 'Y': YE},
              20: {'k': ST2, 'n': '#3e6a64', 'N': '#e8e0c8', 'p': '#d8ccb0'},
              21: {'d': '#e05a5a', 'R': '#ffaaa0'},
-             22: {'m': '#e8e0c8', 'M': '#fffff0'}}
+             22: {'m': '#e8e0c8', 'M': '#fffff0'},
+             23: {'z': '#8aa076', 'Z': '#aabc96', 'r': '#e05a5a', 'x': '#5a6e58'},
+             24: {'m': '#c8c8e0', 'M': '#f0f0ff'},
+             25: {'b': '#a86a50', 'B': '#c88a6a'},
+             26: {'s': '#5a6a9a', 'S': '#a8b8e0'},
+             27: {'m': '#c8c8e0', 'M': '#f0f0ff', 'o': '#a8784c'}}
     for i, rows in enumerate(ICONS):
         L = Lay(8, 8)
         cm = dict(ICON_COLORS)

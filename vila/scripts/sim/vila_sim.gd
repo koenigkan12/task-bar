@@ -20,6 +20,8 @@ signal merchant_arrived                            # o mercador chegou à praça
 signal merchant_left(sold: Dictionary)             # foi embora (o que vendeu sozinho, se a venda automática estava ligada)
 signal radio(line: Dictionary)                     # uma fala do rádio chegou: {id, speaker, text_key, cue, kind}
 signal ela_arrived                                 # ela entrou pelo portão (o final)
+signal raid_warning(tonight: Dictionary, next: Dictionary)   # fim da tarde: quantos zumbis vêm (e se amanhã é horda)
+signal raid_over(report: Dictionary)               # amanheceu depois de uma noite com zumbis
 
 const RES: Array[String] = ["comida", "agua", "madeira", "sucata", "pecas"]
 const T_GROUND := 0
@@ -52,6 +54,8 @@ var buildings: Array[Dictionary] = []
 var people: Array[Dictionary] = []
 var gate_group: Array[Dictionary] = []   # candidatos esperando no portão
 var stats: Dictionary = {"commons_in_row": 0, "joined": 0, "built": 0, "fogs": 0, "left": 0}
+var defense: VilaDefense         # zumbis, torres, muros e minas (scripts/sim/defense.gd)
+var mine_credits: int = 0         # minas compradas do mascate: as próximas saem de graça
 var died_ids: Array[int] = []    # quem morreu e a tela ainda não mostrou caindo (a vista consome)
 var offline: bool = false        # durante o alcance offline: produção e consumo pela fração
 var _next_id: int = 1
@@ -88,6 +92,7 @@ var _fcache: Dictionary = {}
 # ================================================================ criação
 func setup(balance: Dictionary, now_unix: float, tz_bias: int = 0) -> void:
 	bal = balance
+	defense = VilaDefense.new(self)
 	t = now_unix
 	start_t = now_unix
 	tz_bias_s = tz_bias
@@ -376,7 +381,7 @@ func place_reason(type: String, cell: Vector2i) -> String:
 	for dy in fp.y:
 		for dx in fp.x:
 			var c := cell + Vector2i(dx, dy)
-			if not _inside(c) or not in_zone(c):
+			if not _inside(c) or not (in_zone(c) or (bool(def(type).get("anywhere", false)) and terrain_at(c) != T_WATER)):
 				return "out"
 			if occ[_i(c)] >= 0:
 				return "busy"
@@ -389,6 +394,8 @@ func place_reason(type: String, cell: Vector2i) -> String:
 				return "out"
 			if k != T_GROUND and k != T_STUMP:
 				return "road"
+	if bool(def(type).get("open", false)):
+		return ""
 	if door_for(type, cell).x < 0:
 		return "closed"
 	if _too_tight(type, cell):
@@ -502,8 +509,8 @@ func _reach(from: Vector2i) -> Dictionary:
 
 
 ## Por que cada célula da pegada não serve (para o fantasma pintar só a que bloqueia).
-func cell_ok(c: Vector2i) -> bool:
-	if not _inside(c) or occ[_i(c)] >= 0 or not in_zone(c):
+func cell_ok(c: Vector2i, type: String = "") -> bool:
+	if not _inside(c) or occ[_i(c)] >= 0 or not (in_zone(c) or (type != "" and bool(def(type).get("anywhere", false)) and terrain_at(c) != T_WATER)):
 		return false
 	var k := terrain[_i(c)]
 	return k == T_GROUND or k == T_STUMP
@@ -635,6 +642,7 @@ func set_work_tonight(on: bool) -> void:
 
 ## A noite acabou: quem virou a noite cansa mais; quem dormiu descansa (sem cama, metade).
 func _night_end() -> void:
+	defense.night_end()
 	var nb: Dictionary = bal["night"]
 	for i in people.size():
 		var p: Dictionary = people[i]
@@ -663,6 +671,7 @@ func _night_end() -> void:
 
 ## Começo da noite: se era noite de névoa, ela chega (e cancela o "virar a noite").
 func _night_start() -> void:
+	defense.night_start()
 	if not fog_next:
 		return
 	fog_next = false
@@ -709,7 +718,7 @@ func beds_total() -> int:
 	var n := 0
 	for b in buildings:
 		# Moradia em melhoria continua com as camas do nível atual (ninguém fica sem cama).
-		if String(b["state"]) == "site":
+		if String(b["state"]) == "site" or bool(b.get("ruin", false)):
 			continue
 		n += int(level_def(b).get("beds", def(String(b["type"])).get("beds", 0)))
 	_m_beds = n
@@ -724,7 +733,7 @@ func beds_free() -> int:
 
 ## Prédio pronto e não está em melhoria.
 func _working(b: Dictionary) -> bool:
-	return String(b["state"]) == "built"
+	return String(b["state"]) == "built" and not bool(b.get("broken", false)) and not bool(b.get("ruin", false))
 
 
 func unlocked(type: String, level: int = 1) -> bool:
@@ -820,8 +829,10 @@ func can_place(type: String, cell: Vector2i) -> bool:
 	var fp := _fp(type)
 	for dy in fp.y:
 		for dx in fp.x:
-			if not cell_ok(cell + Vector2i(dx, dy)):
+			if not cell_ok(cell + Vector2i(dx, dy), type):
 				return false
+	if bool(def(type).get("open", false)):   # muro e mina: gente passa por cima, não precisa de porta
+		return true
 	return door_for(type, cell).x >= 0 and not _too_tight(type, cell) and not _cuts_port(type, cell)
 
 
@@ -845,11 +856,15 @@ func build(type: String, cell: Vector2i) -> Dictionary:
 	if at_limit(type):
 		return {"ok": false, "reason": "limit"}
 	var lv: Dictionary = (def(type)["levels"] as Array)[0]
-	if not can_afford(lv["cost"]):
+	var free := type == "mina" and mine_credits > 0
+	if not free and not can_afford(lv["cost"]):
 		return {"ok": false, "reason": "cost"}
 	if not can_place(type, cell):
 		return {"ok": false, "reason": "place"}
-	_pay(lv["cost"])
+	if free:
+		mine_credits -= 1
+	else:
+		_pay(lv["cost"])
 	var b := {"id": _next_id, "type": type, "cell": cell, "level": 1, "state": "site",
 			"progress": 0.0, "total": float(lv["time_s"]), "workers": [], "builder": -1, "acc": 0.0,
 			"queued_t": t}
@@ -861,10 +876,14 @@ func build(type: String, cell: Vector2i) -> Dictionary:
 			var c := cell + Vector2i(dx, dy)
 			terrain[_i(c)] = T_GROUND
 			_fdirty = true
+	if bool(def(type).get("instant", false)):   # muro e mina: prontos na hora (como no Clash)
+		b["state"] = "built"
+		b["care_t"] = t
 	_invalidate()
 	_rebuild_astar()
 	changed.emit()
-	site_started.emit(int(b["id"]))
+	if String(b["state"]) == "site":
+		site_started.emit(int(b["id"]))
 	return {"ok": true, "id": int(b["id"])}
 
 
@@ -879,6 +898,13 @@ func upgrade(id: int) -> Dictionary:
 	if not can_afford(lv["cost"]):
 		return {"ok": false, "reason": "cost"}
 	_pay(lv["cost"])
+	if bool(def(String(b["type"])).get("instant", false)):
+		b["level"] = nl
+		b.erase("hp")
+		_invalidate()
+		defense.dirty()
+		changed.emit()
+		return {"ok": true}
 	_release_workers(b)
 	b["state"] = "upgrade"
 	b["progress"] = 0.0
@@ -918,6 +944,9 @@ func cancel(id: int) -> Dictionary:
 	var cost: Dictionary
 	if String(b["type"]) == "torre":
 		cost = bal["tower"][str(tower + 1)]["cost"]
+	elif bool(b.get("rebuild", false)):
+		cost = defense.rebuild_cost(b)
+		b.erase("rebuild")
 	elif String(b["state"]) == "upgrade":
 		cost = level_def(b, int(b["level"]) + 1)["cost"]
 	else:
@@ -1022,6 +1051,73 @@ func drop(cell: Vector2i) -> Dictionary:
 	return {"ok": true}
 
 
+## Prédio avariado por zumbi: paga o conserto (fração do custo do nível) e volta a funcionar na hora.
+func repair(id: int) -> Dictionary:
+	var b := by_id(id)
+	if b.is_empty() or bool(b.get("ruin", false)) or defense.hp(b) >= defense.max_hp(b):
+		return {"ok": false, "reason": "ok"}
+	var cost: Dictionary = defense.repair_cost(b)
+	if not can_afford(cost):
+		return {"ok": false, "reason": "cost"}
+	_pay(cost)
+	b.erase("broken")
+	b.erase("wreck")
+	b["hp"] = defense.max_hp(b)
+	b["care_t"] = t
+	_invalidate()
+	defense.dirty()
+	changed.emit()
+	return {"ok": true}
+
+
+## Ruína: paga metade do nível e vira obra (alguém precisa reconstruir), no mesmo nível.
+func rebuild(id: int) -> Dictionary:
+	var b := by_id(id)
+	if b.is_empty() or not bool(b.get("ruin", false)) or String(b["state"]) != "built":
+		return {"ok": false, "reason": "ok"}
+	var cost: Dictionary = defense.rebuild_cost(b)
+	if not can_afford(cost):
+		return {"ok": false, "reason": "cost"}
+	_pay(cost)
+	b["rebuild"] = true
+	b["state"] = "upgrade"
+	b["progress"] = 0.0
+	b["total"] = float(level_def(b).get("time_s", 60)) * float(bal["defense"]["rebuild_time_frac"])
+	b["queued_t"] = t
+	_invalidate()
+	changed.emit()
+	site_started.emit(int(b["id"]))
+	return {"ok": true}
+
+
+## Todos os muros de um nível sobem juntos, se der para pagar todos (botão do cartão, como no Clash).
+func upgrade_walls(level: int) -> Dictionary:
+	var ws: Array[Dictionary] = []
+	for b in buildings:
+		if String(b["type"]) == "muro" and int(b["level"]) == level:
+			ws.append(b)
+	if ws.is_empty() or not unlocked("muro", level + 1):
+		return {"ok": false, "reason": "locked"}
+	var one: Dictionary = level_def(ws[0], level + 1)["cost"]
+	var all := {}
+	for r in one:
+		all[r] = float(one[r]) * ws.size()
+	if not can_afford(all):
+		return {"ok": false, "reason": "cost", "n": ws.size()}
+	for b in ws:
+		upgrade(int(b["id"]))
+	return {"ok": true, "n": ws.size()}
+
+
+func _remove_building(b: Dictionary) -> void:
+	_release_workers(b)
+	_mark(b, false)
+	buildings.erase(b)
+	_invalidate()
+	_rebuild_astar()
+	changed.emit()
+
+
 ## Desmonta um prédio pronto: devolve parte do que custou (balance "demolish_refund") e libera o chão.
 ## Quem trabalhava nele fica livre. É a saída quando o chão acaba.
 func demolish(id: int) -> Dictionary:
@@ -1108,6 +1204,8 @@ func _mark(b: Dictionary, on: bool) -> void:
 # ================================================================ caminhos
 func _rebuild_astar() -> void:
 	_invalidate()
+	if defense != null:
+		defense.dirty()
 	_reach_main = {}
 	_astar = AStarGrid2D.new()
 	_astar.region = Rect2i(0, 0, w, h)
@@ -1507,6 +1605,10 @@ func _set_job(p: Dictionary, job: Dictionary) -> void:
 		var ob := by_id(int(old["b"]))
 		if not ob.is_empty():
 			(ob["workers"] as Array).erase(int(p["id"]))
+	elif String(old.get("kind", "")) == "guard":
+		var og := by_id(int(old["b"]))
+		if not og.is_empty() and int(og.get("guard", -1)) == int(p["id"]):
+			og.erase("guard")
 	elif String(old.get("kind", "")) == "build":
 		var ob2 := by_id(int(old["b"]))
 		if not ob2.is_empty() and int(ob2["builder"]) == int(p["id"]):
@@ -1545,11 +1647,35 @@ func _set_job(p: Dictionary, job: Dictionary) -> void:
 		"sleep", "rest":
 			_go(p, _bed_door(p))
 			p["phase"] = "to_bed"
+		"guard":
+			var gb := by_id(int(job["b"]))
+			gb["guard"] = int(p["id"])
+			_go(p, _door(gb))
+			p["phase"] = "to_guard"
 		"move":
 			_go(p, job["cell"])
 			p["phase"] = "to_spot"
 		_:
 			p["phase"] = "idle"
+
+
+## Vigia (passiva "guard"): a torre de defesa mais perto que ainda não tem vigia, só em noite com zumbi.
+func _free_guard_post(p: Dictionary) -> Dictionary:
+	if bonus(p, "guard") <= 1.0 or health_state(p) in ["sick", "grave"] or fog_now:
+		return {}
+	if int(defense.tonight.get("n", 0)) + int(defense.tonight.get("boss", 0)) <= 0:
+		return {}
+	var best := {}
+	var bd := 1e9
+	for b in buildings:
+		var k := String(def(String(b["type"])).get("defense", ""))
+		if k == "" or k == "light" or not _working(b) or by_id(int(b["id"])).has("guard") and int(b["guard"]) != int(p["id"]):
+			continue
+		var d: float = Vector2(p["pos"]).distance_squared_to(Vector2(_door(b)))
+		if d < bd:
+			bd = d
+			best = b
+	return best
 
 
 func _bed_door(p: Dictionary) -> Vector2i:
@@ -1562,6 +1688,8 @@ func _bed_door(p: Dictionary) -> Vector2i:
 
 
 func _beds_of(b: Dictionary) -> int:
+	if bool(b.get("ruin", false)):
+		return 0
 	return int(level_def(b).get("beds", def(String(b["type"])).get("beds", 0)))
 
 
@@ -1672,7 +1800,7 @@ func advance(seconds: float) -> void:
 					p["pos"] = Vector2(_bed_door(p))
 					p["path"] = PackedVector2Array()
 					p["asleep"] = true
-		if is_night() and not work_tonight and _all_asleep():
+		if is_night() and not work_tonight and _all_asleep() and defense.zombies.is_empty() and defense.pending.is_empty():
 			var to_morning := _secs_to_morning()
 			var jump := minf(left, to_morning)
 			if jump > step:
@@ -1718,6 +1846,7 @@ func _step(dt: float) -> void:
 			for r in RES:
 				_day_flow[r] = rate_now(r)
 	_needs(dt, night)
+	defense.step(dt, is_night())
 	_regrow()
 	_arrivals()
 	_merchant_step()
@@ -1773,9 +1902,13 @@ func _needs(dt: float, night: bool) -> void:
 		_health(p, dt)
 
 
+var _regrow_next := 0.0   # a próxima árvore que pode voltar (não varre a lista a cada passo)
+
+
 func _regrow() -> void:
-	if regrow.is_empty():
+	if regrow.is_empty() or t < _regrow_next:
 		return
+	var retry := 120.0 if not offline else 600.0   # offline o caminho fechado tenta de novo mais devagar
 	for c in regrow.keys():
 		if t >= float(regrow[c]) and occ[_i(c)] < 0:
 			var busy := false
@@ -1788,7 +1921,7 @@ func _regrow() -> void:
 				for b in buildings:
 					doors0.append(_door(b))
 				if doors0.has(c):
-					regrow[c] = t + 120.0
+					regrow[c] = t + retry
 					continue
 				if not _local_bypass(c):
 					var r0 := main_reach()
@@ -1802,7 +1935,7 @@ func _regrow() -> void:
 					if cut:
 						_astar.set_point_solid(c, false)
 						_reach_main = r0
-						regrow[c] = t + 120.0
+						regrow[c] = t + retry
 						continue
 				else:
 					_astar.set_point_solid(c, true)
@@ -1810,6 +1943,9 @@ func _regrow() -> void:
 				terrain[_i(c)] = T_TREE
 				_fdirty = true
 				regrow.erase(c)
+	_regrow_next = INF
+	for c in regrow:
+		_regrow_next = minf(_regrow_next, float(regrow[c]))
 
 
 ## Quem chega pelo porto. Grupos vêm desde a antena 1, sempre que sobra cama; a antena só encurta a
@@ -2088,6 +2224,8 @@ func buy_offer(i: int) -> Dictionary:
 		stock[r] = minf(cap(r), float(stock[r]) + float(gives[r]))
 	if o.has("perk"):
 		perks[String(o["perk"])] = int(perks.get(String(o["perk"]), 0)) + 1
+	if o.has("mines"):
+		mine_credits += int(o["mines"])
 	if id == "rumor":
 		_make_group()
 		group_arrived.emit()
@@ -2191,11 +2329,16 @@ func _roll_rarity() -> String:
 func _person_step(p: Dictionary, dt: float, night: bool, rethink: bool) -> void:
 	var job: Dictionary = p["job"]
 	var kind := String(job.get("kind", "idle"))
-	# Noite: larga tudo e vai dormir (a carga volta com ele de manhã).
-	if night and kind != "sleep":
-		_set_job(p, {"kind": "sleep"})
-		kind = "sleep"
-	elif not night and kind == "sleep":
+	# Noite: larga tudo e vai dormir (a carga volta com ele de manhã). Vigia vai para uma torre.
+	if night and kind != "sleep" and kind != "guard":
+		var tw := _free_guard_post(p)
+		if not tw.is_empty():
+			_set_job(p, {"kind": "guard", "b": int(tw["id"])})
+			kind = "guard"
+		else:
+			_set_job(p, {"kind": "sleep"})
+			kind = "sleep"
+	elif not night and (kind == "sleep" or kind == "guard"):
 		_set_job(p, {"kind": "idle"})
 		kind = "idle"
 	# Doente: larga tudo e vai descansar em casa até melhorar.
@@ -2233,7 +2376,7 @@ func _person_step(p: Dictionary, dt: float, night: bool, rethink: bool) -> void:
 				_set_job(p, nj)
 				return
 	match kind:
-		"sleep", "rest":
+		"sleep", "rest", "guard":
 			if _walk(p, dt):
 				p["asleep"] = true
 		"build":
@@ -2375,8 +2518,16 @@ func _finish(b: Dictionary) -> void:
 		b["state"] = "built"
 		_open_area(tower)
 		tower_up.emit(tower)
+	elif bool(b.get("rebuild", false)):   # ruína reconstruída no mesmo nível
+		b.erase("rebuild")
+		b.erase("ruin")
+		b.erase("broken")
+		b.erase("hp")
+		b.erase("wreck")
+		b["state"] = "built"
 	elif String(b["state"]) == "upgrade":
 		b["level"] = int(b["level"]) + 1
+		b.erase("hp")
 		b["state"] = "built"
 	else:
 		b["state"] = "built"
@@ -2488,6 +2639,7 @@ func _do_forage(p: Dictionary, dt: float) -> void:
 						marked.erase(c)
 					else:
 						regrow[c] = t + float(f["regrow_s"])
+						_regrow_next = minf(_regrow_next, float(regrow[c]))
 					_astar.set_point_solid(c, false)
 					_reach_main = {}
 				else:
@@ -2614,6 +2766,8 @@ func doing(p: Dictionary) -> String:
 		return "sleep" if p["asleep"] else "to_bed"
 	if k == "rest":
 		return "rest"
+	if k == "guard":
+		return "guard"
 	if k == "build":
 		var b := by_id(int(j["b"]))
 		return "build:" + (String(b.get("type", "")) if not b.is_empty() else "")
@@ -2632,6 +2786,16 @@ func goal() -> Dictionary:
 	for type in ["poco", "horta", "deposito"]:
 		if _count_any(type) == 0:
 			return {"kind": "build", "type": type}
+	# Zumbi quebrou: consertar vem primeiro (o prédio parado não produz nada).
+	for b in buildings:
+		if bool(b.get("broken", false)) and not bool(b.get("ruin", false)):
+			return {"kind": "repair", "id": int(b["id"]), "type": String(b["type"])}
+	for b in buildings:
+		if bool(b.get("ruin", false)) and String(b["state"]) == "built":
+			return {"kind": "rebuild", "id": int(b["id"]), "type": String(b["type"])}
+	# Os zumbis começam a vir: a primeira torre arqueira.
+	if day_number() + 1 >= int(bal["defense"]["from_day"]) and _count_any("torre_arq") == 0 and has_spot("torre_arq"):
+		return {"kind": "build", "type": "torre_arq"}
 	# Gente parada e comida ou água acabando: falta vaga de trabalho, não gente.
 	var idle := 0
 	for p in people:
@@ -2746,7 +2910,8 @@ func to_dict() -> Dictionary:
 	for b in buildings:
 		bs.append({"id": b["id"], "type": b["type"], "cell": [b["cell"].x, b["cell"].y], "level": b["level"],
 				"state": b["state"], "progress": b["progress"], "total": b["total"], "queued_t": b.get("queued_t", 0.0),
-				"care_t": b.get("care_t", t)})
+				"care_t": b.get("care_t", t), "hp": b.get("hp", -1.0), "broken": b.get("broken", false),
+				"ruin": b.get("ruin", false), "wreck": b.get("wreck", 0.0), "rebuild": b.get("rebuild", false)})
 	var ps: Array = []
 	for p in people:
 		ps.append({"id": p["id"], "name": p["name"], "look": p["look"], "passives": p["passives"],
@@ -2767,11 +2932,12 @@ func to_dict() -> Dictionary:
 			"rng": _rng.state, "tower_t": tower_t, "perks": perks, "merchant": merchant, "auto_sell": auto_sell, "auto_pick": auto_pick,
 			"radio": radio_heard, "ela_t": ela_t, "merchant_key": _merchant_key,
 			"cycle_t0": cycle_t0, "work_tonight": work_tonight, "fog_next": fog_next, "fog_now": fog_now,
-			"fog_bonus_until": fog_bonus_until}
+			"fog_bonus_until": fog_bonus_until, "defense": defense.to_dict(), "mine_credits": mine_credits}
 
 
 func from_dict(d: Dictionary, balance: Dictionary, tz_bias: int = 0) -> void:
 	bal = balance
+	defense = VilaDefense.new(self)
 	tz_bias_s = tz_bias
 	var m: Dictionary = bal["map"]
 	w = int(m["w"])
@@ -2793,6 +2959,13 @@ func from_dict(d: Dictionary, balance: Dictionary, tz_bias: int = 0) -> void:
 				"level": int(e["level"]), "state": String(e["state"]), "progress": float(e["progress"]),
 				"total": float(e["total"]), "workers": [], "builder": -1, "acc": 0.0, "queued_t": float(e.get("queued_t", 0.0)),
 				"care_t": float(e.get("care_t", d["t"]))}
+		if float(e.get("hp", -1.0)) >= 0.0:
+			b["hp"] = float(e["hp"])
+		for k in ["broken", "ruin", "rebuild"]:
+			if bool(e.get(k, false)):
+				b[k] = true
+		if float(e.get("wreck", 0.0)) > 0.0:
+			b["wreck"] = float(e["wreck"])
 		buildings.append(b)
 		if not bool(def(String(b["type"])).get("walkable", false)):
 			_mark(b, true)
@@ -2857,6 +3030,8 @@ func from_dict(d: Dictionary, balance: Dictionary, tz_bias: int = 0) -> void:
 	fog_next = bool(d.get("fog_next", false))
 	fog_now = bool(d.get("fog_now", false))
 	fog_bonus_until = float(d.get("fog_bonus_until", 0.0))
+	defense.from_dict(d.get("defense", {}))
+	mine_credits = int(d.get("mine_credits", 0))
 	_was_night = is_night()
 	_lines_dirty = true
 	_invalidate()
@@ -2890,8 +3065,10 @@ func catch_up_start(now_unix: float) -> Dictionary:
 		return {}
 	elapsed = minf(elapsed, float(tb["offline_cap_h"]) * 3600.0)
 	offline = true
+	defense.offline_broken = 0
 	return {"seconds": elapsed, "left": elapsed, "before": stock.duplicate(), "built0": int(stats["built"]),
-			"joined0": int(stats["joined"]), "radio0": radio_heard.size(), "tower0": tower, "fogs0": int(stats.get("fogs", 0)), "left0": int(stats.get("left", 0))}
+			"joined0": int(stats["joined"]), "radio0": radio_heard.size(), "tower0": tower, "fogs0": int(stats.get("fogs", 0)), "left0": int(stats.get("left", 0)),
+			"raids0": int(stats.get("nights_def", 0)), "zk0": int(stats.get("z_killed", 0))}
 
 
 func catch_up_chunk(ctx: Dictionary, seconds: float) -> bool:
@@ -2912,4 +3089,6 @@ func catch_up_finish(ctx: Dictionary, now_unix: float) -> Dictionary:
 			"joined": int(stats["joined"]) - int(ctx["joined0"]), "group": not gate_group.is_empty(),
 			"radio": radio_heard.size() - int(ctx["radio0"]), "tower": tower, "tower_up": tower - int(ctx.get("tower0", tower)),
 			"fogs": int(stats.get("fogs", 0)) - int(ctx.get("fogs0", 0)),
-			"left": int(stats.get("left", 0)) - int(ctx.get("left0", 0)), "sick": sick_count()}
+			"left": int(stats.get("left", 0)) - int(ctx.get("left0", 0)), "sick": sick_count(),
+			"raids": int(stats.get("nights_def", 0)) - int(ctx.get("raids0", 0)), "z_killed": int(stats.get("z_killed", 0)) - int(ctx.get("zk0", 0)),
+			"raid_broken": defense.offline_broken}

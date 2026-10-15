@@ -149,6 +149,74 @@
   "offline_floor": 20,
   "at_zero": "die"
  },
+ "defense": {
+  "_comment": "Zumbis à noite (defense.gd). Toda noite poucos a partir de from_day; horda a cada horde_every; chefe a cada boss_every. Vida e dano crescem scale_per_day por dia.",
+  "from_day": 2,
+  "warn_h": 18,
+  "daily": {
+   "base": 1,
+   "rand": 1,
+   "per_days": 8
+  },
+  "horde_every": 5,
+  "horde": {
+   "base": 5,
+   "per_day": 0.5,
+   "per_tower": 1.5
+  },
+  "boss_every": 10,
+  "boss": {
+   "base": 1,
+   "per_days": 30
+  },
+  "spawn_window": 0.35,
+  "zombies": {
+   "fraco": {
+    "hp": 8,
+    "speed": 0.7,
+    "dmg": 1,
+    "hit_s": 1.5
+   },
+   "horda": {
+    "hp": 12,
+    "speed": 0.9,
+    "dmg": 2,
+    "hit_s": 1.2
+   },
+   "chefe": {
+    "hp": 140,
+    "speed": 0.5,
+    "dmg": 10,
+    "hit_s": 1.6,
+    "wall_mult": 3
+   }
+  },
+  "scale_per_day": 0.04,
+  "building_hp": {
+   "base": 60,
+   "per_level": 30,
+   "per_tile": 6
+  },
+  "wall_weight": 0.25,
+  "repair_frac": 0.25,
+  "rebuild_frac": 0.5,
+  "rebuild_time_frac": 0.5,
+  "people_dmg": 8,
+  "guard_rate": 0.5,
+  "offline": {
+   "fight_s": 90,
+   "wall_k": 0.6,
+   "wall_chip": 0.3,
+   "splash_k": 2.0,
+   "max_broken": 1
+  },
+  "max_lost_night": 2,
+  "hatch_gun": {
+   "dmg": 2,
+   "range": 6.5,
+   "rate_s": 1.2
+  }
+ },
  "forage": {
   "madeira": {
    "work_s": 5,
@@ -177,7 +245,8 @@
     2
    ],
    "fixed": true,
-   "storage": true
+   "storage": true,
+   "defense": "arrow"
   },
   "gate": {
    "fp": [
@@ -771,6 +840,235 @@
      "time_s": 40
     }
    ]
+  },
+  "muro": {
+   "fp": [
+    1,
+    1
+   ],
+   "tower": 1,
+   "open": true,
+   "instant": true,
+   "wall": true,
+   "levels": [
+    {
+     "cost": {
+      "sucata": 2
+     },
+     "time_s": 0,
+     "hp": 12
+    },
+    {
+     "cost": {
+      "madeira": 4
+     },
+     "time_s": 0,
+     "hp": 35
+    },
+    {
+     "cost": {
+      "sucata": 6,
+      "pecas": 1
+     },
+     "time_s": 0,
+     "hp": 90,
+     "tower": 3
+    },
+    {
+     "cost": {
+      "sucata": 4,
+      "pecas": 3
+     },
+     "time_s": 0,
+     "hp": 200,
+     "tower": 4
+    }
+   ]
+  },
+  "torre_arq": {
+   "fp": [
+    2,
+    2
+   ],
+   "tower": 1,
+   "defense": "arrow",
+   "limit": {
+    "base": 1,
+    "per_tower": 1
+   },
+   "levels": [
+    {
+     "cost": {
+      "madeira": 20,
+      "sucata": 10
+     },
+     "time_s": 90,
+     "dmg": 3,
+     "range": 5.0,
+     "rate_s": 1.0,
+     "hp": 70
+    },
+    {
+     "cost": {
+      "madeira": 40,
+      "sucata": 25
+     },
+     "time_s": 300,
+     "dmg": 5,
+     "range": 5.5,
+     "rate_s": 0.9,
+     "hp": 110,
+     "tower": 2
+    },
+    {
+     "cost": {
+      "madeira": 60,
+      "sucata": 40,
+      "pecas": 6
+     },
+     "time_s": 900,
+     "dmg": 8,
+     "range": 6.0,
+     "rate_s": 0.8,
+     "hp": 170,
+     "tower": 3
+    }
+   ]
+  },
+  "canhao": {
+   "fp": [
+    2,
+    2
+   ],
+   "tower": 3,
+   "defense": "cannon",
+   "limit": {
+    "base": 1,
+    "per_tower": 1
+   },
+   "levels": [
+    {
+     "cost": {
+      "madeira": 30,
+      "sucata": 40,
+      "pecas": 4
+     },
+     "time_s": 600,
+     "dmg": 10,
+     "range": 4.5,
+     "rate_s": 2.4,
+     "splash": 1.3,
+     "hp": 120
+    },
+    {
+     "cost": {
+      "madeira": 50,
+      "sucata": 60,
+      "pecas": 8
+     },
+     "time_s": 1200,
+     "dmg": 16,
+     "range": 4.8,
+     "rate_s": 2.2,
+     "splash": 1.4,
+     "hp": 170,
+     "tower": 4
+    },
+    {
+     "cost": {
+      "madeira": 80,
+      "sucata": 90,
+      "pecas": 14
+     },
+     "time_s": 1800,
+     "dmg": 24,
+     "range": 5.0,
+     "rate_s": 2.0,
+     "splash": 1.5,
+     "hp": 240,
+     "tower": 5
+    }
+   ]
+  },
+  "choque": {
+   "fp": [
+    2,
+    2
+   ],
+   "tower": 4,
+   "defense": "shock",
+   "power_use": 3,
+   "limit": 2,
+   "levels": [
+    {
+     "cost": {
+      "sucata": 50,
+      "pecas": 12
+     },
+     "time_s": 900,
+     "dmg": 7,
+     "range": 4.0,
+     "rate_s": 1.6,
+     "chain": 3,
+     "hp": 100
+    },
+    {
+     "cost": {
+      "sucata": 80,
+      "pecas": 20
+     },
+     "time_s": 1500,
+     "dmg": 11,
+     "range": 4.5,
+     "rate_s": 1.4,
+     "chain": 4,
+     "hp": 150,
+     "tower": 5
+    }
+   ]
+  },
+  "holofote": {
+   "fp": [
+    1,
+    1
+   ],
+   "tower": 3,
+   "defense": "light",
+   "power_use": 1,
+   "limit": 2,
+   "levels": [
+    {
+     "cost": {
+      "sucata": 20,
+      "pecas": 3
+     },
+     "time_s": 240,
+     "radius": 5.0,
+     "buff": 0.3,
+     "hp": 40
+    }
+   ]
+  },
+  "mina": {
+   "fp": [
+    1,
+    1
+   ],
+   "tower": 2,
+   "open": true,
+   "instant": true,
+   "anywhere": true,
+   "limit": 10,
+   "levels": [
+    {
+     "cost": {
+      "sucata": 8
+     },
+     "time_s": 0,
+     "dmg": 30,
+     "splash": 1.6
+    }
+   ]
   }
  },
  "build_order": [
@@ -965,6 +1263,9 @@
   },
   "mecanico": {
    "job": "pecas"
+  },
+  "vigia": {
+   "job": "guard"
   }
  },
  "story_people": {
@@ -1226,6 +1527,12 @@
      "sucata": 10
     },
     "needs_group": true
+   },
+   "minas": {
+    "cost": {
+     "sucata": 20
+    },
+    "mines": 3
    }
   },
   "perks": {
@@ -1262,5 +1569,13 @@
   "deco_lampiao",
   "deco_espantalho",
   "deco_placa"
+ ],
+ "defense_order": [
+  "muro",
+  "torre_arq",
+  "canhao",
+  "choque",
+  "holofote",
+  "mina"
  ]
 }

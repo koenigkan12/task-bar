@@ -331,6 +331,7 @@ func _init() -> void:
 	_check(String(pb["state"]) == "site" and float(pb["progress"]) == 0.0, "obra não anda de noite")
 	_test_orders()
 	_test_rarity()
+	_test_defense()
 	print("FALHAS: ", fails)
 	quit(1 if fails > 0 else 0)
 
@@ -558,3 +559,84 @@ func _test_rarity() -> void:
 	for p in sim.people:
 		joined = joined or String(p["name"]) == nm
 	_check(sim.gate_group.is_empty() and joined, "portão: escolher sozinho põe quem mais ajuda pra dentro")
+
+
+## Defesa: cadência das noites, muro, torre, mina, conserto, ruína e o teto do offline.
+func _test_defense() -> void:
+	var sim := VilaSim.new()
+	var start := 1760000000.0 - fposmod(1760000000.0, 86400.0) + 7.0 * 3600.0
+	sim.setup(_bal(), start, 0)
+	var df := sim.defense
+	_check(int(df.forecast(1)["n"]) == 0, "defesa: dia 1 sem zumbi")
+	var f3 := df.forecast(3)
+	_check(int(f3["n"]) >= 1 and int(f3["n"]) <= 3 and not bool(f3["horde"]), "defesa: dia comum tem 1 a 2 zumbis fracos")
+	_check(bool(df.forecast(5)["horde"]) and int(df.forecast(5)["boss"]) == 0, "defesa: dia 5 é horda sem chefe")
+	_check(bool(df.forecast(10)["horde"]) and int(df.forecast(10)["boss"]) >= 1, "defesa: dia 10 é horda com chefe")
+	_check(int(df.forecast(5)["n"]) > int(f3["n"]), "defesa: horda tem mais zumbis")
+	sim.tower = 3
+	for r in VilaSim.RES:
+		sim.stock[r] = 200.0
+	# Muro sai na hora; derrubado fica no chão e volta inteiro de manhã pagando.
+	var hc := Vector2i(sim._first("hatch")["cell"])
+	var wc := AutoPlayer.spot(sim, "muro")
+	var wr := sim.build("muro", wc)
+	_check(bool(wr["ok"]) and String(sim.building_at(wc).get("state", "")) == "built", "defesa: muro fica pronto na hora")
+	var wall := sim.building_at(wc)
+	df.report = {"broke": [], "ruined": []}
+	df.hit_building(wall, 999.0)
+	_check(df.hp(wall) == 0.0 and not wall.has("broken"), "defesa: muro derrubado não avaria, só cai")
+	var suc0 := float(sim.stock["sucata"])
+	_check(df._repair_walls() == 1 and df.hp(wall) == df.max_hp(wall) and float(sim.stock["sucata"]) < suc0, "defesa: de manhã o muro volta pagando o conserto")
+	# Torre derruba zumbi que chega perto.
+	var tr := sim.build("torre_arq", AutoPlayer.spot(sim, "torre_arq"))
+	_check(bool(tr["ok"]), "defesa: dá para pôr torre arqueira")
+	var tower: Dictionary = sim.buildings[sim.buildings.size() - 1]
+	sim._finish(tower)
+	var tc := Vector2i(tower["cell"])
+	df._spawn("fraco", tc + Vector2i(3, 1))
+	for i in 200:
+		df.step(0.1, true)
+	_check(df.zombies.is_empty() and int(df.report.get("killed", 0)) >= 1, "defesa: a torre derruba o zumbi sozinha")
+	# Mina explode quando o zumbi pisa.
+	sim.mine_credits = 1
+	var mc := tc + Vector2i(-6, 4)
+	while not sim.cell_ok(mc, "mina") and mc.x < sim.w - 1:
+		mc.x += 1
+	var mr := sim.build("mina", mc)
+	_check(bool(mr["ok"]) and sim.mine_credits == 0, "defesa: mina do mascate sai de graça")
+	df._spawn("fraco", mc)
+	df.zombies[0]["pos"] = Vector2(mc)
+	df._mines()
+	_check(sim.building_at(mc).is_empty() and float(df.zombies[0]["hp"]) <= 0.0, "defesa: mina explode e some")
+	df.zombies.clear()
+	# Avariado: para de funcionar; conserto paga e volta.
+	var house := sim._first("moradia")
+	if house.is_empty():
+		sim.build("moradia", AutoPlayer.spot(sim, "moradia"))
+		house = sim.buildings[sim.buildings.size() - 1]
+		sim._finish(house)
+	df._break(house)
+	_check(bool(house.get("broken", false)) and not sim._working(house), "defesa: prédio avariado para")
+	_check(bool(sim.repair(int(house["id"]))["ok"]) and not house.has("broken"), "defesa: consertar volta a funcionar")
+	df._break(house)
+	df._ruin(house)
+	_check(bool(sim.rebuild(int(house["id"]))["ok"]) and String(house["state"]) == "upgrade", "defesa: ruína vira obra para reconstruir")
+	sim._finish(house)
+	_check(not bool(house.get("ruin", false)) and String(house["state"]) == "built", "defesa: reconstruída volta no mesmo nível")
+	# Offline: noite pesada sem defesa avaria no máximo um prédio na volta toda, nunca ruína.
+	for b in sim.buildings.duplicate():
+		if String(b["type"]) in ["torre_arq", "muro"]:
+			sim._remove_building(b)
+	sim.offline = true
+	df.offline_broken = 0
+	for k in 3:
+		df.tonight = df.forecast(10)
+		df.report = {"broke": [], "ruined": [], "killed": 0}
+		df._resolve_offline()
+	var broken := 0
+	var ruins := 0
+	for b in sim.buildings:
+		broken += 1 if bool(b.get("broken", false)) else 0
+		ruins += 1 if bool(b.get("ruin", false)) else 0
+	_check(broken <= int(sim.bal["defense"]["offline"]["max_broken"]) and ruins == 0, "defesa: offline avaria no máximo %d e não arruína" % int(sim.bal["defense"]["offline"]["max_broken"]))
+	sim.offline = false

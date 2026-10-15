@@ -20,7 +20,8 @@ var _ground: Sprite2D
 var _flora: VilaFlora                  # flores da mata que brilham de noite
 var _water: VilaWater                  # ondas, vento, peixe e o farol do porto
 var _boat: Sprite2D                     # bote no porto enquanto tem gente esperando para entrar
-const ICON_FRAMES := 21                 # icons.png: 21 ícones de 8 px
+var ICON_FRAMES := 28                   # icons.png: ícones de 8 px (setup lê da largura)
+var _defense: VilaDefenseView
 var _objects: Node2D
 var _floor: Node2D
 var _fx: VilaFx
@@ -69,6 +70,12 @@ func setup(s: VilaSim) -> void:
 	_merchant_nodes = []
 	_m_state = ""
 	_m_seen = false
+	var itex := tex("icons")
+	if itex != null:
+		ICON_FRAMES = itex.get_width() / 8
+	_defense = VilaDefenseView.new()
+	add_child(_defense)
+	_defense.setup(sim, _objects, _floor, itex, tex("zumbi"), tex("zumbi_chefe"), tex("light"))
 	_fx = VilaFx.new()
 	add_child(_fx)
 	_fx.setup(world_size())
@@ -269,13 +276,14 @@ func _frame_sprite(name: String, frames: int, frame: int, height: int) -> Sprite
 func _btex_name(b: Dictionary) -> String:
 	var tp := String(b["type"])
 	var lvl: int = int(b["level"])
-	var maxl := {"moradia": 4, "horta": 3, "poco": 3, "deposito": 3, "oficina": 3, "galinheiro": 3}
+	var maxl := {"moradia": 4, "horta": 3, "poco": 3, "deposito": 3, "oficina": 3, "galinheiro": 3,
+			"torre_arq": 3, "canhao": 3, "choque": 2, "muro": 4}
 	# Estes têm o nível 1 sem número no nome do arquivo.
 	var plain := {"serraria": 3, "ferrovelho": 3, "cozinha": 2, "estufa": 2}
 	match tp:
 		"torre":
 			return "tower_%d" % mini(5, lvl)
-		"moradia", "horta", "poco", "deposito", "oficina", "galinheiro":
+		"moradia", "horta", "poco", "deposito", "oficina", "galinheiro", "torre_arq", "canhao", "choque", "muro":
 			return "%s_%d" % [tp, mini(int(maxl[tp]), lvl)]
 	if plain.has(tp) and lvl >= 2:
 		return "%s_%d" % [tp, mini(int(plain[tp]), lvl)]
@@ -315,7 +323,7 @@ func _make_building(b: Dictionary) -> Dictionary:
 	var st := String(b["state"])
 	var spr := Sprite2D.new()
 	spr.centered = false
-	var show_main := st != "site"
+	var show_main := st != "site" and tp != "muro"   # muro: o VilaDefenseView desenha ligado aos vizinhos
 	if tp == "fogueira":
 		spr.texture = tex("fogueira")
 		spr.hframes = 4
@@ -445,6 +453,13 @@ func _light_specs(tp: String, level: int, st: String) -> Array:
 			return [{"pos": Vector2(8, -19), "color": warm, "scale": 0.8, "fire": true, "energy": 0.9}]
 		"praca":
 			return [{"pos": Vector2(24, -26), "color": warm, "scale": 1.6, "fire": true, "energy": 0.8}]
+		"holofote":
+			return [{"pos": Vector2(8, -14), "color": Color(1.0, 0.95, 0.78), "scale": 3.2, "energy": 1.0, "electric": true},
+					{"pos": Vector2(8, -20), "color": Color(1.0, 0.95, 0.78), "scale": 0.5, "energy": 1.2, "electric": true}]
+		"choque":
+			return [{"pos": Vector2(16, -40), "color": Color(0.6, 0.9, 1.0), "scale": 0.8, "energy": 0.9, "electric": true}]
+		"mina":
+			return [{"pos": Vector2(8, -10), "color": Color(1.0, 0.3, 0.25), "scale": 0.15, "energy": 0.6, "always": true}]
 		"torre":
 			var top := -50.0 if level <= 3 else (-76.0 if level == 4 else -94.0)
 			var out := [{"pos": Vector2(16, top), "color": cyan, "scale": 1.0 + 0.3 * level, "energy": 0.9, "always": true}]
@@ -471,6 +486,14 @@ func _update_building(b: Dictionary, node: Dictionary) -> void:
 		warn.visible = bad and int(_anim_t * 2.0) % 2 == 0
 	if tp == "fogueira":
 		(node["sprite"] as Sprite2D).frame = int(_anim_t * 8.0) % 4
+	# Avariado pelos zumbis: apagado; ruína: escuro e baixo (o alerta pisca na camada da defesa).
+	var spm: Sprite2D = node["sprite"]
+	if bool(b.get("ruin", false)):
+		spm.modulate = Color(0.42, 0.36, 0.44)
+	elif bool(b.get("broken", false)):
+		spm.modulate = Color(0.78, 0.72, 0.78)
+	else:
+		spm.modulate = Color.WHITE
 	var crops: Array = node["crops"]
 	if not crops.is_empty():
 		var stage := 0
@@ -590,6 +613,7 @@ func _process(delta: float) -> void:
 	_water.update_water(delta, _night_k)
 	_flora.update_flora(delta, _night_k)
 	_fx.update_fx(delta, sim, _night_k)
+	_defense.update_defense(delta, _night_k, _anim_t)
 	if _zone_level != sim.tower:
 		_zone_level = sim.tower
 		_zone.queue_redraw()
@@ -865,7 +889,7 @@ func _draw_overlay() -> void:
 		for dy in fp2.y:
 			for dx in fp2.x:
 				var gc := ghost_cell + Vector2i(dx, dy)
-				var t := t_ok if sim.cell_ok(gc) and not cuts else t_bad
+				var t := t_ok if sim.cell_ok(gc, ghost_type) and not cuts else t_bad
 				if t != null:
 					_overlay.draw_texture(t, Vector2(gc) * TILE)
 		if bt != null:

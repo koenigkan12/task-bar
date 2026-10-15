@@ -18,7 +18,8 @@ var W: float = 384.0
 var H: float = 216.0
 const ICON := {"comida": 0, "agua": 1, "madeira": 2, "sucata": 3, "pessoa": 4, "cama": 5, "relogio": 6,
 		"torre": 7, "martelo": 8, "seta": 9, "cadeado": 10, "check": 11, "estrela": 12, "sol": 13, "lua": 14, "alerta": 15,
-		"pecas": 16, "energia": 17, "radio": 18, "mercador": 19, "caderno": 20, "saude": 21, "mover": 22}
+		"pecas": 16, "energia": 17, "radio": 18, "mercador": 19, "caderno": 20, "saude": 21, "mover": 22,
+		"zumbi": 23, "avariado": 24, "ruina": 25, "escudo": 26, "espada": 27}
 # Paleta da ilha (tools/estilo_ilha.py), um pouco mais clara onde é texto pequeno sobre o roxo.
 const C_TEXT := Color("ccc6ba")    # creme
 const C_MUTED := Color("a592a5")   # lilás
@@ -58,6 +59,7 @@ var _toast: Label
 var _toast_t: float = 0.0
 var _tip: Label
 var _night_btn: Button
+var _raid_btn: Button                   # zumbis da próxima noite (ícone + número; a dica explica)
 var _fog_warned := -1
 var _refresh_acc: float = 0.0
 var handle: WindowHandle
@@ -446,6 +448,12 @@ func _build_bottom() -> void:
 		toast(I18n.t("UI_NIGHT_ON_TOAST") if sim.work_tonight else I18n.t("UI_NIGHT_OFF_TOAST"))
 		refresh())
 	h.add_child(_night_btn)
+	_raid_btn = Button.new()
+	_raid_btn.icon = icon("zumbi")
+	_raid_btn.theme_type_variation = "FlatButton"
+	_raid_btn.visible = false
+	_raid_btn.pressed.connect(show_build_menu)
+	h.add_child(_raid_btn)
 	var zm := Button.new()
 	zm.text = "-"
 	zm.custom_minimum_size = Vector2(14, 0)
@@ -486,6 +494,10 @@ func _goal_text() -> String:
 			return fmt("GOAL_short", {"r": I18n.t("RES_" + String(g["res"])), "b": bname(g["type"])})
 		"improve":
 			return fmt("GOAL_improve", {"b": bname(g["type"]), "r": I18n.t("RES_" + String(g["res"]))})
+		"repair":
+			return fmt("GOAL_repair", {"b": bname(g["type"])})
+		"rebuild":
+			return fmt("GOAL_rebuild", {"b": bname(g["type"])})
 		"beds":
 			return I18n.t("GOAL_beds")
 		"space":
@@ -515,7 +527,7 @@ func _on_goal() -> void:
 	match String(g["kind"]):
 		"build", "more", "short":
 			build_chosen.emit(String(g["type"]))
-		"improve":
+		"improve", "repair", "rebuild":
 			show_building(int(g["id"]))
 		"beds":
 			show_building(int(sim._first("moradia").get("id", -1)))
@@ -664,6 +676,13 @@ func refresh() -> void:
 		_set_tip(_night_btn, I18n.t("TIP_FOG"))
 	else:
 		_set_tip(_night_btn, fmt("TIP_NIGHT", {"pen": int(round(float(nb["tired_penalty"]) * 100.0)), "rest": int(nb["rest_nights_per_tired"])}))
+	var nn := sim.defense.next_night()
+	var zn := int(nn.get("n", 0)) + int(nn.get("boss", 0))
+	_raid_btn.visible = zn > 0
+	if zn > 0:
+		_raid_btn.text = str(zn) if not sim.is_night() else "%d/%d" % [sim.defense.zombies.size() + sim.defense.pending.size(), zn]
+		_raid_btn.add_theme_color_override("font_color", C_WARN if bool(nn["horde"]) or int(nn["boss"]) > 0 else C_TEXT)
+		_set_tip(_raid_btn, _night_forecast_tip(nn))
 	# Aviso da névoa no fim da tarde (uma vez por dia): dá tempo de fazer cama para todo mundo.
 	var to_night := fposmod(float(sim.bal["time"]["night_from_h"]) - sim.local_hour(), 24.0)
 	if sim.fog_next and not sim.is_night() and to_night < float(sim.bal["fog"].get("warn_h", 3.0)) and _fog_warned != sim.day_number():
@@ -963,6 +982,12 @@ func show_welcome(summary: Dictionary) -> void:
 		_card_box.add_child(_row([_icon_rect("radio"), _label(fmt("UI_RADIO_NEW", {"n": summary["radio"]}))]))
 	if bool(summary.get("group", false)):
 		_card_box.add_child(_row([_icon_rect("pessoa"), _label(fmt("UI_GATE_BADGE", {"n": sim.gate_group.size()}))]))
+	if int(summary.get("raids", 0)) > 0:
+		var rr := _stats([_stat("zumbi", "x%d" % int(summary["raids"]), fmt("TIP_AWAY_RAIDS", {"n": summary["raids"]})),
+				_stat("espada", str(int(summary.get("z_killed", 0))), fmt("TIP_AWAY_KILLED", {"n": summary.get("z_killed", 0)}), C_GOOD)])
+		if int(summary.get("raid_broken", 0)) > 0:
+			rr.add_child(_stat("avariado", str(int(summary["raid_broken"])), fmt("TIP_AWAY_BROKEN", {"n": summary["raid_broken"]}), C_WARN))
+		_card_box.add_child(rr)
 	var ok := Button.new()
 	ok.text = I18n.t("UI_OK")
 	ok.pressed.connect(close_card)
@@ -1116,6 +1141,12 @@ func _card_building() -> void:
 		_progress_lines(b)
 		return
 	var lv := sim.level_def(b)
+	if _damage_lines(b):
+		return
+	if d.has("defense") or tp == "muro" or tp == "mina":
+		_card_box.add_child(_stats(_defense_stats(tp, lv, b)))
+	if tp == "muro":
+		_wall_upgrade_all(b)
 	if lv.has("slots"):
 		var ws: Array = b["workers"]
 		var names: Array[String] = []
@@ -1172,7 +1203,9 @@ func _card_building() -> void:
 			_card_box.add_child(_row([_icon_rect("cadeado"), _label(fmt("UI_UPGRADE_TO", {"b": bname(tp, nl)}) + " · " + fmt("UI_LOCKED_TOWER", {"n": need_t}), C_MUTED)]))
 		else:
 			var gain: Array = [_stat("seta", bname(tp, nl), fmt("UI_UPGRADE_TO", {"b": bname(tp, nl)}), C_MUTED)]
-			if nd.has("beds"):
+			if d.has("defense") or tp == "muro":
+				gain.append_array(_defense_stats(tp, nd, {}))
+			elif nd.has("beds"):
 				gain.append(_stat("cama", str(int(nd["beds"])), fmt("UI_GAIN_BEDS", {"n": nd["beds"]})))
 			elif nd.has("cap"):
 				gain.append(_stat("check", "+%d" % int(nd["cap"]), fmt("UI_GAIN_CAP", {"n": nd["cap"]})))
@@ -1182,7 +1215,10 @@ func _card_building() -> void:
 				var nr := "%.1f" % (60.0 / float(nd["rate_s"]))
 				gain.append(_stat(String(d.get("res", "seta")), nr + "/min", fmt("UI_GAIN_RATE", {"n": nr})))
 			_card_box.add_child(_stats(gain))
-			_card_box.add_child(_row([_cost_row(nd["cost"]), _icon_rect("relogio"), _label(fmt_time(float(nd["time_s"])))]))
+			if float(nd["time_s"]) > 0.0:
+				_card_box.add_child(_row([_cost_row(nd["cost"]), _icon_rect("relogio"), _label(fmt_time(float(nd["time_s"])))]))
+			else:
+				_card_box.add_child(_cost_row(nd["cost"]))
 			var up := Button.new()
 			up.text = I18n.t("UI_UPGRADE")
 			up.icon = icon("seta")
@@ -1351,6 +1387,8 @@ func _passive_icon(id: String) -> String:
 			return "seta"
 		"eat":
 			return "comida"
+		"guard":
+			return "escudo"
 	return job if ICON.has(job) else "estrela"
 
 
@@ -1428,6 +1466,8 @@ func _doing_text(p: Dictionary) -> String:
 			return I18n.t("DO_to_bed")
 		"rest":
 			return I18n.t("DO_rest")
+		"guard":
+			return I18n.t("DO_guard")
 		"move":
 			return I18n.t("DO_move")
 	return I18n.t("DO_idle")
@@ -1539,42 +1579,27 @@ func _card_build() -> void:
 		if not sim.unlocked(type):
 			locked.append(type)
 			continue
-		var lv: Dictionary = sim.def(type)["levels"][0]
-		var btn := Button.new()
-		btn.text = bname(type)
-		btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		btn.custom_minimum_size = Vector2(62, 12)
-		var full := sim.at_limit(type)
-		var no_spot := not full and not sim.has_spot(type)
-		btn.disabled = full or no_spot or not sim.can_afford(lv["cost"]) or (tut_only != "" and tut_only != type)
-		btn.tooltip_text = I18n.t("BD_" + type)
-		build_btns[type] = btn
-		btn.pressed.connect(func() -> void:
-			close_card()
-			build_chosen.emit(type))
-		var parts: Array = [btn]
-		# Limite estilo Clash: "2/3" do lado do nome; a explicação fica na dica.
-		var lim := sim.limit(type)
-		if lim >= 0:
-			var ll := _label("%d/%d" % [sim._count_any(type), lim], C_WARN if full else C_MUTED)
-			ll.tooltip_text = _limit_tip(type)
-			ll.mouse_filter = Control.MOUSE_FILTER_PASS
-			parts.append(ll)
-			if full:
-				btn.tooltip_text = _limit_tip(type) + "\n" + btn.tooltip_text
-		# Não cabe em lugar nenhum: diz na hora, em vez de deixar o jogador procurar.
-		if no_spot:
-			var nt := _no_spot_tip()
-			var ic := _icon_rect("alerta")
-			ic.tooltip_text = nt
-			ic.mouse_filter = Control.MOUSE_FILTER_PASS
-			parts.append(ic)
-			btn.tooltip_text = nt + "\n" + btn.tooltip_text
-		parts.append_array([_cost_row(lv["cost"]), _icon_rect("relogio"), _label(fmt_time(float(lv["time_s"])), C_MUTED)])
-		var row := _row(parts)
-		row.tooltip_text = btn.tooltip_text
-		row.mouse_filter = Control.MOUSE_FILTER_PASS
-		grid.add_child(row)
+		grid.add_child(_build_row(type))
+	# Defesa: muro, torres, holofote e minas (aparece quando a primeira libera).
+	var dgrid := GridContainer.new()
+	dgrid.columns = grid.columns
+	dgrid.add_theme_constant_override("h_separation", 6)
+	dgrid.add_theme_constant_override("v_separation", 2)
+	for tp in sim.bal.get("defense_order", []):
+		var type := String(tp)
+		if not sim.unlocked(type):
+			locked.append(type)
+			continue
+		dgrid.add_child(_build_row(type))
+	if dgrid.get_child_count() > 0:
+		var dh := _row([_icon_rect("escudo"), _label(I18n.t("UI_DEFENSE"), C_AMBER)])
+		var nn := sim.defense.next_night()
+		if int(nn.get("n", 0)) > 0:
+			dh.add_child(_stat("zumbi", str(int(nn["n"])), _night_forecast_tip(nn), C_WARN if bool(nn.get("horde", false)) else C_MUTED))
+		_card_box.add_child(dh)
+		_card_box.add_child(dgrid)
+	else:
+		dgrid.queue_free()
 	# Decoração: só beleza; uma fileira de figurinhas (nome, custo e o que é ficam na dica).
 	var deco_row := HFlowContainer.new()
 	deco_row.add_theme_constant_override("h_separation", 2)
@@ -1621,6 +1646,179 @@ func _card_build() -> void:
 		lrow.tooltip_text = "\n".join(tips)
 		lrow.mouse_filter = Control.MOUSE_FILTER_PASS
 		_card_box.add_child(lrow)
+
+
+## Uma linha do menu de obras: botão com o nome, limite, alerta de sem lugar, custo e tempo.
+func _build_row(type: String) -> HBoxContainer:
+	var lv: Dictionary = sim.def(type)["levels"][0]
+	var btn := Button.new()
+	btn.text = bname(type)
+	btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	btn.custom_minimum_size = Vector2(62, 12)
+	var full := sim.at_limit(type)
+	var no_spot := not full and not sim.has_spot(type)
+	var free := type == "mina" and sim.mine_credits > 0   # minas do mascate: saem de graça
+	btn.disabled = full or no_spot or not (free or sim.can_afford(lv["cost"])) or (tut_only != "" and tut_only != type)
+	btn.tooltip_text = I18n.t("BD_" + type)
+	if sim.def(type).has("defense"):
+		btn.tooltip_text += "\n" + _defense_tip(type, lv)
+	build_btns[type] = btn
+	btn.pressed.connect(func() -> void:
+		close_card()
+		build_chosen.emit(type))
+	var parts: Array = [btn]
+	# Limite estilo Clash: "2/3" do lado do nome; a explicação fica na dica.
+	var lim := sim.limit(type)
+	if lim >= 0:
+		var ll := _label("%d/%d" % [sim._count_any(type), lim], C_WARN if full else C_MUTED)
+		ll.tooltip_text = _limit_tip(type)
+		ll.mouse_filter = Control.MOUSE_FILTER_PASS
+		parts.append(ll)
+		if full:
+			btn.tooltip_text = _limit_tip(type) + "\n" + btn.tooltip_text
+	# Não cabe em lugar nenhum: diz na hora, em vez de deixar o jogador procurar.
+	if no_spot:
+		var nt := _no_spot_tip()
+		var ic := _icon_rect("alerta")
+		ic.tooltip_text = nt
+		ic.mouse_filter = Control.MOUSE_FILTER_PASS
+		parts.append(ic)
+		btn.tooltip_text = nt + "\n" + btn.tooltip_text
+	if free:
+		parts.append(_stat("check", "x%d" % sim.mine_credits, fmt("TIP_FREE_MINES", {"n": sim.mine_credits}), C_GOOD))
+	else:
+		parts.append(_cost_row(lv["cost"]))
+	if float(lv["time_s"]) > 0.0:
+		parts.append_array([_icon_rect("relogio"), _label(fmt_time(float(lv["time_s"])), C_MUTED)])
+	var row := _row(parts)
+	row.tooltip_text = btn.tooltip_text
+	row.mouse_filter = Control.MOUSE_FILTER_PASS
+	return row
+
+
+# ================================================================ defesa
+## Avariado ou em ruína: a linha que diz e o botão de consertar/reconstruir com o custo. Devolve true
+## quando o resto do cartão não vale (ruína não produz nem sobe de nível).
+func _damage_lines(b: Dictionary) -> bool:
+	var bid := int(b["id"])
+	if bool(b.get("ruin", false)):
+		_card_box.add_child(_wrap_row("ruina", I18n.t("UI_RUIN"), C_WARN))
+		var cost: Dictionary = sim.defense.rebuild_cost(b)
+		var rb := Button.new()
+		rb.text = I18n.t("UI_REBUILD")
+		rb.icon = icon("martelo")
+		rb.disabled = not sim.can_afford(cost)
+		rb.tooltip_text = I18n.t("TIP_REBUILD")
+		rb.pressed.connect(func() -> void:
+			if not bool(sim.rebuild(bid)["ok"]):
+				toast(I18n.t("UI_NO_MONEY"))
+			_rebuild_card())
+		_card_box.add_child(_row([rb, _cost_row(cost)]))
+		return true
+	var mh := sim.defense.max_hp(b)
+	var h := sim.defense.hp(b)
+	if h >= mh:
+		return false
+	var broken := bool(b.get("broken", false))
+	if broken:
+		_card_box.add_child(_wrap_row("avariado", I18n.t("UI_BROKEN"), C_WARN))
+	else:
+		_card_box.add_child(_stats([_stat("escudo", "%d/%d" % [int(h), int(mh)], I18n.t("TIP_HP"), C_WARN)]))
+	var rc: Dictionary = sim.defense.repair_cost(b)
+	var fx := Button.new()
+	fx.text = I18n.t("UI_REPAIR")
+	fx.icon = icon("avariado")
+	fx.disabled = not sim.can_afford(rc)
+	fx.tooltip_text = I18n.t("TIP_REPAIR_WALL") if String(b["type"]) == "muro" else I18n.t("TIP_REPAIR")
+	fx.pressed.connect(func() -> void:
+		if not bool(sim.repair(bid)["ok"]):
+			toast(I18n.t("UI_NO_MONEY"))
+		_rebuild_card())
+	_card_box.add_child(_row([fx, _cost_row(rc)]))
+	return broken   # avariado não produz nem sobe de nível até consertar
+
+
+## Números da defesa (dano, alcance, intervalo, vida); as frases que explicam ficam na dica.
+func _defense_stats(tp: String, lv: Dictionary, b: Dictionary) -> Array:
+	var out: Array = []
+	var kind := String(sim.def(tp).get("defense", ""))
+	if kind == "light":
+		out.append(_stat("espada", "+%d%%" % int(round(float(lv.get("buff", 0.0)) * 100.0)), fmt("TIP_DEF_LIGHT", {"n": int(round(float(lv.get("buff", 0.0)) * 100.0)), "r": lv.get("radius", 0)})))
+		out.append(_stat("mover", "%.0f" % float(lv.get("radius", 0)), fmt("TIP_DEF_RANGE", {"n": lv.get("radius", 0)})))
+	elif lv.has("dmg"):
+		var dtip := fmt("TIP_DEF_DMG", {"n": lv["dmg"]})
+		if lv.has("splash"):
+			dtip += "\n" + fmt("TIP_DEF_SPLASH", {"n": lv["splash"]})
+		if lv.has("chain"):
+			dtip += "\n" + fmt("TIP_DEF_CHAIN", {"n": lv["chain"]})
+		out.append(_stat("espada", str(int(lv["dmg"])), dtip))
+		if lv.has("range"):
+			out.append(_stat("mover", "%.1f" % float(lv["range"]), fmt("TIP_DEF_RANGE", {"n": lv["range"]})))
+		if lv.has("rate_s"):
+			out.append(_stat("relogio", "%.1fs" % float(lv["rate_s"]), fmt("TIP_DEF_RATE", {"n": lv["rate_s"]})))
+	if lv.has("hp") and (b.is_empty() or sim.defense.hp(b) >= sim.defense.max_hp(b)):
+		out.append(_stat("escudo", str(int(lv["hp"])), I18n.t("TIP_HP_WALL") if tp == "muro" else I18n.t("TIP_HP")))
+	if not b.is_empty() and int(b.get("guard", -1)) >= 0:
+		var gp := sim.person(int(b["guard"]))
+		if not gp.is_empty():
+			out.append(_stat("pessoa", pname(gp), fmt("TIP_GUARD", {"n": int(round(float(sim.bal["defense"]["guard_rate"]) * 100.0))}), C_GOOD))
+	return out
+
+
+## Muro: sobe todos os do mesmo nível de uma vez (como no Clash), pagando por todos.
+func _wall_upgrade_all(b: Dictionary) -> void:
+	var lvl := int(b["level"])
+	var n := 0
+	for o in sim.buildings:
+		if String(o["type"]) == "muro" and int(o["level"]) == lvl:
+			n += 1
+	var nd := sim.level_def(b, lvl + 1)
+	if n < 2 or nd.is_empty() or not sim.unlocked("muro", lvl + 1):
+		return
+	var all := {}
+	for r in nd["cost"]:
+		all[r] = float(nd["cost"][r]) * n
+	var ub := Button.new()
+	ub.text = fmt("UI_WALLS_ALL", {"n": n})
+	ub.icon = icon("seta")
+	ub.disabled = not sim.can_afford(all)
+	ub.tooltip_text = fmt("TIP_WALLS_ALL", {"n": n, "b": bname("muro", lvl + 1)})
+	ub.pressed.connect(func() -> void:
+		var r := sim.upgrade_walls(lvl)
+		if bool(r["ok"]):
+			toast(fmt("UI_WALLS_DONE", {"n": r["n"], "b": bname("muro", lvl + 1)}))
+		else:
+			toast(I18n.t("UI_NO_MONEY"))
+		_rebuild_card())
+	_card_box.add_child(_row([ub, _cost_row(all)]))
+
+
+## Dica do menu de obras para uma defesa: os números em frase.
+func _defense_tip(type: String, lv: Dictionary) -> String:
+	var parts: PackedStringArray = []
+	if lv.has("dmg"):
+		parts.append(fmt("TIP_DEF_DMG", {"n": lv["dmg"]}))
+	if lv.has("range"):
+		parts.append(fmt("TIP_DEF_RANGE", {"n": lv["range"]}))
+	if lv.has("hp"):
+		parts.append(I18n.t("TIP_HP_WALL") if type == "muro" else I18n.t("TIP_HP"))
+	if type == "mina" and sim.mine_credits > 0:
+		parts.append(fmt("TIP_FREE_MINES", {"n": sim.mine_credits}))
+	return "\n".join(parts)
+
+
+## "Esta noite: 2 zumbis" + horda/chefe + o que vem amanhã.
+func _night_forecast_tip(nn: Dictionary) -> String:
+	var t := fmt("TIP_RAID_TONIGHT" if sim.is_night() or sim.local_hour() >= 12.0 else "TIP_RAID_NEXT", {"n": nn["n"]})
+	if bool(nn.get("horde", false)):
+		t += "\n" + I18n.t("TIP_RAID_HORDE")
+	if int(nn.get("boss", 0)) > 0:
+		t += "\n" + fmt("TIP_RAID_BOSS", {"n": nn["boss"]})
+	var tomorrow := sim.defense.forecast(int(nn["day"]) + 1)
+	if bool(tomorrow["horde"]) and not bool(nn.get("horde", false)):
+		t += "\n" + I18n.t("TIP_RAID_HORDE_TOMORROW")
+	t += "\n" + I18n.t("TIP_RAID_HOW")
+	return t
 
 
 func _no_spot_tip() -> String:
