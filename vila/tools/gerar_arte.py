@@ -1984,6 +1984,15 @@ ICONS = [
      "...d....",
      "........",
      "........"],
+    # 22 mover (cruz de setas)
+    ["...m....",
+     "..mmm...",
+     "...m....",
+     ".m.m.m..",
+     "mmmMmmm.",
+     ".m.m.m..",
+     "..mmm...",
+     "...m...."],
 ]
 ICON_COLORS = {
     'r': OR2, 'R': OR, 'd': '#a03a20', 'g': '#5ad6a0', 'c': CY2, 'C': CY, 'b': '#2a8aa0',
@@ -2002,7 +2011,8 @@ def icons():
              18: {'r': D4, 'k': D0, 'R': D2, 'C': CY},
              19: {'t': ROPE, 'b': W3, 'B': W4, 'y': '#d8a830', 'Y': YE},
              20: {'k': ST2, 'n': '#3e6a64', 'N': '#e8e0c8', 'p': '#d8ccb0'},
-             21: {'d': '#e05a5a', 'R': '#ffaaa0'}}
+             21: {'d': '#e05a5a', 'R': '#ffaaa0'},
+             22: {'m': '#e8e0c8', 'M': '#fffff0'}}
     for i, rows in enumerate(ICONS):
         L = Lay(8, 8)
         cm = dict(ICON_COLORS)

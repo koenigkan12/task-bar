@@ -87,6 +87,7 @@ func _make_hud() -> void:
 	_layer.add_child(hud)
 	hud.setup(sim)
 	hud.build_chosen.connect(_start_placing)
+	hud.move_chosen.connect(_start_moving)
 	hud.zoom_step.connect(func(d: int) -> void: _set_zoom(_zoom_i + d, get_viewport().get_visible_rect().size / 2.0))
 	hud.quit_pressed.connect(func() -> void: WindowService.quit_game())
 	hud.options_pressed.connect(_show_options)
@@ -297,6 +298,10 @@ func _open_test_card() -> void:
 				p["tired"] = 2
 			hud.show_person(int(sim.people[0]["id"]))
 		"manage": hud.set_manage(true)
+		"move":   # capturas: movendo a primeira moradia (fantasma num lugar livre)
+			var mb := sim._first("moradia")
+			_start_moving(int(mb["id"]))
+			_test_cell = AutoPlayer.spot(sim, "moradia")
 		"ending": _show_ending()
 		var o:
 			# --open=b:deposito abre o cartão do primeiro prédio desse tipo.
@@ -387,8 +392,29 @@ func _start_placing(type: String) -> void:
 
 func _stop_placing() -> void:
 	_placing = ""
+	if _moving >= 0:   # desistiu de mover: o prédio volta para onde estava
+		_moving = -1
+		sim.cancel_lift()
 	if world != null:
 		world.ghost_type = ""
+		world.ghost_level = 1
+
+
+## Mover: o prédio sai do chão e o fantasma dele segue o mouse até o clique no lugar novo.
+var _moving: int = -1
+
+
+func _start_moving(id: int) -> void:
+	_stop_placing()
+	var b := sim.by_id(id)
+	if not sim.lift(id):
+		return
+	_moving = id
+	_placing = String(b["type"])
+	world.ghost_type = _placing
+	world.ghost_level = int(b["level"])
+	hud.close_card()
+	hud.toast(I18n.t("UI_MOVE"))
 
 
 var _tip_text: String = ""
@@ -537,6 +563,17 @@ func _order(pid: int, screen: Vector2) -> void:
 func _click(screen: Vector2) -> void:
 	var wp := _screen_to_world(screen)
 	var c := world.cell_at(wp)
+	if _moving >= 0:
+		var rm := sim.drop(c)
+		if bool(rm["ok"]):
+			var mb := sim.by_id(_moving)
+			_moving = -1
+			_stop_placing()
+			hud.toast(hud.fmt("UI_MOVED", {"b": hud.bname(String(mb["type"]), int(mb["level"]))}))
+		else:
+			var why := String(rm.get("reason", ""))
+			hud.toast(I18n.t("UI_PLACE_" + why) if why != "" else I18n.t("UI_NO_SPACE"))
+		return
 	if _placing != "":
 		var tp := _placing
 		var r := sim.build(_placing, c)

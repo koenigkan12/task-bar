@@ -178,6 +178,18 @@ func _init() -> void:
 	fz.advance(5.0)
 	_check(not fz.fog_now and int(nobed["tired"]) >= 1 and fz.home_of(nobed) < 0, "névoa: quem dormiu sem cama acorda cansado")
 	_check(fz.food_mult() > fm0, "névoa: depois dela a horta rende mais")
+	# Mover: sai do chão, vai para o lugar novo com nível e trabalhador; desistir devolve.
+	var mvb: Dictionary = sim._first("poco")
+	var mv_from: Vector2i = mvb["cell"]
+	var mv_lv := int(mvb["level"])
+	_check(not sim.lift(int(sim.tower_building()["id"])) and not sim.lift(int(sim._first("hatch")["id"])), "mover: antena e bunker não saem do lugar")
+	_check(sim.lift(int(mvb["id"])) and sim.building_at(mv_from).is_empty(), "mover: prédio sai do chão")
+	sim.cancel_lift()
+	_check(sim.lifted < 0 and sim.building_at(mv_from) == mvb, "mover: desistir devolve ao lugar")
+	sim.lift(int(mvb["id"]))
+	var mv_to := AutoPlayer.spot(sim, "poco")
+	var mr := sim.drop(mv_to)
+	_check(bool(mr["ok"]) and Vector2i(mvb["cell"]) == mv_to and int(mvb["level"]) == mv_lv and sim.building_at(mv_to) == mvb and sim.building_at(mv_from).is_empty() == (mv_from != mv_to), "mover: vai para o lugar novo com o mesmo nível")
 	# Desmontar: libera o chão, devolve metade e não deixa mexer no bunker nem na torre.
 	var pc: Dictionary = sim._first("poco")
 	var cell0: Vector2i = pc["cell"]

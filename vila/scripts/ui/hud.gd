@@ -10,6 +10,7 @@ signal quit_pressed
 signal options_pressed
 signal goal_pressed
 signal res_clicked(res: String)
+signal move_chosen(id: int)
 
 const ART := "res://assets/art/"
 ## Tamanho lógico atual da tela (a janela pode ser puxada pela borda: 384×216 é o mínimo).
@@ -17,7 +18,7 @@ var W: float = 384.0
 var H: float = 216.0
 const ICON := {"comida": 0, "agua": 1, "madeira": 2, "sucata": 3, "pessoa": 4, "cama": 5, "relogio": 6,
 		"torre": 7, "martelo": 8, "seta": 9, "cadeado": 10, "check": 11, "estrela": 12, "sol": 13, "lua": 14, "alerta": 15,
-		"pecas": 16, "energia": 17, "radio": 18, "mercador": 19, "caderno": 20, "saude": 21}
+		"pecas": 16, "energia": 17, "radio": 18, "mercador": 19, "caderno": 20, "saude": 21, "mover": 22}
 # Paleta da ilha (tools/estilo_ilha.py), um pouco mais clara onde é texto pequeno sobre o roxo.
 const C_TEXT := Color("ccc6ba")    # creme
 const C_MUTED := Color("a592a5")   # lilás
@@ -1192,20 +1193,30 @@ func _card_building() -> void:
 					toast(I18n.t("UI_MISSING").format({"list": ""}))
 				_rebuild_card())
 			_card_box.add_child(up)
+	# Mover e desmontar lado a lado, no pé do cartão.
+	var foot := HBoxContainer.new()
+	foot.alignment = BoxContainer.ALIGNMENT_END
+	foot.add_theme_constant_override("separation", 2)
+	if sim.can_move(b):
+		var mv := Button.new()
+		mv.icon = icon("mover")
+		mv.theme_type_variation = "FlatButton"
+		mv.tooltip_text = I18n.t("TIP_MOVE")
+		var mid := int(b["id"])
+		mv.pressed.connect(func() -> void: move_chosen.emit(mid))
+		foot.add_child(mv)
 	if String(b["state"]) == "built" and sim.demolish_leaves_homeless(b):
 		var dn := Button.new()
 		dn.text = I18n.t("UI_DEMOLISH")
 		dn.theme_type_variation = "FlatButton"
 		dn.disabled = true
 		dn.tooltip_text = I18n.t("UI_DEMOLISH_NO_BEDS")
-		dn.size_flags_horizontal = Control.SIZE_SHRINK_END
-		_card_box.add_child(dn)
+		foot.add_child(dn)
 	elif sim.can_demolish(b):
 		var dm := Button.new()
 		dm.text = I18n.t("UI_DEMOLISH")
 		dm.theme_type_variation = "FlatButton"
 		dm.tooltip_text = I18n.t("UI_DEMOLISH_TEXT")
-		dm.size_flags_horizontal = Control.SIZE_SHRINK_END
 		var bid := int(b["id"])
 		var nm := title
 		dm.pressed.connect(func() -> void:
@@ -1213,7 +1224,9 @@ func _card_building() -> void:
 				if bool(sim.demolish(bid)["ok"]):
 					toast(fmt("UI_DEMOLISHED", {"b": nm}))
 					close_card()))
-		_card_box.add_child(dm)
+		foot.add_child(dm)
+	if foot.get_child_count() > 0:
+		_card_box.add_child(foot)
 
 
 ## Ícone + número curto; a frase que explica vai na dica do mouse (regra da interface: ícone e número,

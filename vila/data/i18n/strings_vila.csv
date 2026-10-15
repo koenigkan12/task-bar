@@ -393,3 +393,6 @@ UI_LEFT,"{name} não aguentou e foi embora no barco.","{name} couldn't take it a
 UI_AWAY_LEFT,"{n} foi(ram) embora","{n} left"
 UI_AWAY_SICK,"{n} doente(s)","{n} sick"
 UI_DIED,"{name} não resistiu. A vila perdeu alguém.","{name} didn't make it. The village lost someone."
+TIP_MOVE,"Mover: escolha outro lugar no mapa. Sai de graça e mantém o nível e quem trabalha aqui.","Move: pick another spot on the map. Free, and it keeps its level and workers."
+UI_MOVE,"Clique no lugar novo (botão direito ou Esc desiste)","Click the new spot (right click or Esc cancels)"
+UI_MOVED,{b} mudou de lugar,{b} moved

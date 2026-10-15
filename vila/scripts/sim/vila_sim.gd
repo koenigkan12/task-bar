@@ -953,6 +953,75 @@ func demolish_leaves_homeless(b: Dictionary) -> bool:
 	return _beds_of(b) > 0 and beds_total() - _beds_of(b) < people.size()
 
 
+## Mover: tira o prédio do chão (lift), o jogador escolhe o lugar novo (drop) ou desiste
+## (cancel_lift). Sai de graça e mantém nível, quem trabalha e quem mora.
+var lifted: int = -1
+
+
+func can_move(b: Dictionary) -> bool:
+	if b.is_empty() or String(b["state"]) != "built":
+		return false
+	var tp := String(b["type"])
+	if bool(def(tp).get("fixed", false)) or tp == "torre" or tp == "hatch" or tp == "gate":
+		return false
+	return not (tp == "praca" and merchant_here())
+
+
+func lift(id: int) -> bool:
+	var b := by_id(id)
+	if lifted >= 0 or not can_move(b):
+		return false
+	_mark(b, false)
+	lifted = id
+	_rebuild_astar()
+	return true
+
+
+func cancel_lift() -> void:
+	var b := by_id(lifted)
+	lifted = -1
+	if b.is_empty():
+		return
+	_mark(b, true)
+	_clear_ground(b)   # uma árvore pode ter voltado ali enquanto ele estava no ar
+	_rebuild_astar()
+	changed.emit()
+
+
+func _clear_ground(b: Dictionary) -> void:
+	var fp := _fp(String(b["type"]))
+	for dy in fp.y:
+		for dx in fp.x:
+			var c := Vector2i(b["cell"]) + Vector2i(dx, dy)
+			terrain[_i(c)] = T_GROUND
+			regrow.erase(c)
+	_fdirty = true
+
+
+func drop(cell: Vector2i) -> Dictionary:
+	var b := by_id(lifted)
+	if b.is_empty():
+		lifted = -1
+		return {"ok": false, "reason": "gone"}
+	var tp := String(b["type"])
+	if not can_place(tp, cell):
+		return {"ok": false, "reason": place_reason(tp, cell)}
+	lifted = -1
+	b["cell"] = cell
+	_mark(b, true)
+	_clear_ground(b)
+	_rebuild_astar()
+	# Quem trabalhava ou construía ali vai para a porta nova; quem estava dentro sai pela porta nova.
+	for p in people:
+		var j: Dictionary = p["job"]
+		if int(j.get("b", -1)) == int(b["id"]):
+			_set_job(p, j.duplicate())
+		elif p["asleep"] and home_of(p) == int(b["id"]):
+			p["pos"] = Vector2(_door(b))
+	changed.emit()
+	return {"ok": true}
+
+
 ## Desmonta um prédio pronto: devolve parte do que custou (balance "demolish_refund") e libera o chão.
 ## Quem trabalhava nele fica livre. É a saída quando o chão acaba.
 func demolish(id: int) -> Dictionary:

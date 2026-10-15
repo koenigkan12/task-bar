@@ -14,6 +14,7 @@ var sim: VilaSim
 var hover_cell: Vector2i = Vector2i(-1, -1)
 var ghost_type: String = ""          # prédio sendo posicionado ("" = nenhum)
 var ghost_cell: Vector2i = Vector2i(-1, -1)
+var ghost_level: int = 1               # mover: o fantasma mostra o prédio no nível dele
 
 var _ground: Sprite2D
 var _flora: VilaFlora                  # flores da mata que brilham de noite
@@ -286,7 +287,7 @@ func _sync_buildings() -> void:
 	for b in sim.buildings:
 		var id: int = int(b["id"])
 		seen[id] = true
-		var key := "%s|%s|%d|%d" % [b["type"], b["state"], int(b["level"]), sim.tower]
+		var key := "%s|%s|%d|%d|%s" % [b["type"], b["state"], int(b["level"]), sim.tower, str(b["cell"])]
 		var node: Dictionary = _bnodes.get(id, {})
 		if node.is_empty() or String(node["key"]) != key:
 			if not node.is_empty():
@@ -295,6 +296,7 @@ func _sync_buildings() -> void:
 			node["key"] = key
 			_bnodes[id] = node
 		_update_building(b, node)
+		(node["root"] as Node2D).modulate.a = 0.3 if id == sim.lifted else 1.0   # no ar: sendo movido
 	for id in _bnodes.keys():
 		if not seen.has(id):
 			(_bnodes[id]["root"] as Node).queue_free()
@@ -858,7 +860,7 @@ func _draw_overlay() -> void:
 		# Cada célula com a sua cor: só a que bloqueia fica vermelha.
 		var t_ok := tex("ghost_ok")
 		var t_bad := tex("ghost_bad")
-		var bt := tex(_btex_name({"type": ghost_type, "level": 1, "state": "built"}))
+		var bt := tex(_btex_name({"type": ghost_type, "level": ghost_level, "state": "built"}))
 		var cuts := sim.place_reason(ghost_type, ghost_cell) in ["cuts", "tight"]   # fecharia caminho ou colado: tudo vermelho
 		for dy in fp2.y:
 			for dx in fp2.x:
