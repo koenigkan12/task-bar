@@ -291,20 +291,44 @@ def entulho():
 
 
 def fogueira():
-    """Fogo e lenha do meio da fogueira das peças, em 4 quadros (a chama vira de lado e sobe)."""
-    base = peca('fogueira_troncos').crop((13, 4, 31, 24))
-    chama = base.crop((0, 0, 18, 13))
+    """Fogueira desenhada à mão em 4 quadros: pedras, duas toras cruzadas e a chama que balança.
+    (Recortar o meio da peça do PixelLab trazia pedaços das toras de fora e cortava a chama.)"""
+    W, H = 20, 26
+    # chama: (linha a partir da base, meia-largura) por quadro; desloca o topo para dar o balanço
+    formas = [
+        [4, 4, 3, 3, 2, 2, 1, 1, 0],
+        [4, 4, 4, 3, 2, 2, 1, 0, 0],
+        [4, 4, 3, 3, 3, 2, 1, 1, 0, 0],
+        [4, 3, 3, 3, 2, 1, 1, 0],
+    ]
+    balanco = [[0, 0, 0, 0, 1, 1, 1, 1, 2], [0, 0, 0, -1, -1, -1, -1, -2, -2],
+               [0, 0, 0, 0, 0, 1, 1, 0, 0, -1], [0, 0, -1, -1, 0, 0, 1, 1]]
+    fumaca = [[(11, 6), (12, 3)], [(9, 5), (10, 2)], [(10, 4), (9, 1)], [(12, 5), (11, 2)]]
     quadros = []
     for k in range(4):
-        q = base.copy()
-        ch = chama.transpose(Image.FLIP_LEFT_RIGHT) if k % 2 else chama
-        if k >= 2:
-            ch = ch.crop((0, 1, 18, 13))
-        apaga = Image.new('RGBA', (18, 13))
-        q.paste(apaga, (0, 0))
-        q.alpha_composite(ch, (0, 0))
-        quadros.append(q)
-    return folha(quadros, 18, 20)
+        im = Image.new('RGBA', (W, H))
+        d = ImageDraw.Draw(im)
+        d.ellipse([3, H - 6, W - 4, H - 1], GS + (255,))               # sombra
+        for x, y in ((2, H - 5), (5, H - 3), (9, H - 3), (13, H - 3), (16, H - 5), (3, H - 7), (15, H - 7)):
+            d.rectangle([x, y, x + 1, y + 1], CR + (255,))             # pedras
+            im.putpixel((x + 1, y + 1), LC + (255,))
+        d.line([(4, H - 5), (15, H - 9)], ME + (255,), 2)                # toras cruzadas
+        d.line([(4, H - 9), (15, H - 5)], MC + (255,), 2)
+        cx, base = 10, H - 9
+        for i, hw in enumerate(formas[k]):
+            y = base - i
+            x0 = cx - hw + balanco[k][i]
+            x1 = cx + hw - 1 + balanco[k][i] if hw else x0
+            d.line([(x0, y), (x1, y)], VM + (255,))
+            if hw >= 2:
+                d.line([(x0 + 1, y), (x1 - 1, y)], Y + (255,))
+            if hw >= 3 and i < 4:
+                d.line([(x0 + 2, y), (x1 - 2, y)], CR + (255,))
+        for x, y in fumaca[k]:                                         # fagulha e fumaça
+            im.putpixel((x, y + 4), Y + (255,))
+            im.putpixel((x, y), LC + (255,))
+        quadros.append(im)
+    return folha(quadros, W, H)
 
 
 def bote():
