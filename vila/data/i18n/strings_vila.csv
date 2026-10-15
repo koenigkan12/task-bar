@@ -315,7 +315,7 @@ UI_SRC_HAND,Catando à mão,Gathering by hand
 TIP_SRC_HAND,"{n} pessoa(s) catando à mão agora.","{n} person(s) gathering by hand right now."
 DO_move,Indo até lá,Heading over
 UI_ORDER_HINT,Botão direito: mandar,Right-click: send
-TIP_ORDER_HINT,"Com a pessoa selecionada, clique com o botão direito num prédio, obra, árvore ou entulho para ela trabalhar ali, ou no chão para só ir até lá.","With this person selected, right-click a building, site, tree or rubble to send them to work there, or the ground to just walk there."
+TIP_ORDER_HINT,"Com a pessoa selecionada, clique com o botão direito num prédio, obra, árvore ou entulho para ela trabalhar ali, ou no chão para só ir até lá. Numa obra, até 3 pessoas constroem juntas.","With this person selected, right-click a building, site, tree or rubble to send them to work there, or the ground to just walk there. Up to 3 people can build one site together."
 ORD_night,De noite todo mundo dorme,Everyone sleeps at night
 ORD_power,Sem energia,No power
 ORD_input,Falta {r},Missing {r}

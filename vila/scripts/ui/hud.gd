@@ -1095,7 +1095,10 @@ func _progress_lines(b: Dictionary) -> void:
 	if int(b["builder"]) < 0:
 		_card_box.add_child(_row([_icon_rect("alerta"), _label(I18n.t("UI_WAITING_BUILDER"), C_WARN)]))
 	else:
-		_card_box.add_child(_row([_icon_rect("pessoa"), _label(pname(sim.person(int(b["builder"]))))]))
+		var who: Array[String] = [pname(sim.person(int(b["builder"])))]
+		for hid in b.get("helpers", []):
+			who.append(pname(sim.person(int(hid))))
+		_card_box.add_child(_row([_icon_rect("pessoa"), _label(", ".join(who))]))
 	var c := Button.new()
 	c.text = I18n.t("UI_CANCEL")
 	c.pressed.connect(func() -> void:

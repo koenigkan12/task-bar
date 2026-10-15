@@ -532,14 +532,12 @@ func eta(p: Dictionary) -> float:
 ## ainda espera alguém.
 func site_eta(b: Dictionary) -> float:
 	var left := maxf(0.0, float(b["total"]) - float(b["progress"]))
-	var bid := int(b["builder"])
-	if bid >= 0:
-		var p := person(bid)
+	var m := 0.0
+	for bid in [int(b["builder"])] + (b.get("helpers", []) as Array):
+		var p := person(int(bid))
 		if not p.is_empty():
-			var m := bonus(p, "build") * _work_mult(p)
-			if m > 0.0:
-				return left / m
-	return left
+			m += bonus(p, "build") * _work_mult(p)
+	return left / m if m > 0.0 else left
 
 
 func missing(cost: Dictionary) -> Dictionary:
@@ -1057,6 +1055,11 @@ func _release_workers(b: Dictionary) -> void:
 
 
 func _release_builder(b: Dictionary) -> void:
+	for hid in (b.get("helpers", []) as Array).duplicate():
+		var h := person(int(hid))
+		if not h.is_empty():
+			_set_job(h, {"kind": "idle"})
+	b["helpers"] = []
 	var p := person(int(b["builder"]))
 	b["builder"] = -1
 	if not p.is_empty():
@@ -1073,6 +1076,8 @@ func _set_job(p: Dictionary, job: Dictionary) -> void:
 		var ob2 := by_id(int(old["b"]))
 		if not ob2.is_empty() and int(ob2["builder"]) == int(p["id"]):
 			ob2["builder"] = -1
+		if not ob2.is_empty():
+			(ob2.get("helpers", []) as Array).erase(int(p["id"]))
 	p["target_cell"] = Vector2i(-1, -1)
 	p["job"] = job
 	p["path"] = PackedVector2Array()
@@ -1087,7 +1092,13 @@ func _set_job(p: Dictionary, job: Dictionary) -> void:
 			p["phase"] = "to_work"
 		"build":
 			var b2 := by_id(int(job["b"]))
-			b2["builder"] = int(p["id"])
+			# Ajudante (mandado pelo jogador) soma na obra sem tirar quem já constrói.
+			if bool(job.get("helper", false)):
+				if not b2.has("helpers"):
+					b2["helpers"] = []
+				(b2["helpers"] as Array).append(int(p["id"]))
+			else:
+				b2["builder"] = int(p["id"])
 			_go(p, _door(b2))
 			p["phase"] = "to_build"
 		"forage":
@@ -1700,13 +1711,16 @@ func order(pid: int, c: Vector2i) -> Dictionary:
 	if not b.is_empty():
 		var bid := int(b["id"])
 		if String(b["state"]) != "built":
-			if int(b["builder"]) != pid:
-				var old := person(int(b["builder"]))
-				if not old.is_empty():
-					_set_job(old, {"kind": "idle"})
-				_set_job(p, {"kind": "build", "b": bid, "manual": true})
-			else:
+			# Até 3 na mesma obra: quem chega depois do construtor entra como ajudante.
+			var helpers: Array = b.get("helpers", [])
+			if int(b["builder"]) == pid or helpers.has(pid):
 				p["job"]["manual"] = true
+			elif int(b["builder"]) < 0 or person(int(b["builder"])).is_empty():
+				_set_job(p, {"kind": "build", "b": bid, "manual": true})
+			elif helpers.size() < int(bal["people"].get("max_builders", 3)) - 1:
+				_set_job(p, {"kind": "build", "b": bid, "manual": true, "helper": true})
+			else:
+				return {"ok": false, "reason": "full"}
 			return {"ok": true, "kind": "build"}
 		var d := def(String(b["type"]))
 		var lv := level_def(b)
@@ -1791,6 +1805,7 @@ func _do_build(p: Dictionary, dt: float) -> void:
 
 func _finish(b: Dictionary) -> void:
 	b["builder"] = -1
+	b["helpers"] = []
 	var tp := String(b["type"])
 	if tp == "torre":
 		tower += 1

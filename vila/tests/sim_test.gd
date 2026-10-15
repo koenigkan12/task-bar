@@ -238,6 +238,26 @@ func _test_orders() -> void:
 	_check(bool(o["ok"]) and String(jo["job"]["kind"]) == "move", "ordens: clique direito no chão só move")
 	sim.advance(30.0)
 	_check(Vector2(jo["pos"]).distance_to(Vector2(ground)) < 0.6 or String(jo["job"].get("kind", "")) != "move", "ordens: chegou onde clicou")
+	# Até 3 na mesma obra: o segundo mandado vira ajudante e a obra anda mais rápido.
+	for r3 in VilaSim.RES:
+		sim.stock[r3] = 0.0
+	sim.stock["madeira"] = 50.0
+	sim.stock["sucata"] = 50.0
+	var hc := Vector2i(-1, -1)
+	for y in sim.h:
+		for x in sim.w:
+			if hc.x < 0 and sim.can_place("deposito", Vector2i(x, y)):
+				hc = Vector2i(x, y)
+	sim.build("deposito", hc)
+	var site := sim.building_at(hc)
+	var other := sim._add_person("Teste", 1, [], Vector2i(jo["pos"]))
+	sim.order(int(jo["id"]), hc)
+	var eta1 := sim.site_eta(site)
+	var oh := sim.order(int(other["id"]), hc)
+	_check(bool(oh["ok"]) and (site["helpers"] as Array).has(int(other["id"])) and int(site["builder"]) == int(jo["id"]), "obra: segundo mandado entra como ajudante")
+	_check(sim.site_eta(site) < eta1 * 0.6, "obra: com ajudante a obra termina mais cedo")
+	sim.advance(120.0)
+	_check(String(site["state"]) == "built" and (site["helpers"] as Array).is_empty(), "obra: pronta e ajudantes liberados")
 	# Torre 2: serraria e ferro-velho também aceitam a ordem.
 	sim.tower = 2
 	sim._open_area(2)
