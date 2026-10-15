@@ -68,6 +68,8 @@ func _bind_sim() -> void:
 	world.setup(sim)
 	var hatch := sim._first("hatch")
 	cam.position = Vector2(Vector2i(hatch["cell"])) * 16.0 + Vector2(40, 8)
+	if Game.args.has("zoom"):   # capturas: --zoom=0 abre de longe
+		_zoom_i = clampi(int(Game.args["zoom"]), 0, ZOOMS.size() - 1)
 	_apply_zoom()
 	if hud != null:
 		hud.queue_free()

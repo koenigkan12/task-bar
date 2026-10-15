@@ -80,7 +80,7 @@ func _read_save() -> Dictionary:
 		if not FileAccess.file_exists(path):
 			continue
 		var d: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
-		if d is Dictionary and int((d as Dictionary).get("v", 0)) == 1:
+		if d is Dictionary and int((d as Dictionary).get("v", 0)) == 2:
 			if path == SAVE_BAK:
 				push_warning("save principal estragado; usando a cópia anterior")
 			return d

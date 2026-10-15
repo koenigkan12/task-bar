@@ -27,7 +27,14 @@ func _init() -> void:
 	var start := 1760000000.0 - fposmod(1760000000.0, 86400.0) + 7.0 * 3600.0   # 7h UTC
 	sim.setup(bal, start, 0)
 	_check(sim.people.size() == 1, "começa só com o Joaquim")
-	_check(sim._first("gate").is_empty(), "começa sem estrada nem portão")
+	_check(not sim._first("gate").is_empty(), "começa com o porto")
+	var wat := 0
+	for i in sim.terrain.size():
+		if sim.terrain[i] == VilaSim.T_WATER:
+			wat += 1
+	_check(wat > 0 and sim.terrain_at(Vector2i(0, 0)) == VilaSim.T_WATER and not sim.cell_ok(Vector2i(0, 0)), "ilha: água em volta, não se constrói nela")
+	var gd := sim._door(sim._first("gate"))
+	_check(sim.terrain_at(gd) != VilaSim.T_WATER, "o porto tem saída por terra")
 	_check(sim._count_any("moradia") == 1 and sim.beds_total() == 1, "começa com uma barraca de uma cama")
 	var free0 := sim._free_build_cells()
 	print("chão livre no começo: ", free0)
@@ -58,7 +65,7 @@ func _init() -> void:
 	for p in sim.people:
 		print("  ", p["name"], " -> ", sim.doing(p), " ", p["passives"])
 	_check(t_tower2 > 0.0 and t_tower2 < 30.0 * 60.0, "torre 2 em menos de 30 min")
-	_check(not sim._first("gate").is_empty(), "a estrada e o portão aparecem na torre 2")
+	_check(not sim.gate_group.is_empty() or sim.people.size() > 1, "na torre 2 o bote traz gente ao porto")
 	_check(t_ari > 0.0, "seu Ari chega depois da torre 2")
 	_check(t_group > 0.0, "chega um grupo de 3 no portão")
 	_check(sim.people.size() >= 3, "pelo menos 3 pessoas em 3 h")

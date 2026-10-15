@@ -20,14 +20,14 @@ B_deposito_1,Caixotes,Crates
 B_deposito_2,Galpão,Shed
 B_deposito_3,Depósito,Storehouse
 B_area,Mais chão em volta,More ground around
-B_estrada,A estrada (chega gente),The road (people come)
+B_estrada,O porto (chega gente),The dock (people come)
 B_entulho,Entulho,Rubble
 B_fogueira,Fogueira,Campfire
 B_serraria,Serraria,Sawmill
 B_ferrovelho,Ferro-velho,Scrapyard
 B_torre,Torre do rádio,Radio tower
 B_hatch,Bunker,Bunker
-B_gate,Estrada,Road
+B_gate,Porto,Dock
 B_praca,Praça,Square
 B_oficina,Oficina,Workshop
 B_gerador,Gerador,Generator
@@ -72,7 +72,7 @@ UI_TOWER_MAX,A torre está no máximo deste protótipo.,The tower is at this pro
 UI_TOWER_PROTO,Fim do protótipo: o nível 3 ainda não traz nada.,End of prototype: level 3 brings nothing yet.
 UI_SOON,em breve,soon
 UI_TIME,Leva {t},Takes {t}
-UI_GATE_TITLE,Gente na estrada,People on the road
+UI_GATE_TITLE,Gente no bote,People on the boat
 UI_GATE_PICK,Escolha quem entra (há {n} cama livre),Pick who comes in ({n} free bed)
 UI_GATE_PICK_N,Escolha quem entra (há {n} camas livres),Pick who comes in ({n} free beds)
 UI_GATE_NOBED,Sem cama livre: melhore ou construa uma moradia,No free bed: upgrade or build a home
@@ -168,7 +168,7 @@ TUT_horta,Uma horta. Ponha onde quiser.,A garden. Put it wherever you like.
 TUT_tower,"Se a torre subir, alguém pode ouvir. Clique em Torre.","If the tower goes up, someone might hear. Click Tower."
 TUT_zoom,Use a roda do mouse para afastar e aproximar.,Use the mouse wheel to zoom out and in.
 TUT_end,Ele trabalha sozinho. Pode ir fazer suas coisas que a vila continua.,He works on his own. Go do your things; the village keeps going.
-HINT_gate,Gente na estrada! Clique no selo para escolher quem entra.,People on the road! Click the badge to pick who comes in.
+HINT_gate,Um bote chegou ao porto! Clique no selo para escolher quem entra.,A boat reached the dock! Click the badge to pick who comes in.
 HINT_tower_ready,A torre já pode subir. Clique em Torre.,The tower can go up now. Click Tower.
 HINT_space,"Falta chão. Clique num entulho ou numa árvore dentro da área para mandar limpar.","Out of ground. Click rubble or a tree inside the area to have it cleared."
 HINT_short,"Está acabando comida ou água. A meta diz o que construir.","Food or water is running out. The goal tells you what to build."
@@ -294,7 +294,7 @@ UI_PLACE_out,"Fora da área limpa (a borda tracejada). A torre aumenta a área q
 UI_PLACE_busy,Já tem um prédio aqui.,There is already a building here.
 UI_PLACE_tree,"Tem uma árvore aqui. Clique nela para mandar cortar.","There is a tree here. Click it to have it cut."
 UI_PLACE_rubble,"Tem entulho aqui. Clique nele para mandar limpar.","There is rubble here. Click it to have it cleared."
-UI_PLACE_road,Aqui é a estrada.,This is the road.
+UI_PLACE_road,Aqui não dá para construir.,You can't build here.
 UI_PLACE_closed,"Ficaria todo cercado: ninguém conseguiria chegar até ele.","It would be boxed in: nobody could reach it."
 UI_NIGHT_OFF,Virar a noite,Pull an all-nighter
 UI_NIGHT_ON,Virando a noite,Pulling an all-nighter

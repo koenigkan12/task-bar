@@ -5,13 +5,16 @@ extends Node2D
 
 const TILE := 16
 const ART := "res://assets/art/"
+const MARGEM := 192                     # ilha.png tem água desenhada além do mapa (tools/estilo_ilha.py)
+const CREME := Color8(204, 198, 186)     # destaque de 1 px no hover (estilo da ilha)
 
 var sim: VilaSim
 var hover_cell: Vector2i = Vector2i(-1, -1)
 var ghost_type: String = ""          # prédio sendo posicionado ("" = nenhum)
 var ghost_cell: Vector2i = Vector2i(-1, -1)
 
-var _ground: TileMapLayer
+var _ground: Sprite2D
+var _boat: Sprite2D                     # bote no porto enquanto tem gente esperando para entrar
 const ICON_FRAMES := 21                 # icons.png: 21 ícones de 8 px
 var _objects: Node2D
 var _floor: Node2D
@@ -42,8 +45,12 @@ func setup(s: VilaSim) -> void:
 	_bnodes.clear()
 	_pnodes.clear()
 	_lights.clear()
-	_ground = TileMapLayer.new()
-	_ground.tile_set = _make_tileset()
+	# Chão, beira e água da ilha: uma imagem só (a forma da ilha não muda).
+	_ground = Sprite2D.new()
+	_ground.texture = tex("ilha")
+	_ground.centered = false
+	_ground.position = Vector2(-MARGEM, -MARGEM)
+	_ground.z_index = -10
 	add_child(_ground)
 	_zone = Node2D.new()
 	_zone.draw.connect(_draw_zone)
@@ -65,7 +72,12 @@ func setup(s: VilaSim) -> void:
 	_modulate = CanvasModulate.new()
 	add_child(_modulate)
 	_terrain_cache = PackedByteArray()
-	_paint_ground()
+	_boat = Sprite2D.new()
+	_boat.texture = tex("bote")
+	_boat.centered = false
+	_boat.visible = false
+	_boat.z_index = -5
+	add_child(_boat)
 	_sync_terrain(true)
 	_sync_buildings()
 	_sync_people(0.0)
@@ -90,7 +102,7 @@ func tex_day(name: String) -> Texture2D:
 		var img := t.get_image()
 		if img.is_compressed():
 			img.decompress()
-		var lit := {Color8(255, 179, 71).to_rgba32(): Color8(58, 54, 70), Color8(255, 211, 107).to_rgba32(): Color8(84, 80, 98)}
+		var lit := {Color8(240, 196, 104).to_rgba32(): Color8(67, 52, 85), Color8(250, 226, 150).to_rgba32(): Color8(102, 95, 146)}
 		var changed := false
 		var spots: Array[Vector2i] = []
 		for y in img.get_height():
@@ -110,7 +122,7 @@ func tex_day(name: String) -> Texture2D:
 						continue
 					var g := img.get_pixel(q.x, q.y)
 					if g.a > 0.99 and g.r > 0.43 and g.r - g.g > 0.2 and g.r - g.b > 0.3:
-						img.set_pixel(q.x, q.y, Color8(62, 50, 52))
+						img.set_pixel(q.x, q.y, Color8(67, 52, 85))
 		if changed:
 			out = ImageTexture.create_from_image(img)
 	_tex[key] = out
@@ -182,51 +194,9 @@ func building_screen_top(id: int) -> Vector2:
 
 
 # ================================================================ chão
-func _make_tileset() -> TileSet:
-	var ts := TileSet.new()
-	ts.tile_size = Vector2i(TILE, TILE)
-	var src := TileSetAtlasSource.new()
-	src.texture = tex("ground")
-	src.texture_region_size = Vector2i(TILE, TILE)
-	for y in 2:
-		for x in 8:
-			src.create_tile(Vector2i(x, y))
-	ts.add_source(src, 0)
-	return ts
-
-
 func _hash(c: Vector2i) -> int:
 	var hsh := (c.x * 73856093) ^ (c.y * 19349663) ^ 0x5bd1e995
 	return absi(hsh)
-
-
-func _paint_ground() -> void:
-	for y in sim.h:
-		for x in sim.w:
-			_paint_cell(Vector2i(x, y))
-
-
-func _paint_cell(c: Vector2i) -> void:
-	var k := sim.terrain_at(c)
-	var hh := _hash(c)
-	var at: Vector2i
-	if k == VilaSim.T_ROAD:
-		at = Vector2i(hh % 4, 1)
-	else:
-		var r := hh % 100
-		if r < 70:
-			at = Vector2i(hh % 4, 0)
-		elif r < 78:
-			at = Vector2i(4, 0)
-		elif r < 86:
-			at = Vector2i(5, 0) if r % 2 == 0 else Vector2i(5 + (hh >> 4) % 3, 1)
-		elif r < 97:
-			at = Vector2i(6, 0)
-		else:
-			at = Vector2i(7, 0)
-	if sim.occ[c.y * sim.w + c.x] >= 0:
-		at = Vector2i(4, 1)
-	_ground.set_cell(c, 0, at)
 
 
 func _sync_terrain(all: bool) -> void:
@@ -236,7 +206,6 @@ func _sync_terrain(all: bool) -> void:
 		if not all and not first and _terrain_cache[i] == sim.terrain[i]:
 			continue
 		var c := Vector2i(i % sim.w, i / sim.w)
-		_paint_cell(c)
 		if _terrain_nodes.has(c):
 			(_terrain_nodes[c] as Node).queue_free()
 			_terrain_nodes.erase(c)
@@ -244,10 +213,20 @@ func _sync_terrain(all: bool) -> void:
 		var spr: Sprite2D = null
 		match k:
 			VilaSim.T_TREE:
-				spr = _frame_sprite("tree", 4, _hash(c) % 4, 32)
+				# Uma árvore por tile; a copa (34 px) passa do tile e encosta nas vizinhas, como mata.
+				spr = _frame_sprite("tree", 4, _hash(c) % 4, 44)
+				spr.offset.x = -9
+				spr.offset.y += 2
 				spr.material = _fx.tree_mat
+				var sh := Sprite2D.new()
+				sh.texture = tex("tree_sombra")
+				sh.centered = false
+				sh.position = Vector2(-5, -5)
+				sh.z_index = -1   # no chão, embaixo de todas as copas
+				spr.add_child(sh)
 			VilaSim.T_RUBBLE:
-				spr = _frame_sprite("rubble", 3, _hash(c) % 3, 16)
+				spr = _frame_sprite("rubble", 3, _hash(c) % 3, 24)
+				spr.offset = Vector2(-4, -22)
 			VilaSim.T_STUMP:
 				spr = _frame_sprite("stump", 1, 0, 16)
 		if spr != null:
@@ -297,11 +276,6 @@ func _sync_buildings() -> void:
 			node = _make_building(b)
 			node["key"] = key
 			_bnodes[id] = node
-			# chão por baixo vira terreno limpo
-			var fp := sim._fp(String(b["type"]))
-			for dy in fp.y:
-				for dx in fp.x:
-					_paint_cell(Vector2i(b["cell"]) + Vector2i(dx, dy))
 		_update_building(b, node)
 	for id in _bnodes.keys():
 		if not seen.has(id):
@@ -330,7 +304,9 @@ func _make_building(b: Dictionary) -> Dictionary:
 	var tex_lit: Texture2D = spr.texture
 	var tex_dia: Texture2D = spr.texture if tp == "fogueira" else tex_day(_btex_name(b))
 	if spr.texture != null:
-		spr.offset = Vector2(0, -spr.texture.get_height())
+		# Peça mais larga ou mais estreita que a pegada fica centrada nela; o píer desce para a água.
+		var fw := spr.texture.get_width() / spr.hframes
+		spr.offset = Vector2(roundi((fp.x * TILE - fw) / 2.0), -spr.texture.get_height() + (12 if tp == "gate" else 0))
 	spr.visible = show_main
 	root.add_child(spr)
 	if st == "built" and spr.texture != null:
@@ -555,6 +531,7 @@ func _process(delta: float) -> void:
 			if not node.is_empty():
 				_update_building(b, node)
 	_sync_people(delta)
+	_sync_boat()
 	_update_light()
 	_fx.update_fx(delta, sim, _night_k)
 	if _zone_level != sim.tower:
@@ -563,16 +540,27 @@ func _process(delta: float) -> void:
 	_overlay.queue_redraw()
 
 
+## O bote só aparece encostado no píer quando tem gente esperando para entrar (ambientação: barcos no
+## mapa são naufrágios; o único que navega é esse).
+func _sync_boat() -> void:
+	var gate := sim._first("gate")
+	_boat.visible = not gate.is_empty() and not sim.gate_group.is_empty()
+	if _boat.visible:
+		var fp := sim._fp("gate")
+		var base := Vector2(Vector2i(gate["cell"]).x + fp.x, Vector2i(gate["cell"]).y + fp.y) * TILE
+		_boat.position = (base + Vector2(1, 2 + sin(_anim_t * 1.6))).round()
+
+
 ## Cor do dia pela hora do relógio: dia claro e quente, fim de tarde dourado, noite bem escura e azul
 ## (aí as luzes quentes da fogueira e das janelas se destacam). Acima de 1 clareia o chão.
 func _update_light() -> void:
 	# Pela hora que o relógio mostra (dia 6–18, noite 18–6): 16h ainda é dia claro.
 	var hr := sim.display_hour()
 	var night := Color(0.09, 0.10, 0.22)
-	var day := Color(1.5, 1.4, 1.12)
+	var day := Color(1.0, 1.0, 1.0)   # a paleta da ilha já é clara: de dia fica como foi desenhada
 	var keys := [
 		[0.0, night], [5.0, night], [5.6, Color(0.62, 0.55, 0.74)],
-		[6.3, day], [16.6, day], [17.4, Color(1.3, 0.95, 0.72)],
+		[6.3, day], [16.6, day], [17.4, Color(1.05, 0.86, 0.72)],
 		[18.0, Color(0.48, 0.38, 0.58)], [18.6, night], [24.0, night]]
 	var col: Color = keys[0][1]
 	for i in keys.size() - 1:
@@ -589,14 +577,14 @@ func _update_light() -> void:
 		if not is_instance_valid(lo):
 			continue
 		var l := lo as PointLight2D
-		var k := _night_k if not bool(e["always"]) else 0.25 + 0.75 * _night_k
+		var k := _night_k   # de dia nenhuma luz: a paleta da ilha lava fácil
 		var ph: float = e["ph"]
 		var m := 0.92 + 0.08 * sin(_anim_t * 11.0 + ph) * sin(_anim_t * 3.7 + ph)
 		if bool(e["fire"]):
 			m = 0.8 + 0.2 * sin(_anim_t * 13.0 + ph) * sin(_anim_t * 5.3 + ph * 2.0)
 		elif bool(e["electric"]):
 			m = pf   # sem energia, apaga
-		l.energy = float(e["base"]) * 2.0 * k * m
+		l.energy = float(e["base"]) * 1.4 * k * m   # paleta clara: luz forte estoura
 		l.visible = l.energy > 0.01   # de dia a luz apagada nem entra no desenho
 	_lights = _lights.filter(func(e: Dictionary) -> bool: return is_instance_valid(e["light"]))
 	# Janelas acendem ao anoitecer e apagam de manhã.
@@ -611,17 +599,19 @@ func _update_light() -> void:
 
 ## Área da vila: fora do alcance da torre o chão fica mais escuro, e a borda leva uma linha tracejada.
 func _draw_zone() -> void:
-	var shade := Color(0.03, 0.02, 0.05, 0.32)
+	var shade := Color(0.16, 0.12, 0.24, 0.26)
 	var edge := Color(0.95, 0.85, 0.6, 0.45)
 	for y in sim.h:
 		for x in sim.w:
 			var c := Vector2i(x, y)
 			var p := Vector2(c) * TILE
+			if sim.terrain_at(c) == VilaSim.T_WATER:
+				continue
 			if not sim.in_zone(c):
 				_zone.draw_rect(Rect2(p, Vector2(TILE, TILE)), shade)
 				continue
 			for d: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
-				if sim.in_zone(c + d):
+				if sim.in_zone(c + d) or sim.terrain_at(c + d) == VilaSim.T_WATER:
 					continue
 				var a := p + Vector2(maxi(d.x, 0), maxi(d.y, 0)) * TILE
 				var along := Vector2(absi(d.y), absi(d.x))
@@ -768,7 +758,8 @@ func _draw_overlay() -> void:
 		if bt != null:
 			var bottom := Vector2(ghost_cell.x * TILE, (ghost_cell.y + fp2.y) * TILE)
 			var src := Rect2(0, 0, bt.get_width() / (4 if ghost_type == "fogueira" else 1), bt.get_height())
-			_overlay.draw_texture_rect_region(bt, Rect2(bottom - Vector2(0, src.size.y), src.size), src, Color(1, 1, 1, 0.6))
+			var gx := roundi((fp2.x * TILE - src.size.x) / 2.0)
+			_overlay.draw_texture_rect_region(bt, Rect2(bottom + Vector2(gx, -src.size.y), src.size), src, Color(1, 1, 1, 0.6))
 		# porta: onde as pessoas vão parar
 		var dc := sim.door_for(ghost_type, ghost_cell)
 		if dc.x >= 0:
@@ -787,12 +778,48 @@ func _draw_overlay() -> void:
 	if ghost_type == "" and hover_cell.x >= 0:
 		var sel := tex("selecao")
 		var bh := sim.building_at(hover_cell)
-		if not bh.is_empty():
-			var fp3 := sim._fp(String(bh["type"]))
-			var r0 := Rect2(Vector2(Vector2i(bh["cell"])) * TILE, Vector2(fp3) * TILE)
-			_draw_brackets(r0)
+		if not bh.is_empty() and _bnodes.has(int(bh["id"])):
+			var bn: Dictionary = _bnodes[int(bh["id"])]
+			var bs: Sprite2D = bn["sprite"] if (bn["sprite"] as Sprite2D).visible else bn["overlay"]
+			_draw_outline(bs)
+		elif _terrain_nodes.has(hover_cell):
+			_draw_outline(_terrain_nodes[hover_cell])
 		elif sel != null:
 			_overlay.draw_texture(sel, Vector2(hover_cell) * TILE, Color(1, 1, 1, 0.55))
+
+
+## Destaque do hover no estilo da ilha: 1 px creme em volta do desenho (não da pegada).
+var _outlines: Dictionary = {}   # "textura|quadro" -> PackedVector2Array dos pixels de fora
+
+
+func _draw_outline(spr: Sprite2D) -> void:
+	if spr == null or spr.texture == null:
+		return
+	var key := "%d|%d" % [spr.texture.get_instance_id(), spr.frame]
+	if not _outlines.has(key):
+		var img := spr.texture.get_image()
+		if img.is_compressed():
+			img.decompress()
+		var fw := img.get_width() / spr.hframes
+		var fh := img.get_height() / spr.vframes
+		var ox := (spr.frame % spr.hframes) * fw
+		var oy := (spr.frame / spr.hframes) * fh
+		var solid := func(x: int, y: int) -> bool:
+			return x >= 0 and y >= 0 and x < fw and y < fh and img.get_pixel(ox + x, oy + y).a > 0.5
+		var pts := PackedVector2Array()
+		for y in range(-1, fh + 1):
+			for x in range(-1, fw + 1):
+				if solid.call(x, y):
+					continue
+				if solid.call(x + 1, y) or solid.call(x - 1, y) or solid.call(x, y + 1) or solid.call(x, y - 1):
+					pts.append(Vector2(x, y))
+		_outlines[key] = pts
+	var off := spr.offset
+	if spr.centered:
+		off -= Vector2(spr.texture.get_width() / spr.hframes, spr.texture.get_height() / spr.vframes) / 2.0
+	var at := _overlay.to_local(spr.to_global(off))
+	for q: Vector2 in _outlines[key]:
+		_overlay.draw_rect(Rect2(at + q, Vector2.ONE), CREME)
 
 
 func _res_icon(res: String) -> int:

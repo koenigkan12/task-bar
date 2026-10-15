@@ -23,6 +23,7 @@ const T_TREE := 1
 const T_RUBBLE := 2
 const T_ROAD := 3
 const T_STUMP := 4
+const T_WATER := 5     # rio em volta da ilha (balance map.island: '.' = água)
 
 var bal: Dictionary = {}
 var t: float = 0.0
@@ -89,6 +90,8 @@ func setup(balance: Dictionary, now_unix: float, tz_bias: int = 0) -> void:
 	_place_fixed("torre", _v(m["tower"]))
 	# A barraca do Joaquim: uma moradia nível 1 como qualquer outra (dá para melhorar no lugar).
 	_place_fixed("moradia", _v(m["tent"]))
+	# O porto: é por ele que o bote traz quem chega (existe desde o começo).
+	_place_fixed("gate", _v(m["gate"]))
 	_rebuild_astar()
 	var hatch: Dictionary = _first("hatch")
 	_add_person("Joaquim", 0, [], _door(hatch), "joaquim")
@@ -122,7 +125,9 @@ func _gen_map() -> void:
 			var k := T_GROUND
 			var r := _rng.randf()
 			var trees := clump.get_noise_2d(x, y) > 0.18   # árvores em bosques, não espalhadas
-			if d <= r1:
+			if not _island(x, y):
+				k = T_WATER
+			elif d <= r1:
 				k = T_GROUND
 			elif d <= rmax + 1.5:
 				# Em volta da clareira: chão com alguns montes de entulho e um ou outro bosque.
@@ -140,6 +145,16 @@ func _gen_map() -> void:
 				rubble[Vector2i(x, y)] = int(bal["rubble_amount"])
 
 
+## Terra ou água pela máscara da ilha (sem máscara: tudo terra).
+func _island(x: int, y: int) -> bool:
+	var rows: Array = bal["map"].get("island", [])
+	if rows.is_empty():
+		return true
+	if y < 0 or y >= rows.size() or x < 0 or x >= String(rows[y]).length():
+		return false
+	return String(rows[y])[x] == "#"
+
+
 func _place_fixed(type: String, cell: Vector2i) -> void:
 	var fp := _fp(type)
 	for dy in fp.y:
@@ -151,7 +166,7 @@ func _place_fixed(type: String, cell: Vector2i) -> void:
 			rubble.erase(c)
 	# Limpa a frente (porta) para dar para chegar.
 	var door := cell + Vector2i(fp.x / 2, fp.y)
-	if _inside(door) and terrain[_i(door)] != T_ROAD:
+	if _inside(door) and terrain[_i(door)] != T_ROAD and terrain[_i(door)] != T_WATER:
 		terrain[_i(door)] = T_GROUND
 		_fdirty = true
 	var b := {"id": _next_id, "type": type, "cell": cell, "level": 1, "state": "built",
@@ -172,7 +187,6 @@ func open_radius(level: int) -> float:
 
 
 ## A torre subiu: o entulho dentro do novo raio vira chão (a sucata vai para o depósito, até o limite).
-## Na torre 2 a estrada aparece e o portão é montado na ponta dela.
 func _open_area(level: int) -> void:
 	var c := center()
 	var rad := open_radius(level)
@@ -186,17 +200,6 @@ func _open_area(level: int) -> void:
 				marked.erase(cell)
 				terrain[_i(cell)] = T_GROUND
 				_fdirty = true
-	if level == int(bal["arrivals"]["story_tower"]) and _first("gate").is_empty():
-		var row: int = int(bal["map"]["road_row"])
-		for x in range(int(c.x), w):
-			var rc := Vector2i(x, row)
-			if occ[_i(rc)] < 0:
-				rubble.erase(rc)
-				marked.erase(rc)
-				regrow.erase(rc)
-				terrain[_i(rc)] = T_ROAD
-				_fdirty = true
-		_place_fixed("gate", _v(bal["map"]["gate"]))
 	stock["sucata"] = minf(cap("sucata"), float(stock["sucata"]) + float(gained) * float(bal.get("open_scrap_share", 0.5)))
 	_rebuild_astar()
 
@@ -279,7 +282,7 @@ func building_at(c: Vector2i) -> Dictionary:
 
 
 func terrain_at(c: Vector2i) -> int:
-	return terrain[_i(c)] if _inside(c) else T_TREE
+	return terrain[_i(c)] if _inside(c) else T_WATER
 
 
 ## Célula na frente do prédio (embaixo do meio): onde as pessoas param para trabalhar ou entregar.
@@ -320,7 +323,7 @@ func _walkable_door(c: Vector2i, cell: Vector2i, fp: Vector2i) -> bool:
 	if o >= 0:
 		return false
 	var k := terrain[_i(c)]
-	return k != T_TREE and k != T_RUBBLE
+	return k != T_TREE and k != T_RUBBLE and k != T_WATER
 
 
 ## Motivo de não dar para construir ali ("" = pode): o primeiro problema achado, para o jogo dizer
@@ -339,6 +342,8 @@ func place_reason(type: String, cell: Vector2i) -> String:
 				return "tree"
 			if k == T_RUBBLE:
 				return "rubble"
+			if k == T_WATER:
+				return "out"
 			if k != T_GROUND and k != T_STUMP:
 				return "road"
 	if door_for(type, cell).x < 0:
@@ -552,7 +557,7 @@ func missing(cost: Dictionary) -> Dictionary:
 
 ## A área da vila: só se constrói dentro do raio que a torre alcança.
 func in_zone(c: Vector2i) -> bool:
-	return Vector2(c).distance_to(center()) <= open_radius(tower)
+	return Vector2(c).distance_to(center()) <= open_radius(tower) and terrain_at(c) != T_WATER
 
 
 func can_place(type: String, cell: Vector2i) -> bool:
@@ -781,7 +786,7 @@ func _rebuild_astar() -> void:
 			var c := Vector2i(x, y)
 			var k := terrain[_i(c)]
 			var o := occ[_i(c)]
-			if (o >= 0 and not bool(def(String(by_id(o).get("type", ""))).get("open", false))) or k == T_TREE or k == T_RUBBLE:
+			if (o >= 0 and not bool(def(String(by_id(o).get("type", ""))).get("open", false))) or k == T_TREE or k == T_RUBBLE or k == T_WATER:
 				_astar.set_point_solid(c, true)
 
 
@@ -2183,7 +2188,7 @@ func to_dict() -> Dictionary:
 	var rb: Array = []
 	for c in rubble:
 		rb.append([c.x, c.y, rubble[c]])
-	return {"v": 1, "t": t, "start_t": start_t, "stock": stock, "tower": tower, "terrain": Marshalls.raw_to_base64(terrain),
+	return {"v": 2, "t": t, "start_t": start_t, "stock": stock, "tower": tower, "terrain": Marshalls.raw_to_base64(terrain),
 			"buildings": bs, "people": ps, "regrow": rg, "rubble": rb, "gate": gate_group,
 			"marked": marked.keys().map(func(c: Vector2i) -> Array: return [c.x, c.y]),
 			"stats": stats, "next_id": _next_id, "group_t": _group_ready_t, "story": _story_done.keys(),
