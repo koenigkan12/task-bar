@@ -540,7 +540,7 @@ func refresh() -> void:
 	_power_label.text = "%d/%d" % [int(pw["out"]), int(pw["use"])]
 	var pshort := float(pw["use"]) > float(pw["out"])
 	_power_label.add_theme_color_override("font_color", C_WARN if pshort else C_TEXT)
-	_set_tip(_power_chip, fmt("UI_POWER_LINE", {"out": int(pw["out"]), "use": int(pw["use"])}) + ((" · " + I18n.t("UI_POWER_LOW")) if pshort else ""))
+	_set_tip(_power_chip, fmt("UI_POWER_LINE", {"out": int(pw["out"]), "use": int(pw["use"])}) + ((" · " + I18n.t("UI_POWER_LOW")) if pshort else "") + "\n" + _power_users_text())
 	_radio_btn.text = str(radio_unread) if radio_unread > 0 else ""
 	_merchant_btn.visible = sim.merchant_here()
 	var lx := 154.0 if _manage.visible else 2.0
@@ -742,14 +742,55 @@ func show_res(r: String) -> void:
 	res_clicked.emit(r)
 
 
+## O que a energia liga: um item por tipo de prédio elétrico (quantos tem, quanto gasta) e, se ainda
+## não tem nenhum, o nome do que vai ligar quando for construído.
+func _power_users_rows() -> Array:
+	var rows: Array = []
+	var low := sim.power_frac() < 0.999
+	for tp in sim.bal["build_order"]:
+		var type := String(tp)
+		var d := sim.def(type)
+		if not d.has("power_use"):
+			continue
+		var n := 0
+		for b in sim.buildings:
+			if String(b["type"]) == type and String(b["state"]) != "site":
+				n += 1
+		var row: HBoxContainer
+		if n > 0:
+			row = _row([_label("%s ×%d" % [bname(type), n]), _stat("energia", "-%d" % (int(d["power_use"]) * n), fmt("UI_POWER_USE", {"n": int(d["power_use"]) * n}), C_WARN if low else C_TEXT)])
+			row.tooltip_text = I18n.t("BD_" + type) + ("\n" + I18n.t("UI_POWER_LOW") if low else "")
+		else:
+			row = _row([_icon_rect("cadeado" if not sim.unlocked(type) else "seta"), _label(bname(type), C_MUTED)])
+			row.tooltip_text = fmt("TIP_POWER_NOT_YET", {"b": bname(type)})
+		row.mouse_filter = Control.MOUSE_FILTER_PASS
+		rows.append(row)
+	return rows
+
+
+func _power_users_text() -> String:
+	var names: PackedStringArray = []
+	for tp in sim.bal["build_order"]:
+		if sim.def(String(tp)).has("power_use"):
+			names.append(bname(String(tp)))
+	return fmt("TIP_POWER_FEEDS", {"list": ", ".join(names)})
+
+
 func _card_res() -> void:
 	var r := _card_kind.trim_prefix("res:")
 	_clear_card()
 	if r == "energia":
 		var pw := sim.power()
 		_header("energia", I18n.t("UI_POWER"))
-		_card_box.add_child(_stats([_stat("energia", "+%d" % int(pw["out"]), fmt("UI_POWER_LINE", {"out": int(pw["out"]), "use": int(pw["use"])}), C_GOOD),
-			_stat("alerta", "-%d" % int(pw["use"]), fmt("UI_POWER_LINE", {"out": int(pw["out"]), "use": int(pw["use"])}), C_WARN if float(pw["use"]) > float(pw["out"]) else C_TEXT)]))
+		# Sem linha de zero: só mostra o que entra e o que sai quando existe.
+		var pst: Array = []
+		var pline := fmt("UI_POWER_LINE", {"out": int(pw["out"]), "use": int(pw["use"])})
+		if float(pw["out"]) > 0.0:
+			pst.append(_stat("energia", "+%d" % int(pw["out"]), pline, C_GOOD))
+		if float(pw["use"]) > 0.0:
+			pst.append(_stat("alerta", "-%d" % int(pw["use"]), pline, C_WARN if float(pw["use"]) > float(pw["out"]) else C_TEXT))
+		if not pst.is_empty():
+			_card_box.add_child(_stats(pst))
 		_card_box.add_child(_wrap(I18n.t("RD_energia"), C_MUTED))
 		var gens := {}
 		for b in sim.buildings:
@@ -758,6 +799,9 @@ func _card_res() -> void:
 				gens[String(b["type"])] = int(gens.get(String(b["type"]), 0)) + 1
 		for tp in gens:
 			_card_box.add_child(_row([_label("%s ×%d" % [bname(tp), gens[tp]]), _stat("energia", "+%d" % (int(sim.def(tp)["power_out"]) * int(gens[tp])), fmt("UI_POWER_OUT", {"n": sim.def(tp)["power_out"]}), C_GOOD)]))
+		_card_box.add_child(_label(I18n.t("UI_POWER_FEEDS"), C_AMBER))
+		for row in _power_users_rows():
+			_card_box.add_child(row)
 		return
 	_header(r, I18n.t("RES_" + r))
 	var v := int(floor(float(sim.stock[r])))
@@ -985,6 +1029,9 @@ func _card_building() -> void:
 		_card_box.add_child(_stats([_stat("energia", "-%d" % int(d["power_use"]), ptip, C_WARN if low else C_TEXT)]))
 	if d.has("power_out"):
 		_card_box.add_child(_stats([_stat("energia", "+%d" % int(d["power_out"]), fmt("UI_POWER_OUT", {"n": d["power_out"]}), C_GOOD)]))
+		_card_box.add_child(_label(I18n.t("UI_POWER_FEEDS"), C_AMBER))
+		for row in _power_users_rows():
+			_card_box.add_child(row)
 	var inp: Dictionary = lv.get("input", {})
 	for r in inp:
 		var short := float(sim.stock[r]) < float(inp[r])

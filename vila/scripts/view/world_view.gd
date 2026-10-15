@@ -364,12 +364,16 @@ func _make_building(b: Dictionary) -> Dictionary:
 		var l := PointLight2D.new()
 		l.texture = tex("light")
 		l.color = spec["color"]
-		l.texture_scale = float(spec["scale"]) * 1.8   # luz que ilumina o chão em volta, não só o prédio
+		# Lampião (fogo) ilumina pouco e treme; lâmpada elétrica ilumina mais longe e firme.
+		var fire := bool(spec.get("fire", false))
+		var elec_l := bool(spec.get("electric", false))
+		l.texture_scale = float(spec["scale"]) * (1.4 if fire else (2.2 if elec_l else 1.8))
 		l.position = spec["pos"]
 		l.energy = 0.0
 		root.add_child(l)
 		lights.append(l)
-		_lights.append({"light": l, "base": float(spec["energy"]), "always": bool(spec.get("always", false))})
+		_lights.append({"light": l, "base": float(spec["energy"]) * (0.8 if fire else (1.2 if elec_l else 1.0)), "always": bool(spec.get("always", false)),
+				"fire": fire, "electric": elec_l, "ph": randf() * TAU})
 	# Prédio elétrico ou que gasta insumo: alerta em cima quando falta energia ou sucata.
 	var warn: Sprite2D = null
 	var d := sim.def(tp)
@@ -381,7 +385,8 @@ func _make_building(b: Dictionary) -> Dictionary:
 		warn.position = Vector2(fp.x * TILE / 2.0, -fp.y * TILE - 10)
 		warn.visible = false
 		root.add_child(warn)
-	return {"root": root, "sprite": spr, "overlay": ov, "crops": crops, "lights": lights, "key": "", "warn": warn, "tex_lit": tex_lit, "tex_dia": tex_dia}
+	return {"root": root, "sprite": spr, "overlay": ov, "crops": crops, "lights": lights, "key": "", "warn": warn, "tex_lit": tex_lit, "tex_dia": tex_dia,
+			"electric": sim.def(tp).has("power_use")}
 
 
 func _input_of(b: Dictionary) -> Dictionary:
@@ -392,37 +397,38 @@ func _light_specs(tp: String, level: int, st: String) -> Array:
 	var warm := Color(1.0, 0.68, 0.32)
 	var cyan := Color(0.45, 0.95, 0.9)
 	var pink := Color(0.95, 0.55, 0.9)
+	var elec := Color(0.86, 0.93, 1.0)   # lâmpada: branca e forte, só com energia
 	if st == "site":
 		return []
 	match tp:
 		"fogueira":
-			return [{"pos": Vector2(8, -8), "color": Color(1.0, 0.6, 0.25), "scale": 2.6, "energy": 1.1, "always": true}]
+			return [{"pos": Vector2(8, -8), "color": Color(1.0, 0.6, 0.25), "scale": 2.6, "fire": true, "energy": 1.1, "always": true}]
 		"moradia":
-			return [{"pos": Vector2(16, -12 - 2 * level), "color": warm, "scale": 0.8 + 0.15 * level, "energy": 0.9}]
+			return [{"pos": Vector2(16, -12 - 2 * level), "color": warm, "scale": 0.8 + 0.15 * level, "fire": true, "energy": 0.9}]
 		"deposito":
-			return [] if level < 2 else [{"pos": Vector2(16, -14), "color": warm, "scale": 0.9, "energy": 0.7}]
+			return [] if level < 2 else [{"pos": Vector2(16, -14), "color": warm, "scale": 0.9, "fire": true, "energy": 0.7}]
 		"ferrovelho":
-			return [{"pos": Vector2(20, -14), "color": warm, "scale": 0.9, "energy": 0.7}]
+			return [{"pos": Vector2(20, -14), "color": warm, "scale": 0.9, "fire": true, "energy": 0.7}]
 		"hatch":
-			return [{"pos": Vector2(16, -18), "color": warm, "scale": 1.2, "energy": 0.8}]
+			return [{"pos": Vector2(16, -18), "color": warm, "scale": 1.2, "fire": true, "energy": 0.8}]
 		"gate":
-			return [{"pos": Vector2(24, -24), "color": warm, "scale": 1.1, "energy": 0.9}]
+			return [{"pos": Vector2(24, -24), "color": warm, "scale": 1.1, "fire": true, "energy": 0.9}]
 		"poco":
 			return [{"pos": Vector2(16, -14), "color": cyan, "scale": 0.6, "energy": 0.5}]
 		"oficina":
-			return [{"pos": Vector2(24, -16), "color": warm, "scale": 1.0, "energy": 0.8}]
+			return [{"pos": Vector2(24, -16), "color": elec, "scale": 1.0, "electric": true, "energy": 0.9}]
 		"gerador":
 			return [{"pos": Vector2(15, -23), "color": Color(1.0, 0.3, 0.25), "scale": 0.4, "energy": 0.8, "always": true}]
 		"cozinha":
-			return [{"pos": Vector2(16, -14), "color": warm, "scale": 1.0, "energy": 0.9}]
+			return [{"pos": Vector2(16, -14), "color": warm, "scale": 1.0, "fire": true, "energy": 0.9}]
 		"estufa":
-			return [{"pos": Vector2(24, -16), "color": pink, "scale": 1.3, "energy": 0.8, "always": true}]
+			return [{"pos": Vector2(24, -16), "color": pink, "scale": 1.3, "energy": 0.8, "always": true, "electric": true}]
 		"galinheiro":
-			return [{"pos": Vector2(16, -12), "color": warm, "scale": 0.6, "energy": 0.5}]
+			return [{"pos": Vector2(16, -12), "color": warm, "scale": 0.6, "fire": true, "energy": 0.5}]
 		"deco_lampiao":
-			return [{"pos": Vector2(8, -19), "color": warm, "scale": 0.8, "energy": 0.9}]
+			return [{"pos": Vector2(8, -19), "color": warm, "scale": 0.8, "fire": true, "energy": 0.9}]
 		"praca":
-			return [{"pos": Vector2(24, -26), "color": warm, "scale": 1.6, "energy": 0.8}]
+			return [{"pos": Vector2(24, -26), "color": warm, "scale": 1.6, "fire": true, "energy": 0.8}]
 		"torre":
 			var top := -50.0 if level <= 3 else (-76.0 if level == 4 else -94.0)
 			var out := [{"pos": Vector2(16, top), "color": cyan, "scale": 1.0 + 0.3 * level, "energy": 0.9, "always": true}]
@@ -577,21 +583,27 @@ func _update_light() -> void:
 			break
 	_modulate.color = col
 	_night_k = clampf(1.0 - (minf(col.v, 1.0) - 0.36) / 0.6, 0.0, 1.0)
-	var flick := 0.92 + 0.08 * sin(_anim_t * 11.0) * sin(_anim_t * 3.7)
+	var pf := sim.power_frac()
 	for e in _lights:
 		var lo: Variant = e["light"]   # sem tipo: o prédio pode ter sido refeito e a luz liberada
 		if not is_instance_valid(lo):
 			continue
 		var l := lo as PointLight2D
 		var k := _night_k if not bool(e["always"]) else 0.25 + 0.75 * _night_k
-		l.energy = float(e["base"]) * 2.0 * k * flick
+		var ph: float = e["ph"]
+		var m := 0.92 + 0.08 * sin(_anim_t * 11.0 + ph) * sin(_anim_t * 3.7 + ph)
+		if bool(e["fire"]):
+			m = 0.8 + 0.2 * sin(_anim_t * 13.0 + ph) * sin(_anim_t * 5.3 + ph * 2.0)
+		elif bool(e["electric"]):
+			m = pf   # sem energia, apaga
+		l.energy = float(e["base"]) * 2.0 * k * m
 		l.visible = l.energy > 0.01   # de dia a luz apagada nem entra no desenho
 	_lights = _lights.filter(func(e: Dictionary) -> bool: return is_instance_valid(e["light"]))
 	# Janelas acendem ao anoitecer e apagam de manhã.
 	var lit_on := _night_k > 0.45
 	for id in _bnodes:
 		var n: Dictionary = _bnodes[id]
-		var want: Texture2D = n["tex_lit"] if lit_on else n["tex_dia"]
+		var want: Texture2D = n["tex_lit"] if lit_on and (not bool(n.get("electric", false)) or pf > 0.0) else n["tex_dia"]
 		var sp: Sprite2D = n["sprite"]
 		if want != null and sp.texture != want:
 			sp.texture = want
@@ -672,6 +684,10 @@ func _draw_overlay() -> void:
 			if String(bd.get("res", "")) == hl_res or (hl_res == "energia" and bd.has("power_out")):
 				var fp := sim._fp(String(b["type"]))
 				_overlay.draw_rect(Rect2(Vector2(Vector2i(b["cell"])) * TILE - Vector2(1, 1), Vector2(fp) * TILE + Vector2(2, 2)), hc, false, 1.0)
+			elif hl_res == "energia" and bd.has("power_use"):
+				# Energia: quem gasta fica contornado em azul (o que o gerador liga).
+				var fpu := sim._fp(String(b["type"]))
+				_overlay.draw_rect(Rect2(Vector2(Vector2i(b["cell"])) * TILE - Vector2(1, 1), Vector2(fpu) * TILE + Vector2(2, 2)), Color(0.55, 0.85, 1.0, hc.a), false, 1.0)
 		for p in sim.people:
 			if String(p["job"].get("res", "")) == hl_res:
 				_overlay.draw_arc(_person_world(p) + Vector2(0, -5), 7.0, 0.0, TAU, 16, hc, 1.0)

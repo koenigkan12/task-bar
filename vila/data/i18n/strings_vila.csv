@@ -187,7 +187,7 @@ B_ela,Ela,Her
 BD_praca,"O mercador para aqui, três vezes por dia.","The merchant stops here, three times a day."
 BD_oficina,Transforma sucata em peças. Gasta energia.,Turns scrap into parts. Uses power.
 BD_gerador,Dá energia para oficina e estufa.,Powers the workshop and greenhouse.
-BD_painel,"Energia sem barulho, do sol.","Quiet power, from the sun."
+BD_painel,"Energia do sol para a oficina e a estufa, sem barulho.","Power from the sun for the workshop and greenhouse, quietly."
 BD_galinheiro,Comida sem gastar água.,Food without using water.
 BD_cozinha,Toda comida rende mais.,All food goes further.
 BD_estufa,"Muita comida, com energia.","Lots of food, with power."
@@ -198,7 +198,7 @@ UI_POWER_OUT,"Gera {n} de energia para a vila","Makes {n} power for the village"
 UI_POWER_LOW,"A vila tem menos energia do que gasta: trabalha mais devagar","The village has less power than it uses: works slower"
 UI_INPUT,"Cada vez que produz, gasta {n} de {r}","Each time it makes something, it uses {n} {r}"
 UI_NO_INPUT,"Parado: falta {r} para produzir","Stopped: needs {r} to make anything"
-RD_energia,"Energia vem do gerador e do painel. Oficina e estufa gastam. Faltando, elas andam mais devagar.","Power comes from generators and panels. Workshop and greenhouse use it. When short, they run slower."
+RD_energia,"Liga as máquinas. Casas usam lampião e não precisam. Faltando, as máquinas andam devagar e apagam.","Runs the machines. Homes use oil lamps and don't need it. When short, machines slow down and go dark."
 GOAL_power,Falta energia: construa um gerador ou painel,Short on power: build a generator or panel
 GOAL_journey,Ela está vindo. Chega em {t},She is on her way. Arrives in {t}
 GOAL_journey_soon,Ela está chegando,She is almost here
@@ -354,3 +354,6 @@ B_deco_espantalho,Espantalho,Scarecrow
 BD_deco_espantalho,Só beleza: cuida da horta com cara de poucos amigos.,Just for looks: guards the garden with a grumpy face.
 B_deco_placa,Placa de boas-vindas,Welcome sign
 BD_deco_placa,Só beleza: pra quem chegar saber que é esperado.,Just for looks: so whoever arrives knows they were expected.
+UI_POWER_FEEDS,Liga:,Runs:
+TIP_POWER_FEEDS,Liga: {list},Runs: {list}
+TIP_POWER_NOT_YET,Quando tiver {b} construída, ela usa esta energia.,Once you build {b} it will use this power.
