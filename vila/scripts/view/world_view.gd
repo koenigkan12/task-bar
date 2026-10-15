@@ -672,6 +672,7 @@ const TINY := {
 	"6": ["111", "100", "111", "101", "111"], "7": ["111", "001", "010", "010", "010"],
 	"8": ["111", "101", "111", "101", "111"], "9": ["111", "101", "111", "001", "111"],
 	":": ["0", "1", "0", "1", "0"],
+	"+": ["000", "010", "111", "010", "000"],
 	"/": ["001", "001", "010", "100", "100"],
 }
 
@@ -847,6 +848,7 @@ func _draw_overlay() -> void:
 			_draw_outline(bs)
 		elif _terrain_nodes.has(hover_cell):
 			_draw_outline(_terrain_nodes[hover_cell])
+			_draw_yield(hover_cell)
 		elif sel != null:
 			_overlay.draw_texture(sel, Vector2(hover_cell) * TILE, Color(1, 1, 1, 0.55))
 
@@ -883,6 +885,32 @@ func _draw_outline(spr: Sprite2D) -> void:
 	var at := _overlay.to_local(spr.to_global(off))
 	for q: Vector2 in _outlines[key]:
 		_overlay.draw_rect(Rect2(at + q, Vector2.ONE), CREME)
+
+
+## Em cima da árvore ou do entulho debaixo do mouse: ícone do recurso e quanto rende (madeira +3,
+## sucata +8), para saber sem abrir o cartão.
+func _draw_yield(c: Vector2i) -> void:
+	var k := sim.terrain_at(c)
+	var res := ""
+	var n := 0
+	if k == VilaSim.T_TREE:
+		res = "madeira"
+		n = int(sim.bal["forage"]["madeira"]["yield"])
+	elif k == VilaSim.T_RUBBLE:
+		res = "sucata"
+		n = int(sim.rubble.get(c, 0))
+	if res == "" or n <= 0:
+		return
+	var icons := tex("icons")
+	var txt := "+%d" % n
+	var wdt := 9.0 + _tiny_width(txt)
+	var spr: Sprite2D = _terrain_nodes[c]
+	var top := _overlay.to_local(spr.to_global(spr.offset)).y
+	var at := Vector2(c.x * TILE + TILE / 2.0 - wdt / 2.0, top - 10.0).round()
+	_overlay.draw_rect(Rect2(at + Vector2(-1, -1), Vector2(wdt + 2, 10)), Color(0.26, 0.2, 0.33, 0.9))
+	if icons != null:
+		_overlay.draw_texture_rect_region(icons, Rect2(at, Vector2(8, 8)), Rect2(_res_icon(res) * 8, 0, 8, 8))
+	_tiny_text(at + Vector2(9, 2), txt, CREME)
 
 
 func _res_icon(res: String) -> int:

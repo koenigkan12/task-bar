@@ -241,6 +241,16 @@ func _open_test_card() -> void:
 			if Game.args.has("cell"):   # --cell=dx,dy: desloca do lugar livre (para ver célula bloqueada)
 				var cs := String(Game.args["cell"]).split(",")
 				_test_cell += Vector2i(int(cs[0]), int(cs[1]))
+		"hover_tree", "hover_rubble":   # capturas: mouse parado na árvore/entulho mais perto da escotilha
+			var want := VilaSim.T_TREE if op == "hover_tree" else VilaSim.T_RUBBLE
+			var hc := Vector2i(sim._first("hatch")["cell"])
+			var best := Vector2i(-1, -1)
+			for y in sim.h:
+				for x in sim.w:
+					var cc := Vector2i(x, y)
+					if sim.terrain_at(cc) == want and (best.x < 0 or (cc - hc).length_squared() < (best - hc).length_squared()):
+						best = cc
+			_test_cell = best
 		"options": _show_options()
 		"merchant":
 			if not sim.merchant_here():
