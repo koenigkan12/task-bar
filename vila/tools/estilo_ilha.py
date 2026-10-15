@@ -456,6 +456,43 @@ def flor_brilho():
     return folha(quadros, 7, 7)
 
 
+def _nove(fill, borda, luz=None, sombra_=None, alfa=255, cantos=True):
+    """Peça de 9 fatias 16x16 da interface (painel e botões)."""
+    im = Image.new('RGBA', (16, 16))
+    d = ImageDraw.Draw(im)
+    d.rectangle([1, 1, 14, 14], fill + (alfa,))
+    d.line([(1, 0), (14, 0)], borda + (255,))
+    d.line([(1, 15), (14, 15)], borda + (255,))
+    d.line([(0, 1), (0, 14)], borda + (255,))
+    d.line([(15, 1), (15, 14)], borda + (255,))
+    if not cantos:
+        for xy in ((0, 0), (15, 0), (0, 15), (15, 15)):
+            im.putpixel(xy, borda + (255,))
+    if luz:
+        d.line([(1, 1), (14, 1)], luz + (255,))
+    if sombra_:
+        d.line([(1, 14), (14, 14)], sombra_ + (255,))
+    return im
+
+
+def ui_panel():
+    """Painel da interface na paleta da ilha: roxo escuro, borda lilás."""
+    return _nove(D, LI, alfa=242, cantos=False)
+
+
+def ui_button():
+    """Botão: normal, mouse em cima (borda dourada), apertado."""
+    sh = Image.new('RGBA', (48, 16))
+    sh.alpha_composite(_nove(LI, D, LC, D), (0, 0))
+    sh.alpha_composite(_nove(LI, Y, LC, D), (16, 0))
+    sh.alpha_composite(_nove(D, LI, D, LI), (32, 0))
+    return sh
+
+
+def ui_button_off():
+    return _nove(D, LI, D, D)
+
+
 # ---------------------------------------------------------------- chão da ilha
 def chao_ilha(rows, seed=3):
     import numpy as np
@@ -572,8 +609,9 @@ def chao_ilha(rows, seed=3):
 # ---------------------------------------------------------------- tudo
 TROCA = {'tree': arvores, 'tree_sombra': sombra_arvore, 'stump': toco, 'rubble': entulho,
          'fogueira': fogueira, 'bote': bote, 'barco_mascate': barco_mascate, 'banca': banca, 'farol': farol, 'trepadeira': trepadeira, 'flor_brilho': flor_brilho,
+         'ui_panel': ui_panel, 'ui_button': ui_button, 'ui_button_off': ui_button_off,
          'hatch': lambda: peca('bunker'), 'moradia_1': lambda: peca('barraca'), 'gate': lambda: peca('pier')}
-MANTER = ('icons', 'light', 'ghost_ok', 'ghost_bad', 'selecao', 'ui_button', 'ui_button_off', 'ui_panel',
+MANTER = ('icons', 'light', 'ghost_ok', 'ghost_bad', 'selecao',
           'ground', 'person_sleep')
 
 

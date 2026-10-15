@@ -18,11 +18,12 @@ var H: float = 216.0
 const ICON := {"comida": 0, "agua": 1, "madeira": 2, "sucata": 3, "pessoa": 4, "cama": 5, "relogio": 6,
 		"torre": 7, "martelo": 8, "seta": 9, "cadeado": 10, "check": 11, "estrela": 12, "sol": 13, "lua": 14, "alerta": 15,
 		"pecas": 16, "energia": 17, "radio": 18, "mercador": 19, "caderno": 20}
-const C_TEXT := Color(0.93, 0.88, 0.9)
-const C_MUTED := Color(0.62, 0.55, 0.62)
-const C_WARN := Color(1.0, 0.55, 0.35)
-const C_GOOD := Color(0.5, 0.92, 0.85)
-const C_AMBER := Color(1.0, 0.8, 0.42)
+# Paleta da ilha (tools/estilo_ilha.py), um pouco mais clara onde é texto pequeno sobre o roxo.
+const C_TEXT := Color("ccc6ba")    # creme
+const C_MUTED := Color("a592a5")   # lilás
+const C_WARN := Color("e07f68")    # vermelho da paleta, clareado
+const C_GOOD := Color("a9c47c")    # verde da grama, clareado
+const C_AMBER := Color("e6c46a")   # dourado
 const RAR_COLOR := {"comum": Color(0.78, 0.74, 0.78), "rara": Color(0.45, 0.85, 1.0), "excelente": Color(1.0, 0.62, 0.95)}
 
 var sim: VilaSim
@@ -198,8 +199,8 @@ func _make_theme() -> Theme:
 	th.default_font_size = 8
 	th.set_color("font_color", "Label", C_TEXT)
 	th.set_color("font_color", "Button", C_TEXT)
-	th.set_color("font_hover_color", "Button", Color(1, 0.92, 0.75))
-	th.set_color("font_pressed_color", "Button", Color(1, 0.92, 0.75))
+	th.set_color("font_hover_color", "Button", Color("f2ead8"))
+	th.set_color("font_pressed_color", "Button", Color("f2ead8"))
 	th.set_color("font_disabled_color", "Button", C_MUTED)
 	th.set_stylebox("panel", "PanelContainer", _panel_box())
 	th.set_stylebox("normal", "Button", _button_box(0))
