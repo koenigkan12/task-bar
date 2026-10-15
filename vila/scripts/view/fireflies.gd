@@ -3,7 +3,7 @@ extends Node2D
 ## Vaga-lumes da noite: cada um vaga devagar pela vila (direção que muda aos poucos) e pisca com halo.
 ## Fica numa CanvasLayer própria para o escuro da noite não apagar a luz.
 
-const COUNT := 60
+const COUNT := 20
 const COL := Color(0.86, 1.0, 0.5)
 
 var area: Rect2
