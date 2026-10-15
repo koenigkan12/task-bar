@@ -392,3 +392,4 @@ UI_GRAVE,"{name} está grave: falta comida ou água!","{name} is in critical con
 UI_LEFT,"{name} não aguentou e foi embora no barco.","{name} couldn't take it and left on the boat."
 UI_AWAY_LEFT,"{n} foi(ram) embora","{n} left"
 UI_AWAY_SICK,"{n} doente(s)","{n} sick"
+UI_DIED,"{name} não resistiu. A vila perdeu alguém.","{name} didn't make it. The village lost someone."

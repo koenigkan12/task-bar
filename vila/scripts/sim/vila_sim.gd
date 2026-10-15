@@ -10,7 +10,7 @@ signal building_done(id: int)                      # obra ou melhoria terminou
 signal tower_up(level: int)
 signal person_joined(id: int)
 signal person_grave(id: int)                       # alguém ficou grave (fome/sede): aviso
-signal person_left(name: String)                   # saúde zerou: foi embora no barco
+signal person_left(name: String, died: bool)       # saúde zerou: foi embora no barco ou morreu (balance health.at_zero)
 signal group_arrived                               # um grupo de 3 chegou ao portão
 signal harvested(id: int, res: String, amount: int) # alguém entregou no depósito (para o "+N")
 signal site_started(id: int)                       # obra nova, melhoria ou torre começou (som de martelo)
@@ -603,7 +603,7 @@ func _leave(p: Dictionary) -> void:
 	people.erase(p)
 	_invalidate()
 	stats["left"] = int(stats.get("left", 0)) + 1
-	person_left.emit(nm)
+	person_left.emit(nm, String(bal["health"].get("at_zero", "leave")) == "die")
 	changed.emit()
 
 

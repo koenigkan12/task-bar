@@ -146,7 +146,8 @@
   "sick_until": 60,
   "grave_below": 15,
   "weak_mult": 0.7,
-  "offline_floor": 20
+  "offline_floor": 20,
+  "at_zero": "leave"
  },
  "forage": {
   "madeira": {
