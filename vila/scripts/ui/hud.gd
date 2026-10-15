@@ -940,8 +940,14 @@ func show_welcome(summary: Dictionary) -> void:
 		var v: int = int(d.get(r, 0))
 		if v != 0:
 			_card_box.add_child(_row([_icon_rect(r), _label("%+d %s" % [v, I18n.t("RES_" + r)], C_GOOD if v > 0 else C_WARN)]))
+	if int(summary.get("tower_up", 0)) > 0:
+		_card_box.add_child(_row([_icon_rect("torre"), _label(fmt("UI_AWAY_TOWER", {"n": int(summary["tower"])}), C_AMBER)]))
 	if int(summary.get("built", 0)) > 0:
-		_card_box.add_child(_row([_icon_rect("martelo"), _label(fmt("UI_DONE", {"b": str(summary["built"])}))]))
+		_card_box.add_child(_row([_icon_rect("martelo"), _label(fmt("UI_AWAY_BUILT", {"n": int(summary["built"])}))]))
+	if int(summary.get("joined", 0)) > 0:
+		_card_box.add_child(_row([_icon_rect("pessoa"), _label(fmt("UI_AWAY_JOINED", {"n": int(summary["joined"])}), C_GOOD)]))
+	if int(summary.get("fogs", 0)) > 0:
+		_card_box.add_child(_row([_icon_rect("lua"), _label(fmt("UI_AWAY_FOG", {"n": int(summary["fogs"])}), C_MUTED)]))
 	if int(summary.get("radio", 0)) > 0:
 		radio_unread += int(summary["radio"])
 		_card_box.add_child(_row([_icon_rect("radio"), _label(fmt("UI_RADIO_NEW", {"n": summary["radio"]}))]))

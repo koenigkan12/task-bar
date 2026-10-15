@@ -377,3 +377,7 @@ TIP_FOG,"Noite de névoa de pólen: ninguém sai de casa. Quem dorme sem cama ac
 UI_FOG_WARN,"O vento está trazendo pólen: hoje à noite vem névoa. Quem não tiver cama vai passar mal.","The wind is bringing pollen: fog tonight. Anyone without a bed will feel it."
 UI_FOG_START,"Névoa de pólen! Todo mundo para dentro até amanhecer.","Pollen fog! Everyone inside until dawn."
 UI_FOG_END,"A névoa baixou e o pólen adubou a terra: hortas +{pct}% hoje.","The fog settled and the pollen fed the soil: gardens +{pct}% today."
+UI_AWAY_TOWER,"A torre subiu para o nível {n}","The tower rose to level {n}"
+UI_AWAY_BUILT,"{n} obras ficaram prontas","{n} buildings finished"
+UI_AWAY_JOINED,"+{n} pessoas chegaram","+{n} people arrived"
+UI_AWAY_FOG,"{n} noites de névoa de pólen","{n} pollen fog nights"

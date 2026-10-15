@@ -49,7 +49,7 @@ var marked: Dictionary = {}       # entulho marcado para limpar primeiro
 var buildings: Array[Dictionary] = []
 var people: Array[Dictionary] = []
 var gate_group: Array[Dictionary] = []   # candidatos esperando no portão
-var stats: Dictionary = {"commons_in_row": 0, "joined": 0, "built": 0}
+var stats: Dictionary = {"commons_in_row": 0, "joined": 0, "built": 0, "fogs": 0}
 var offline: bool = false        # durante o alcance offline: produção e consumo pela fração
 var _next_id: int = 1
 var _astar: AStarGrid2D
@@ -569,6 +569,7 @@ func _night_start() -> void:
 	fog_next = false
 	fog_now = true
 	work_tonight = false
+	stats["fogs"] = int(stats.get("fogs", 0)) + 1
 	fog_started.emit()
 
 
@@ -2653,7 +2654,7 @@ func catch_up_start(now_unix: float) -> Dictionary:
 	elapsed = minf(elapsed, float(tb["offline_cap_h"]) * 3600.0)
 	offline = true
 	return {"seconds": elapsed, "left": elapsed, "before": stock.duplicate(), "built0": int(stats["built"]),
-			"joined0": int(stats["joined"]), "radio0": radio_heard.size()}
+			"joined0": int(stats["joined"]), "radio0": radio_heard.size(), "tower0": tower, "fogs0": int(stats.get("fogs", 0))}
 
 
 func catch_up_chunk(ctx: Dictionary, seconds: float) -> bool:
@@ -2672,4 +2673,5 @@ func catch_up_finish(ctx: Dictionary, now_unix: float) -> Dictionary:
 		delta[r] = int(round(float(stock[r]) - float(ctx["before"][r])))
 	return {"seconds": float(ctx["seconds"]), "delta": delta, "built": int(stats["built"]) - int(ctx["built0"]),
 			"joined": int(stats["joined"]) - int(ctx["joined0"]), "group": not gate_group.is_empty(),
-			"radio": radio_heard.size() - int(ctx["radio0"])}
+			"radio": radio_heard.size() - int(ctx["radio0"]), "tower": tower, "tower_up": tower - int(ctx.get("tower0", tower)),
+			"fogs": int(stats.get("fogs", 0)) - int(ctx.get("fogs0", 0))}
