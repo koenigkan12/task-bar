@@ -92,12 +92,25 @@ func tex_day(name: String) -> Texture2D:
 			img.decompress()
 		var lit := {Color8(255, 179, 71).to_rgba32(): Color8(58, 54, 70), Color8(255, 211, 107).to_rgba32(): Color8(84, 80, 98)}
 		var changed := false
+		var spots: Array[Vector2i] = []
 		for y in img.get_height():
 			for x in img.get_width():
 				var c := img.get_pixel(x, y)
 				if c.a > 0.99 and lit.has(Color(c, 1.0).to_rgba32()):
 					img.set_pixel(x, y, lit[Color(c, 1.0).to_rgba32()])
+					spots.append(Vector2i(x, y))
 					changed = true
+		# O brilho em volta da chama (vermelho-alaranjado colado nela) também apaga; senão, com a luz
+		# forte do dia, o lampião parecia aceso.
+		for sp in spots:
+			for dy in range(-1, 2):
+				for dx in range(-1, 2):
+					var q := sp + Vector2i(dx, dy)
+					if q.x < 0 or q.y < 0 or q.x >= img.get_width() or q.y >= img.get_height():
+						continue
+					var g := img.get_pixel(q.x, q.y)
+					if g.a > 0.99 and g.r > 0.43 and g.r - g.g > 0.2 and g.r - g.b > 0.3:
+						img.set_pixel(q.x, q.y, Color8(62, 50, 52))
 		if changed:
 			out = ImageTexture.create_from_image(img)
 	_tex[key] = out

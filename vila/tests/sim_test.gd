@@ -238,6 +238,27 @@ func _test_orders() -> void:
 	_check(bool(o["ok"]) and String(jo["job"]["kind"]) == "move", "ordens: clique direito no chão só move")
 	sim.advance(30.0)
 	_check(Vector2(jo["pos"]).distance_to(Vector2(ground)) < 0.6 or String(jo["job"].get("kind", "")) != "move", "ordens: chegou onde clicou")
+	# Torre 2: serraria e ferro-velho também aceitam a ordem.
+	sim.tower = 2
+	sim._open_area(2)
+	for tp in ["serraria", "ferrovelho"]:
+		for r2 in VilaSim.RES:
+			sim.stock[r2] = 0.0
+		sim.stock["madeira"] = 60.0
+		sim.stock["sucata"] = 60.0
+		var bc := Vector2i(-1, -1)
+		for y in sim.h:
+			for x in sim.w:
+				if bc.x < 0 and sim.can_place(tp, Vector2i(x, y)):
+					bc = Vector2i(x, y)
+		var rb: Dictionary = sim.build(tp, bc)
+		var bb := sim.building_at(bc)
+		if bool(rb["ok"]):
+			sim._finish(bb)
+		sim.stock["madeira"] = 0.0
+		sim.stock["sucata"] = 0.0
+		o = sim.order(int(jo["id"]), bc + Vector2i(1, 0))
+		_check(bool(rb["ok"]) and bool(o["ok"]) and String(jo["job"]["kind"]) == "work" and int(jo["job"]["b"]) == int(bb["id"]), "ordens: clique direito em %s manda trabalhar lá" % tp)
 	sim.set_cycle_hour(23.0)
 	o = sim.order(int(jo["id"]), cell)
 	_check(not bool(o["ok"]) and String(o["reason"]) == "night", "ordens: de noite diz que todo mundo dorme")

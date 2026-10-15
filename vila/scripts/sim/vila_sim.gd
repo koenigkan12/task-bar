@@ -1575,7 +1575,10 @@ func _make_group() -> void:
 	# Falas sem repetir dentro do mesmo grupo.
 	var bios: Array = range(int(bal["bios"]))
 	for k in 3:
-		var nm: String = String(names[_rng.randi_range(0, names.size() - 1)]) if not names.is_empty() else "?"
+		# Acabaram os nomes livres (vila enorme): repete um da lista, mas nunca aparece "?".
+		if names.is_empty():
+			names = (bal["names"] as Array).duplicate()
+		var nm: String = String(names[_rng.randi_range(0, names.size() - 1)])
 		names.erase(nm)
 		var passives: Array = []
 		var n := 2 if _rng.randf() < float(bal["arrivals"]["two_passives_chance"]) else 1

@@ -752,24 +752,7 @@
    }
   }
  },
- "names": [
-  "Ivo",
-  "Clara",
-  "Davi",
-  "Zé",
-  "Luana",
-  "Otto",
-  "Bia",
-  "Raul",
-  "Iara",
-  "Jonas",
-  "Cida",
-  "Neto",
-  "Lúcia",
-  "Beto",
-  "Tânia",
-  "Edu"
- ],
+ "names": ["Ivo", "Clara", "Davi", "Zé", "Luana", "Otto", "Bia", "Raul", "Iara", "Jonas", "Cida", "Neto", "Lúcia", "Beto", "Tânia", "Edu", "Rita", "Caco", "Dalva", "Tião", "Nair", "Gil", "Lena", "Juca", "Sônia", "Dito", "Vera", "Nando", "Zuza", "Ciro", "Mara", "Tonho", "Ilda", "Paulo", "Rosi", "Quim", "Selma", "Lauro", "Dida", "Fábio", "Inês", "Valter", "Gina", "Mauro", "Elza", "Duda", "Alice", "Sérgio"],
  "bios": 8,
  "story_order": [
   "ari",
