@@ -265,7 +265,7 @@ TIP_PEOPLE,Pessoas na vila / camas,People in the village / beds
 TIP_CLOCK,"Dia e hora na vila: o dia vira ao amanhecer. De noite todo mundo descansa.","Village day and time: the day turns over at dawn. At night everyone rests."
 TIP_BUILD,Escolher um prédio para construir,Pick a building to build
 TIP_TOWER,"A torre do rádio: subir de nível libera prédios, chão e gente nova","The radio tower: each level unlocks buildings, ground and new people"
-TIP_RES,"{r} (cabem {cap}). Clique para ver de onde vem: quem produz fica contornado no mapa.","{r} (holds {cap}). Click to see where it comes from: producers get outlined on the map."
+TIP_RES_CLICK,"Clique para ver de onde vem: quem produz fica contornado no mapa.","Click to see where it comes from: producers get outlined on the map."
 TIP_RESIZE,Puxe a borda da janela para mudar o tamanho,Drag the window edge to resize
 UI_MANAGE_RES,Recursos (por minuto),Resources (per minute)
 UI_MANAGE_SITES,Obras,Building sites

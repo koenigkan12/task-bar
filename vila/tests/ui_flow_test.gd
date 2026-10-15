@@ -127,5 +127,16 @@ func _initialize() -> void:
 		if n is Button and (n as Button).text == root.get_node("I18n").t("UI_CHOOSE") and hud._card.get_global_rect().encloses((n as Button).get_global_rect()):
 			picks += 1
 	_check(picks == 3, "os três botões Escolher aparecem inteiros (%d)" % picks)
+	# Dica da barra de cima: estoque/limite e ritmo por minuto, sem precisar clicar.
+	var tip: Control = hud._res_chips["comida"]._make_custom_tooltip("")
+	var txt := ""
+	var st2: Array = [tip]
+	while not st2.is_empty():
+		var n2: Node = st2.pop_back()
+		st2.append_array(n2.get_children())
+		if n2 is Label:
+			txt += (n2 as Label).text + " "
+	_check(txt.contains("/%d" % int(sim.cap("comida"))) and txt.contains("/min"), "dica da comida mostra estoque/limite e ritmo (%s)" % txt)
+	tip.free()
 	print("FALHAS: ", fails)
 	quit(1 if fails > 0 else 0)

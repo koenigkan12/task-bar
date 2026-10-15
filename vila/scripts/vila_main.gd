@@ -227,6 +227,13 @@ func _open_test_card() -> void:
 	var op := String(Game.args.get("open", ""))
 	if op.begins_with("res:"):
 		hud.show_res(op.trim_prefix("res:"))
+	if op.begins_with("tip:"):   # capturas: a dica do recurso aberta embaixo do chip
+		var chip: Control = hud._res_chips[op.trim_prefix("tip:")]
+		var pc := PanelContainer.new()
+		pc.add_theme_stylebox_override("panel", hud._panel_box())
+		pc.add_child(chip._make_custom_tooltip(""))
+		hud.add_child(pc)
+		pc.position = chip.global_position + Vector2(0, 14)
 	match op:   # só para capturas
 		"build": hud.show_build_menu()
 		"tower": hud.show_tower()

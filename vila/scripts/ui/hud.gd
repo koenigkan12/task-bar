@@ -68,6 +68,40 @@ var _offscreen := false   # o cartão está sendo montado fora da tela (_rebuild
 var tut_only: String = ""
 
 
+## Controle cuja dica é montada na hora por `build` (Array de Controls) e se atualiza aberta.
+class LiveTipChip extends HBoxContainer:
+	var build: Callable
+	var tip_theme: Theme
+
+	func _make_custom_tooltip(_for_text: String) -> Object:
+		return LiveTip.new(build, tip_theme)
+
+
+class LiveTip extends VBoxContainer:
+	var _build: Callable
+	var _t := 0.0
+
+	func _init(b: Callable, th: Theme) -> void:
+		_build = b
+		theme = th
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_theme_constant_override("separation", 1)
+		_fill()
+
+	func _process(delta: float) -> void:
+		_t += delta
+		if _t >= 0.5:
+			_t = 0.0
+			_fill()
+
+	func _fill() -> void:
+		for c in get_children():
+			remove_child(c)
+			c.queue_free()
+		for c: Control in _build.call():
+			add_child(c)
+
+
 func setup(s: VilaSim) -> void:
 	sim = s
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -282,10 +316,12 @@ func _build_top() -> void:
 	h.add_theme_constant_override("separation", 3)
 	bar.add_child(h)
 	for r in VilaSim.RES:
-		var chip := HBoxContainer.new()
+		var chip := LiveTipChip.new()
 		chip.add_theme_constant_override("separation", 1)
 		chip.mouse_filter = Control.MOUSE_FILTER_PASS
 		chip.tooltip_text = I18n.t("RES_" + r)
+		chip.tip_theme = theme
+		chip.build = _res_tip_rows.bind(r)
 		chip.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 		chip.gui_input.connect(func(ev: InputEvent) -> void:
 			if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT:
@@ -514,6 +550,26 @@ func _process(delta: float) -> void:
 			_toast.visible = false
 
 
+## Dica do recurso na barra de cima: estoque/limite e quanto entra e sai por minuto,
+## o mesmo que o cartão mostra ao clicar. LiveTip remonta isto enquanto a dica está aberta.
+func _res_tip_rows(r: String) -> Array:
+	var v := int(floor(float(sim.stock[r])))
+	var cap := int(sim.cap(r))
+	var fl := sim.flow_per_min(r)
+	var st: Array = [_label(I18n.t("RES_" + r).capitalize(), C_AMBER),
+		_stat(r, "%d/%d" % [v, cap], "", C_AMBER if v >= cap else C_TEXT),
+		_stat("seta", "+%.1f/min" % float(fl["prod"]), "", C_GOOD)]
+	if float(fl["use"]) > 0.0:
+		st.append(_stat("alerta", "-%.1f/min" % float(fl["use"]), "", C_WARN))
+	var row := _row(st)
+	row.add_theme_constant_override("separation", 5)
+	var out: Array = [row]
+	if v >= cap:
+		out.append(_label(I18n.t("UI_FULL"), C_AMBER))
+	out.append(_wrap(I18n.t("TIP_RES_CLICK"), C_MUTED, 150.0))
+	return out
+
+
 ## Só troca a dica se o texto mudou (trocar fecha e reabre a dica com o mouse parado em cima).
 func _set_tip(c: Control, text: String) -> void:
 	if c.tooltip_text != text:
@@ -530,10 +586,6 @@ func refresh() -> void:
 		var full := v >= cap
 		l.add_theme_color_override("font_color", C_WARN if low else (C_AMBER if full else C_TEXT))
 		(_res_warn[r] as Control).visible = low
-		# Dica sem números que mudam a toda hora: trocar o texto fechava e reabria a dica.
-		var rtip := I18n.t("TIP_RES", {"r": I18n.t("RES_" + r).capitalize(), "cap": cap}) + ((" · " + I18n.t("UI_FULL")) if full else "")
-		if (l.get_parent() as Control).tooltip_text != rtip:
-			(l.get_parent() as Control).tooltip_text = rtip
 	(_res_chips["pecas"] as Control).visible = sim.tower >= 3 or float(sim.stock["pecas"]) > 0.0
 	var pw := sim.power()
 	_power_chip.visible = float(pw["out"]) > 0.0 or float(pw["use"]) > 0.0
