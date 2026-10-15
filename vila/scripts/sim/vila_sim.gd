@@ -52,6 +52,7 @@ var buildings: Array[Dictionary] = []
 var people: Array[Dictionary] = []
 var gate_group: Array[Dictionary] = []   # candidatos esperando no portão
 var stats: Dictionary = {"commons_in_row": 0, "joined": 0, "built": 0, "fogs": 0, "left": 0}
+var died_ids: Array[int] = []    # quem morreu e a tela ainda não mostrou caindo (a vista consome)
 var offline: bool = false        # durante o alcance offline: produção e consumo pela fração
 var _next_id: int = 1
 var _astar: AStarGrid2D
@@ -603,7 +604,10 @@ func _leave(p: Dictionary) -> void:
 	people.erase(p)
 	_invalidate()
 	stats["left"] = int(stats.get("left", 0)) + 1
-	person_left.emit(nm, String(bal["health"].get("at_zero", "leave")) == "die")
+	var died := String(bal["health"].get("at_zero", "leave")) == "die"
+	if died and not offline:
+		died_ids.append(int(p["id"]))
+	person_left.emit(nm, died)
 	changed.emit()
 
 

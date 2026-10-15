@@ -523,8 +523,19 @@ func _sync_people(delta: float) -> void:
 		alert.visible = p["hungry"] or p["thirsty"]
 	for id in _pnodes.keys():
 		if not seen.has(id):
-			(_pnodes[id]["root"] as Node).queue_free()
+			var gone: Node2D = _pnodes[id]["root"]
 			_pnodes.erase(id)
+			if sim.died_ids.has(id):
+				# Morreu: o boneco tomba de lado, fica um instante e some.
+				sim.died_ids.erase(id)
+				gone.visible = true
+				var tw := gone.create_tween()
+				tw.tween_property(gone, "rotation", PI / 2.0, 0.35).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+				tw.tween_interval(1.2)
+				tw.tween_property(gone, "modulate:a", 0.0, 1.0)
+				tw.tween_callback(gone.queue_free)
+			else:
+				gone.queue_free()
 
 
 func _make_person(p: Dictionary) -> Dictionary:
