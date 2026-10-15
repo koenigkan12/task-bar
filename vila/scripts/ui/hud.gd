@@ -1369,6 +1369,33 @@ func _card_build() -> void:
 		row.tooltip_text = btn.tooltip_text
 		row.mouse_filter = Control.MOUSE_FILTER_PASS
 		grid.add_child(row)
+	# Decoração: só beleza; uma fileira de figurinhas (nome, custo e o que é ficam na dica).
+	var deco_row := HFlowContainer.new()
+	deco_row.add_theme_constant_override("h_separation", 2)
+	for tp in sim.bal.get("deco_order", []):
+		var dt := String(tp)
+		if not sim.unlocked(dt):
+			continue
+		var dl: Dictionary = sim.def(dt)["levels"][0]
+		var db := Button.new()
+		db.icon = load(ART + dt + ".png")
+		db.theme_type_variation = "FlatButton"
+		var dfull := sim.at_limit(dt)
+		db.disabled = dfull or not sim.can_afford(dl["cost"]) or not sim.has_spot(dt) or tut_only != ""
+		var cost_txt: PackedStringArray = []
+		for r in dl["cost"]:
+			cost_txt.append("%d %s" % [int(dl["cost"][r]), I18n.t("RES_" + r)])
+		db.tooltip_text = "%s (%d/%d): %s\n%s" % [bname(dt), sim._count_any(dt), sim.limit(dt), I18n.t("BD_" + dt), ", ".join(cost_txt)]
+		build_btns[dt] = db
+		db.pressed.connect(func() -> void:
+			close_card()
+			build_chosen.emit(dt))
+		deco_row.add_child(db)
+	if deco_row.get_child_count() > 0:
+		_card_box.add_child(_label(I18n.t("UI_DECO"), C_AMBER))
+		_card_box.add_child(deco_row)
+	else:
+		deco_row.queue_free()
 	# Trancados: uma linha por nível da torre ("🔒 Torre 3: Praça, Oficina…"); o que cada um faz vai na dica.
 	var by_t := {}
 	for type in locked:

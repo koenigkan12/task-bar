@@ -419,6 +419,8 @@ func _light_specs(tp: String, level: int, st: String) -> Array:
 			return [{"pos": Vector2(24, -16), "color": pink, "scale": 1.3, "energy": 0.8, "always": true}]
 		"galinheiro":
 			return [{"pos": Vector2(16, -12), "color": warm, "scale": 0.6, "energy": 0.5}]
+		"deco_lampiao":
+			return [{"pos": Vector2(8, -19), "color": warm, "scale": 0.8, "energy": 0.9}]
 		"praca":
 			return [{"pos": Vector2(24, -26), "color": warm, "scale": 1.6, "energy": 0.8}]
 		"torre":

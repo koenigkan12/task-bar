@@ -209,6 +209,90 @@ def estufa_2(base):
     return add(im, L, fx)
 
 
+# ---------------------------------------------------------------- decoração (1 célula, só beleza)
+def deco_banco():
+    L = Lay(16, 16)
+    L.box(1, 8, 14, 9, W3, W4, W1)     # assento
+    L.box(1, 4, 14, 5, W2, W3, W1)     # encosto
+    for x in (2, 12):
+        L.rect(x, 6, x + 1, 7, W1)
+        L.rect(x, 10, x + 1, 13, W1)
+    return finish(L, drop=(1, 1))
+
+
+def deco_vaso():
+    L = Lay(16, 16)
+    L.box(4, 9, 11, 13, R3, R4, R1)
+    L.hl(3, 12, 9, R4)
+    for (x, y, c) in ((5, 7, PL2), (7, 5, PL1), (9, 6, PL2), (10, 8, PL1), (6, 4, PL3), (8, 3, PL2)):
+        L.p(x, y, c)
+        L.p(x, y + 1, PL1)
+        L.p(x, y + 2, PL1)
+    L.p(6, 3, PK)
+    L.p(9, 4, '#ffd36b')
+    L.p(10, 6, PK2)
+    return finish(L, drop=(1, 1))
+
+
+def deco_lampiao():
+    L = Lay(16, 24)
+    fx = Lay(16, 24)
+    L.rect(7, 6, 8, 21, ST0)
+    L.vl(7, 6, 21, ST2)
+    L.box(5, 21, 10, 22, D2, D3, D1)
+    L.box(5, 2, 10, 6, D2, D3, D1)
+    L.rect(6, 3, 9, 5, OR)
+    L.p(6, 3, YE)
+    L.p(7, 3, YE)
+    L.hl(4, 11, 1, D3)
+    return finish(L, fx, drop=(1, 1))
+
+
+def deco_varal():
+    L = Lay(16, 20)
+    for x in (1, 14):
+        L.rect(x, 4, x, 18, W2)
+        L.p(x, 3, W3)
+    L.hl(1, 14, 5, '#9a8a70')
+    L.box(3, 6, 6, 10, '#c8b890', '#e0d4b0', '#988868')
+    L.box(8, 6, 12, 9, '#5a7a8a', '#7a9aaa', '#3a5a6a')
+    L.p(9, 10, '#3a5a6a')
+    L.p(11, 10, '#3a5a6a')
+    return finish(L, drop=(1, 1))
+
+
+def deco_espantalho():
+    L = Lay(16, 24)
+    L.rect(7, 6, 8, 22, W2)
+    L.hl(2, 13, 10, W2)
+    L.box(5, 9, 10, 16, '#7a5a8a', '#9a7aaa', '#5a3a6a')   # camisa
+    L.ell(7.5, 6, 2.6, 2.6, '#c8b890')                       # cabeça de saco
+    L.p(6, 5, OUT)
+    L.p(9, 5, OUT)
+    L.rect(4, 2, 11, 3, W3)                                  # chapéu
+    L.rect(6, 1, 9, 2, W3)
+    L.p(2, 11, '#c8b890')
+    L.p(13, 11, '#c8b890')
+    return finish(L, drop=(1, 1))
+
+
+def deco_placa():
+    L = Lay(16, 24)
+    fx = Lay(16, 24)
+    for x in (2, 13):
+        L.rect(x, 10, x + 1, 22, W1)
+    L.box(0, 4, 15, 11, W3, W4, W1)
+    L.hl(1, 14, 7, W2)
+    # coração e flores: a vila esperando ela
+    for (x, y) in ((6, 5), (9, 5), (5, 6), (6, 6), (7, 6), (8, 6), (9, 6), (10, 6), (6, 7), (7, 7), (8, 7), (9, 7), (7, 8), (8, 8)):
+        L.p(x, y, '#d8423a')
+    L.p(6, 5, '#f08c8c')
+    for (x, c) in ((1, PK), (4, '#ffd36b'), (11, PK2), (14, '#ffd36b')):
+        L.p(x, 21, PL1)
+        L.p(x, 20, c)
+    return finish(L, fx, drop=(1, 1))
+
+
 def main(art):
     out = {}
     out['serraria_2'] = serraria_2(art['serraria'])
@@ -220,6 +304,12 @@ def main(art):
     out['oficina_3'] = oficina_3(art['oficina_2'])
     out['cozinha_2'] = cozinha_2(art['cozinha'])
     out['estufa_2'] = estufa_2(art['estufa'])
+    out['deco_banco'] = deco_banco()
+    out['deco_vaso'] = deco_vaso()
+    out['deco_lampiao'] = deco_lampiao()
+    out['deco_varal'] = deco_varal()
+    out['deco_espantalho'] = deco_espantalho()
+    out['deco_placa'] = deco_placa()
     for k, im in out.items():
         save(im, k + '.png')
     return out

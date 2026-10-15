@@ -341,3 +341,16 @@ B_estufa_1,Estufa,Greenhouse
 B_estufa_2,Estufa irrigada,Irrigated greenhouse
 UI_AUTO_PICK,Escolher sozinho no portão,Pick at the gate for me
 TIP_AUTO_PICK,"Quando chegar gente no portão, entra quem mais ajuda no que está faltando. Liga e desliga aqui ou no painel da vila, na lista de pessoas.","When people reach the gate, whoever helps most with what's missing comes in. Turn it on or off here or in the village panel, by the people list."
+UI_DECO,Decoração,Decoration
+B_deco_banco,Banco,Bench
+BD_deco_banco,Só beleza: um lugar pra sentar no fim do dia.,Just for looks: somewhere to sit at the end of the day.
+B_deco_vaso,Vaso de flor,Flower pot
+BD_deco_vaso,Só beleza: flor que nasceu no meio da sucata.,Just for looks: a flower that grew out of the scrap.
+B_deco_varal,Varal,Clothesline
+BD_deco_varal,Só beleza: roupa secando quer dizer que tem gente morando.,Just for looks: laundry drying means people live here.
+B_deco_lampiao,Lampião,Lamp post
+BD_deco_lampiao,Só beleza: acende de noite e ilumina em volta.,Just for looks: lights up at night and brightens the ground around it.
+B_deco_espantalho,Espantalho,Scarecrow
+BD_deco_espantalho,Só beleza: cuida da horta com cara de poucos amigos.,Just for looks: guards the garden with a grumpy face.
+B_deco_placa,Placa de boas-vindas,Welcome sign
+BD_deco_placa,Só beleza: pra quem chegar saber que é esperado.,Just for looks: so whoever arrives knows they were expected.

@@ -599,6 +599,113 @@
      "tower": 5
     }
    ]
+  },
+  "deco_banco": {
+   "fp": [
+    1,
+    1
+   ],
+   "tower": 2,
+   "deco": true,
+   "limit": 6,
+   "levels": [
+    {
+     "cost": {
+      "madeira": 4
+     },
+     "time_s": 15
+    }
+   ]
+  },
+  "deco_vaso": {
+   "fp": [
+    1,
+    1
+   ],
+   "tower": 2,
+   "deco": true,
+   "limit": 6,
+   "levels": [
+    {
+     "cost": {
+      "madeira": 2,
+      "sucata": 1
+     },
+     "time_s": 10
+    }
+   ]
+  },
+  "deco_varal": {
+   "fp": [
+    1,
+    1
+   ],
+   "tower": 3,
+   "deco": true,
+   "limit": 6,
+   "levels": [
+    {
+     "cost": {
+      "madeira": 3
+     },
+     "time_s": 15
+    }
+   ]
+  },
+  "deco_lampiao": {
+   "fp": [
+    1,
+    1
+   ],
+   "tower": 3,
+   "deco": true,
+   "limit": 6,
+   "levels": [
+    {
+     "cost": {
+      "madeira": 2,
+      "sucata": 4
+     },
+     "time_s": 20
+    }
+   ]
+  },
+  "deco_espantalho": {
+   "fp": [
+    1,
+    1
+   ],
+   "tower": 4,
+   "deco": true,
+   "limit": 6,
+   "levels": [
+    {
+     "cost": {
+      "madeira": 4,
+      "sucata": 2
+     },
+     "time_s": 20
+    }
+   ]
+  },
+  "deco_placa": {
+   "fp": [
+    1,
+    1
+   ],
+   "tower": 5,
+   "deco": true,
+   "limit": 6,
+   "levels": [
+    {
+     "cost": {
+      "madeira": 10,
+      "sucata": 6,
+      "pecas": 2
+     },
+     "time_s": 40
+    }
+   ]
   }
  },
  "build_order": [
@@ -1057,5 +1164,13 @@
   "journey_day_scale": 0.5,
   "arrival_after_h": 3.0,
   "look": 6
- }
+ },
+ "deco_order": [
+  "deco_banco",
+  "deco_vaso",
+  "deco_varal",
+  "deco_lampiao",
+  "deco_espantalho",
+  "deco_placa"
+ ]
 }
