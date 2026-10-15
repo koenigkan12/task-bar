@@ -421,14 +421,13 @@ func set_work_tonight(on: bool) -> void:
 ## A noite acabou: quem virou a noite cansa mais; quem dormiu descansa (sem cama, metade).
 func _night_end() -> void:
 	var nb: Dictionary = bal["night"]
-	var beds := beds_total()
 	for i in people.size():
 		var p: Dictionary = people[i]
 		if work_tonight:
 			p["tired"] = int(p["tired"]) + 1
 			p["rest"] = 0.0
 		elif int(p["tired"]) > 0:
-			p["rest"] = float(p["rest"]) + (1.0 if i < beds else float(nb["no_bed_rest"]))
+			p["rest"] = float(p["rest"]) + (1.0 if home_of(p) >= 0 else float(nb["no_bed_rest"]))
 			if float(p["rest"]) >= float(nb["rest_nights_per_tired"]) - 0.001:
 				p["rest"] = 0.0
 				p["tired"] = int(p["tired"]) - 1
@@ -815,7 +814,7 @@ func _add_person(nm: String, look: int, passives: Array, at: Vector2i, story: St
 			"pos": Vector2(at), "path": PackedVector2Array(), "job": {}, "phase": "idle",
 			"carry_res": "", "carry": 0.0, "work_t": 0.0, "hungry": false, "thirsty": false,
 			"eat_acc": 0.0, "drink_acc": 0.0, "facing": Vector2.DOWN, "moving": false,
-			"story": story, "bio": bio, "asleep": false, "target_cell": Vector2i(-1, -1),
+			"story": story, "bio": bio, "asleep": false, "home": -1, "target_cell": Vector2i(-1, -1),
 			"tired": 0, "rest": 0.0}
 	_next_id += 1
 	people.append(p)
@@ -1150,17 +1149,59 @@ func _set_job(p: Dictionary, job: Dictionary) -> void:
 
 
 func _bed_door(p: Dictionary) -> Vector2i:
-	# Joaquim dorme no bunker; os outros na casa/barraco mais perto (camas não são nominais no protótipo).
-	var best := _door(_first("hatch"))
-	var bd := 1e9
-	for b in buildings:
-		var tp := String(b["type"])
-		if tp == "moradia" and String(b["state"]) != "site":
+	# Cada um dorme na moradia que é dele (home_of). Sem cama: perto da fogueira, ou na escotilha.
+	var hb := by_id(home_of(p))
+	if not hb.is_empty():
+		return _door(hb)
+	var fire := _first("fogueira")
+	return _door(fire if not fire.is_empty() and String(fire["state"]) == "built" else _first("hatch"))
+
+
+func _beds_of(b: Dictionary) -> int:
+	return int(level_def(b).get("beds", def(String(b["type"])).get("beds", 0)))
+
+
+## Moradia (id) onde a pessoa dorme; -1 = sem cama. A cama é da pessoa: fica a mesma de uma noite para
+## a outra enquanto a casa existir; quem não tem ganha a vaga livre mais perto de onde está.
+func home_of(p: Dictionary) -> int:
+	_assign_homes()
+	return int(p.get("home", -1))
+
+
+## Quem dorme nesta moradia (nomes na ordem de chegada).
+func residents(b: Dictionary) -> Array:
+	_assign_homes()
+	var out: Array = []
+	for p in people:
+		if int(p.get("home", -1)) == int(b["id"]):
+			out.append(p)
+	return out
+
+
+func _assign_homes() -> void:
+	var used := {}
+	for p in people:
+		var hb := by_id(int(p.get("home", -1)))
+		var ok := not hb.is_empty() and String(hb["type"]) == "moradia" and String(hb["state"]) != "site"
+		if ok and int(used.get(int(hb["id"]), 0)) < _beds_of(hb):
+			used[int(hb["id"])] = int(used.get(int(hb["id"]), 0)) + 1
+		else:
+			p["home"] = -1
+	for p in people:
+		if int(p["home"]) >= 0:
+			continue
+		var bd := 1e9
+		for b in buildings:
+			if String(b["type"]) != "moradia" or String(b["state"]) == "site":
+				continue
+			if int(used.get(int(b["id"]), 0)) >= _beds_of(b):
+				continue
 			var d := Vector2(p["pos"]).distance_squared_to(Vector2(_door(b)))
 			if d < bd:
 				bd = d
-				best = _door(b)
-	return best
+				p["home"] = int(b["id"])
+		if int(p["home"]) >= 0:
+			used[int(p["home"])] = int(used.get(int(p["home"]), 0)) + 1
 
 
 func _go(p: Dictionary, cell: Vector2i) -> void:
@@ -2187,7 +2228,7 @@ func to_dict() -> Dictionary:
 				"pos": [p["pos"].x, p["pos"].y], "story": p["story"], "bio": p["bio"],
 				"eat_acc": p["eat_acc"], "drink_acc": p["drink_acc"],
 				"carry_res": p["carry_res"], "carry": p["carry"], "tired": p["tired"], "rest": p["rest"],
-				"eat_mult": p.get("eat_mult", 1.0)})
+				"eat_mult": p.get("eat_mult", 1.0), "home": p.get("home", -1)})
 	var rg: Array = []
 	for c in regrow:
 		rg.append([c.x, c.y, regrow[c]])
@@ -2240,6 +2281,7 @@ func from_dict(d: Dictionary, balance: Dictionary, tz_bias: int = 0) -> void:
 		p["tired"] = int(e.get("tired", 0))
 		p["rest"] = float(e.get("rest", 0.0))
 		p["eat_mult"] = float(e.get("eat_mult", 1.0))
+		p["home"] = int(e.get("home", -1))
 	regrow.clear()
 	for e in d["regrow"]:
 		regrow[Vector2i(int(e[0]), int(e[1]))] = float(e[2])

@@ -357,3 +357,5 @@ BD_deco_placa,Só beleza: pra quem chegar saber que é esperado.,Just for looks:
 UI_POWER_FEEDS,Liga:,Runs:
 TIP_POWER_FEEDS,Liga: {list},Runs: {list}
 TIP_POWER_NOT_YET,Quando tiver {b} construída, ela usa esta energia.,Once you build {b} it will use this power.
+TIP_HOME_WHO,"Dormem aqui: {names}. De noite o número em cima da casa mostra quantos já entraram.","Sleeping here: {names}. At night the number above the house shows how many are already in."
+TIP_HOME_EMPTY,Ninguém dorme aqui ainda.,Nobody sleeps here yet.

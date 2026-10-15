@@ -36,6 +36,7 @@ func _init() -> void:
 	var gd := sim._door(sim._first("gate"))
 	_check(sim.terrain_at(gd) != VilaSim.T_WATER, "o porto tem saída por terra")
 	_check(sim._count_any("moradia") == 1 and sim.beds_total() == 1, "começa com uma barraca de uma cama")
+	_check(sim.home_of(sim.people[0]) == int(sim._first("moradia")["id"]), "Joaquim dorme na barraca")
 	var free0 := sim._free_build_cells()
 	print("chão livre no começo: ", free0)
 	_check(free0 >= 60 and free0 <= 110, "clareira do começo cabe o que a torre 1 libera (60 a 110 células livres)")
@@ -67,6 +68,15 @@ func _init() -> void:
 	_check(t_tower2 > 0.0 and t_tower2 < 30.0 * 60.0, "torre 2 em menos de 30 min")
 	_check(not sim.gate_group.is_empty() or sim.people.size() > 1, "na torre 2 o bote traz gente ao porto")
 	_check(t_ari > 0.0, "seu Ari chega depois da torre 2")
+	var homes_ok := true
+	for b in sim.buildings:
+		if String(b["type"]) == "moradia" and sim.residents(b).size() > sim._beds_of(b):
+			homes_ok = false
+	var housed := 0
+	for p in sim.people:
+		if sim.home_of(p) >= 0:
+			housed += 1
+	_check(homes_ok and housed == mini(sim.people.size(), sim.beds_total()), "cada moradia tem no máximo as camas dela, e toda cama livre tem dono")
 	_check(t_group > 0.0, "chega um grupo de 3 no portão")
 	_check(sim.people.size() >= 3, "pelo menos 3 pessoas em 3 h")
 	_check(min_stock >= -0.001, "estoque nunca negativo (min %.2f)" % min_stock)

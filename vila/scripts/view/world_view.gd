@@ -672,6 +672,7 @@ const TINY := {
 	"6": ["111", "100", "111", "101", "111"], "7": ["111", "001", "010", "010", "010"],
 	"8": ["111", "101", "111", "101", "111"], "9": ["111", "101", "111", "001", "111"],
 	":": ["0", "1", "0", "1", "0"],
+	"/": ["001", "001", "010", "100", "100"],
 }
 
 
@@ -720,6 +721,29 @@ func _draw_overlay() -> void:
 		for p in sim.people:
 			if String(p["job"].get("res", "")) == hl_res:
 				_overlay.draw_arc(_person_world(p) + Vector2(0, -5), 7.0, 0.0, TAU, 16, hc, 1.0)
+	# De noite, em cima de cada moradia: cama e quantos já estão dormindo nela / quantas camas tem.
+	if sim.is_night() and not sim.work_tonight:
+		var bic := tex("icons")
+		for b in sim.buildings:
+			if String(b["type"]) != "moradia" or String(b["state"]) == "site":
+				continue
+			var rs: Array = sim.residents(b)
+			var inside := 0
+			for p in rs:
+				if p["asleep"]:
+					inside += 1
+			var txt := "%d/%d" % [inside, sim._beds_of(b)]
+			var fpm := sim._fp("moradia")
+			var wdt := 9.0 + _tiny_width(txt)
+			var n: Dictionary = _bnodes.get(int(b["id"]), {})
+			var top_y := -float(fpm.y * TILE)
+			if not n.is_empty() and (n["sprite"] as Sprite2D).texture != null:
+				top_y = -float((n["sprite"] as Sprite2D).texture.get_height())
+			var at := (Vector2(Vector2i(b["cell"]).x * TILE + fpm.x * TILE / 2.0 - wdt / 2.0, (Vector2i(b["cell"]).y + fpm.y) * TILE + top_y - 9)).round()
+			_overlay.draw_rect(Rect2(at + Vector2(-1, -1), Vector2(wdt + 2, 10)), Color(0.26, 0.2, 0.33, 0.85))
+			if bic != null:
+				_overlay.draw_texture_rect_region(bic, Rect2(at, Vector2(8, 8)), Rect2(5 * 8, 0, 8, 8))
+			_tiny_text(at + Vector2(9, 2), txt, CREME if inside < rs.size() or rs.is_empty() else Color8(201, 171, 93))
 	# Barras de obra
 	for b in sim.buildings:
 		if String(b["state"]) == "built":

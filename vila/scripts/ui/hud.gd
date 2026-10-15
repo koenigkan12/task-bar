@@ -1041,7 +1041,14 @@ func _card_building() -> void:
 		_card_box.add_child(_stats([_stat("comida", "+%d%%" % int(round(fb * 100.0)), fmt("TIP_FOOD_BONUS", {"n": int(round(fb * 100.0))}))]))
 	var beds := int(lv.get("beds", d.get("beds", 0)))
 	if beds > 0:
-		_card_box.add_child(_stats([_stat("cama", str(beds), fmt("UI_BEDS", {"n": beds, "used": sim.people.size(), "total": sim.beds_total()}))]))
+		var rs: Array = sim.residents(b) if tp == "moradia" else []
+		var names: Array = rs.map(func(q: Dictionary) -> String: return String(q["name"]))
+		var btip := fmt("UI_BEDS", {"n": beds, "used": sim.people.size(), "total": sim.beds_total()})
+		if tp == "moradia":
+			btip += "\n" + (fmt("TIP_HOME_WHO", {"names": ", ".join(names)}) if not names.is_empty() else I18n.t("TIP_HOME_EMPTY"))
+		_card_box.add_child(_stats([_stat("cama", "%d/%d" % [rs.size(), beds] if tp == "moradia" else str(beds), btip)]))
+		if not names.is_empty():
+			_card_box.add_child(_label(", ".join(names), C_MUTED))
 	if tp == "hatch" or lv.has("cap"):
 		# Um ícone por recurso com o quanto este prédio guarda (o bunker é a base; depósito soma).
 		var add := tp != "hatch"
