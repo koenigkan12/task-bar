@@ -184,6 +184,37 @@ func _init() -> void:
 	var n_b: int = sim.buildings.size()
 	_check(bool(sim.demolish(int(pc["id"]))["ok"]) and sim.buildings.size() == n_b - 1 and sim.building_at(cell0).is_empty(), "desmontar tira o prédio e libera o chão")
 	_check(not bool(sim.demolish(int(sim._first("hatch")["id"]))["ok"]) and not bool(sim.demolish(int(sim.tower_building()["id"]))["ok"]), "bunker e torre não desmontam")
+	# Saúde: fome e sede tiram; doente descansa; zerada vai embora (gente da história não vai).
+	var sh := VilaSim.new()
+	sh.setup(bal, start, 0)
+	sh.set_cycle_hour(9.0)
+	var hp: Dictionary = sh._add_person("Teste", 1, [{"id": "agua", "rar": "comum"}], Vector2i(sh._hatch_door()))
+	hp["hungry"] = true
+	hp["thirsty"] = true
+	sh._health(hp, 60.0 * 8.0)
+	_check(sh.health_state(hp) == "weak" and sh.health_mult(hp) < 1.0, "saúde: 8 min sem comida e água deixa fraca (%.0f)" % float(hp["health"]))
+	sh._health(hp, 60.0 * 5.0)
+	sh._person_step(hp, 0.1, false, true)
+	_check(sh.health_state(hp) == "sick" and String(hp["job"]["kind"]) == "rest", "saúde: doente para e vai descansar")
+	var jqs: Dictionary = sh.people[0]
+	jqs["hungry"] = true
+	jqs["thirsty"] = true
+	var n0 := sh.people.size()
+	sh._health(hp, 60.0 * 60.0)
+	sh._health(jq, 60.0 * 60.0)
+	_check(sh.people.size() == n0 - 1 and not sh.people.has(hp) and int(sh.stats["left"]) == 1, "saúde: zerada vai embora no barco")
+	_check(sh.people.has(jqs) and float(jqs["health"]) >= 1.0, "saúde: gente da história não vai embora")
+	var hp2: Dictionary = sh._add_person("Teste2", 1, [], Vector2i(sh._hatch_door()))
+	hp2["hungry"] = true
+	sh.offline = true
+	sh._health(hp2, 60.0 * 120.0)
+	sh.offline = false
+	_check(sh.people.has(hp2) and float(hp2["health"]) >= float(bal["health"]["offline_floor"]), "saúde: fora do jogo ninguém passa de doente")
+	hp2["hungry"] = false
+	sh._set_job(hp2, {"kind": "rest"})
+	sh._health(hp2, 60.0 * 30.0)
+	sh._person_step(hp2, 0.1, false, true)
+	_check(sh.health_state(hp2) != "sick" and String(hp2["job"].get("kind", "")) != "rest", "saúde: com comida e água volta a trabalhar")
 	# Ninguém passa das camas: moradia ocupada não desmonta e a pessoa da história espera vaga.
 	var sb := VilaSim.new()
 	sb.setup(bal, start, 0)

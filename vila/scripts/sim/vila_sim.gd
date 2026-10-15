@@ -9,6 +9,8 @@ signal changed                                     # algo que a interface mostra
 signal building_done(id: int)                      # obra ou melhoria terminou
 signal tower_up(level: int)
 signal person_joined(id: int)
+signal person_grave(id: int)                       # alguém ficou grave (fome/sede): aviso
+signal person_left(name: String)                   # saúde zerou: foi embora no barco
 signal group_arrived                               # um grupo de 3 chegou ao portão
 signal harvested(id: int, res: String, amount: int) # alguém entregou no depósito (para o "+N")
 signal site_started(id: int)                       # obra nova, melhoria ou torre começou (som de martelo)
@@ -49,7 +51,7 @@ var marked: Dictionary = {}       # entulho marcado para limpar primeiro
 var buildings: Array[Dictionary] = []
 var people: Array[Dictionary] = []
 var gate_group: Array[Dictionary] = []   # candidatos esperando no portão
-var stats: Dictionary = {"commons_in_row": 0, "joined": 0, "built": 0, "fogs": 0}
+var stats: Dictionary = {"commons_in_row": 0, "joined": 0, "built": 0, "fogs": 0, "left": 0}
 var offline: bool = false        # durante o alcance offline: produção e consumo pela fração
 var _next_id: int = 1
 var _astar: AStarGrid2D
@@ -539,6 +541,72 @@ func set_cycle_hour(hour: float) -> void:
 	_was_night = is_night()
 
 
+## Saúde (0 a 100): fome e sede tiram, comida e água em dia devolvem devagar. Fraca trabalha mais
+## devagar, doente para e fica em casa, grave dá aviso, zerada vai embora no barco.
+func health_state(p: Dictionary) -> String:
+	var hb: Dictionary = bal["health"]
+	var h := float(p.get("health", 100.0))
+	if h < float(hb["grave_below"]):
+		return "grave"
+	if h < float(hb["sick_below"]) or (String(p["job"].get("kind", "")) == "rest" and h < float(hb["sick_until"])):
+		return "sick"
+	if h < float(hb["weak_below"]):
+		return "weak"
+	return "ok"
+
+
+func sick_count() -> int:
+	var n := 0
+	for p in people:
+		if health_state(p) in ["sick", "grave"]:
+			n += 1
+	return n
+
+
+func health_mult(p: Dictionary) -> float:
+	return float(bal["health"]["weak_mult"]) if health_state(p) == "weak" else 1.0
+
+
+## Gente da história (e o Joaquim) adoece mas não vai embora: a história depende deles.
+func _can_leave(p: Dictionary) -> bool:
+	return String(p["story"]) == ""
+
+
+func _health(p: Dictionary, dt: float) -> void:
+	var hb: Dictionary = bal["health"]
+	var h := float(p["health"])
+	var was := health_state(p)
+	var loss := 0.0
+	if p["hungry"]:
+		loss += float(hb["hungry_loss_min"])
+	if p["thirsty"]:
+		loss += float(hb["thirsty_loss_min"])
+	if loss > 0.0:
+		h -= loss * dt / 60.0
+	else:
+		var rg := float(hb["regen_min"]) * (float(hb["rest_regen_mult"]) if String(p["job"].get("kind", "")) == "rest" else 1.0)
+		h = minf(100.0, h + rg * dt / 60.0)
+	if offline:
+		h = maxf(h, minf(float(p["health"]), float(hb["offline_floor"])))
+	if not _can_leave(p):
+		h = maxf(h, 1.0)
+	p["health"] = h
+	if h <= 0.0:
+		_leave(p)
+	elif was != "grave" and health_state(p) == "grave":
+		person_grave.emit(int(p["id"]))
+
+
+func _leave(p: Dictionary) -> void:
+	_set_job(p, {"kind": "idle"})
+	var nm := String(p["name"])
+	people.erase(p)
+	_invalidate()
+	stats["left"] = int(stats.get("left", 0)) + 1
+	person_left.emit(nm)
+	changed.emit()
+
+
 ## Fração da produção: 1 com o sono em dia; cada noite virada que falta descansar tira um tanto.
 func rest_mult(p: Dictionary) -> float:
 	var nb: Dictionary = bal["night"]
@@ -1021,7 +1089,7 @@ func _add_person(nm: String, look: int, passives: Array, at: Vector2i, story: St
 			"carry_res": "", "carry": 0.0, "work_t": 0.0, "hungry": false, "thirsty": false,
 			"eat_acc": 0.0, "drink_acc": 0.0, "facing": Vector2.DOWN, "moving": false,
 			"story": story, "bio": bio, "asleep": false, "home": -1, "target_cell": Vector2i(-1, -1),
-			"tired": 0, "rest": 0.0}
+			"tired": 0, "rest": 0.0, "health": 100.0}
 	_next_id += 1
 	people.append(p)
 	stats["joined"] = int(stats["joined"]) + 1
@@ -1040,7 +1108,7 @@ func bonus(p: Dictionary, job: String) -> float:
 func _speed(p: Dictionary) -> float:
 	var s: float = float(bal["people"]["speed_tiles_s"]) * bonus(p, "walk") * (1.0 + perk_bonus("carrinho"))
 	# Cansado anda mais devagar (só perde, o bônus de sono em dia não acelera o passo).
-	return s * (float(bal["people"]["hungry_speed"]) if (p["hungry"] or p["thirsty"]) else 1.0) * minf(1.0, rest_mult(p))
+	return s * (float(bal["people"]["hungry_speed"]) if (p["hungry"] or p["thirsty"]) else 1.0) * minf(1.0, rest_mult(p)) * health_mult(p)
 
 
 ## Energia: oferta dos geradores e painéis prontos contra o gasto dos prédios elétricos prontos.
@@ -1084,7 +1152,7 @@ func food_mult() -> float:
 
 
 func _work_mult(p: Dictionary) -> float:
-	return (float(bal["people"]["hungry_speed"]) if (p["hungry"] or p["thirsty"]) else 1.0) * rest_mult(p)
+	return (float(bal["people"]["hungry_speed"]) if (p["hungry"] or p["thirsty"]) else 1.0) * rest_mult(p) * health_mult(p)
 
 
 ## O que mais falta, de 0 a ~2. Comida e água pesam pelo consumo; madeira e sucata pela próxima meta.
@@ -1401,7 +1469,7 @@ func _set_job(p: Dictionary, job: Dictionary) -> void:
 			p["target_cell"] = c
 			_go(p, _free_neighbor(c, p["pos"]))
 			p["phase"] = "to_forage"
-		"sleep":
+		"sleep", "rest":
 			_go(p, _bed_door(p))
 			p["phase"] = "to_bed"
 		"move":
@@ -1628,6 +1696,8 @@ func _needs(dt: float, night: bool) -> void:
 		if p["thirsty"] and float(stock["agua"]) >= 1.0:
 			stock["agua"] = float(stock["agua"]) - 1.0
 			p["thirsty"] = false
+	for p in people.duplicate():
+		_health(p, dt)
 
 
 func _regrow() -> void:
@@ -2055,6 +2125,15 @@ func _person_step(p: Dictionary, dt: float, night: bool, rethink: bool) -> void:
 	elif not night and kind == "sleep":
 		_set_job(p, {"kind": "idle"})
 		kind = "idle"
+	# Doente: larga tudo e vai descansar em casa até melhorar.
+	if not night:
+		var hs := health_state(p)
+		if (hs == "sick" or hs == "grave") and kind != "rest":
+			_set_job(p, {"kind": "rest"})
+			kind = "rest"
+		elif kind == "rest" and hs != "sick" and hs != "grave":
+			_set_job(p, {"kind": "idle"})
+			kind = "idle"
 	if kind == "idle":
 		p["moving"] = false
 		if rethink or p["phase"] == "idle":
@@ -2081,7 +2160,7 @@ func _person_step(p: Dictionary, dt: float, night: bool, rethink: bool) -> void:
 				_set_job(p, nj)
 				return
 	match kind:
-		"sleep":
+		"sleep", "rest":
 			if _walk(p, dt):
 				p["asleep"] = true
 		"build":
@@ -2460,6 +2539,8 @@ func doing(p: Dictionary) -> String:
 	var k := String(j.get("kind", "idle"))
 	if k == "sleep":
 		return "sleep" if p["asleep"] else "to_bed"
+	if k == "rest":
+		return "rest"
 	if k == "build":
 		var b := by_id(int(j["b"]))
 		return "build:" + (String(b.get("type", "")) if not b.is_empty() else "")
@@ -2599,7 +2680,7 @@ func to_dict() -> Dictionary:
 				"pos": [p["pos"].x, p["pos"].y], "story": p["story"], "bio": p["bio"],
 				"eat_acc": p["eat_acc"], "drink_acc": p["drink_acc"],
 				"carry_res": p["carry_res"], "carry": p["carry"], "tired": p["tired"], "rest": p["rest"],
-				"eat_mult": p.get("eat_mult", 1.0), "home": p.get("home", -1)})
+				"eat_mult": p.get("eat_mult", 1.0), "home": p.get("home", -1), "health": p["health"]})
 	var rg: Array = []
 	for c in regrow:
 		rg.append([c.x, c.y, regrow[c]])
@@ -2655,6 +2736,7 @@ func from_dict(d: Dictionary, balance: Dictionary, tz_bias: int = 0) -> void:
 		p["rest"] = float(e.get("rest", 0.0))
 		p["eat_mult"] = float(e.get("eat_mult", 1.0))
 		p["home"] = int(e.get("home", -1))
+		p["health"] = float(e.get("health", 100.0))
 	regrow.clear()
 	for e in d["regrow"]:
 		regrow[Vector2i(int(e[0]), int(e[1]))] = float(e[2])
@@ -2736,7 +2818,7 @@ func catch_up_start(now_unix: float) -> Dictionary:
 	elapsed = minf(elapsed, float(tb["offline_cap_h"]) * 3600.0)
 	offline = true
 	return {"seconds": elapsed, "left": elapsed, "before": stock.duplicate(), "built0": int(stats["built"]),
-			"joined0": int(stats["joined"]), "radio0": radio_heard.size(), "tower0": tower, "fogs0": int(stats.get("fogs", 0))}
+			"joined0": int(stats["joined"]), "radio0": radio_heard.size(), "tower0": tower, "fogs0": int(stats.get("fogs", 0)), "left0": int(stats.get("left", 0))}
 
 
 func catch_up_chunk(ctx: Dictionary, seconds: float) -> bool:
@@ -2756,4 +2838,5 @@ func catch_up_finish(ctx: Dictionary, now_unix: float) -> Dictionary:
 	return {"seconds": float(ctx["seconds"]), "delta": delta, "built": int(stats["built"]) - int(ctx["built0"]),
 			"joined": int(stats["joined"]) - int(ctx["joined0"]), "group": not gate_group.is_empty(),
 			"radio": radio_heard.size() - int(ctx["radio0"]), "tower": tower, "tower_up": tower - int(ctx.get("tower0", tower)),
-			"fogs": int(stats.get("fogs", 0)) - int(ctx.get("fogs0", 0))}
+			"fogs": int(stats.get("fogs", 0)) - int(ctx.get("fogs0", 0)),
+			"left": int(stats.get("left", 0)) - int(ctx.get("left0", 0)), "sick": sick_count()}

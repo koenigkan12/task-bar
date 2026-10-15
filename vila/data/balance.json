@@ -136,6 +136,18 @@
   "move_hold_s": 10,
   "max_builders": 3
  },
+ "health": {
+  "hungry_loss_min": 2.0,
+  "thirsty_loss_min": 3.0,
+  "regen_min": 1.0,
+  "rest_regen_mult": 2.0,
+  "weak_below": 70,
+  "sick_below": 40,
+  "sick_until": 60,
+  "grave_below": 15,
+  "weak_mult": 0.7,
+  "offline_floor": 20
+ },
  "forage": {
   "madeira": {
    "work_s": 5,

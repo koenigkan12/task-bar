@@ -17,7 +17,7 @@ var W: float = 384.0
 var H: float = 216.0
 const ICON := {"comida": 0, "agua": 1, "madeira": 2, "sucata": 3, "pessoa": 4, "cama": 5, "relogio": 6,
 		"torre": 7, "martelo": 8, "seta": 9, "cadeado": 10, "check": 11, "estrela": 12, "sol": 13, "lua": 14, "alerta": 15,
-		"pecas": 16, "energia": 17, "radio": 18, "mercador": 19, "caderno": 20}
+		"pecas": 16, "energia": 17, "radio": 18, "mercador": 19, "caderno": 20, "saude": 21}
 # Paleta da ilha (tools/estilo_ilha.py), um pouco mais clara onde é texto pequeno sobre o roxo.
 const C_TEXT := Color("ccc6ba")    # creme
 const C_MUTED := Color("a592a5")   # lilás
@@ -629,8 +629,10 @@ func refresh() -> void:
 	_merchant_btn.size = Vector2.ZERO
 	_people_label.text = "%d/%d" % [sim.people.size(), sim.beds_total()]
 	var homeless := sim.people.size() - sim.beds_total()
-	_people_label.add_theme_color_override("font_color", C_WARN if homeless > 0 else C_TEXT)
-	_people_label.tooltip_text = I18n.t("TIP_PEOPLE") + (("\n" + fmt("TIP_PEOPLE_OVER", {"n": homeless})) if homeless > 0 else "")
+	var sick := sim.sick_count()
+	_people_label.add_theme_color_override("font_color", C_WARN if homeless > 0 or sick > 0 else C_TEXT)
+	_people_label.tooltip_text = I18n.t("TIP_PEOPLE") + (("\n" + fmt("TIP_PEOPLE_OVER", {"n": homeless})) if homeless > 0 else "") \
+			+ (("\n" + fmt("TIP_PEOPLE_SICK", {"n": sick})) if sick > 0 else "")
 	var hr := sim.local_hour()
 	# Círculo que enche durante o período (dia ou noite); o horário e quanto falta vão na dica.
 	var nf: float = float(sim.bal["time"]["night_from_h"])
@@ -949,6 +951,10 @@ func show_welcome(summary: Dictionary) -> void:
 		_card_box.add_child(_row([_icon_rect("martelo"), _label(fmt("UI_AWAY_BUILT", {"n": int(summary["built"])}))]))
 	if int(summary.get("joined", 0)) > 0:
 		_card_box.add_child(_row([_icon_rect("pessoa"), _label(fmt("UI_AWAY_JOINED", {"n": int(summary["joined"])}), C_GOOD)]))
+	if int(summary.get("left", 0)) > 0:
+		_card_box.add_child(_row([_icon_rect("saude"), _label(fmt("UI_AWAY_LEFT", {"n": int(summary["left"])}), C_WARN)]))
+	if int(summary.get("sick", 0)) > 0:
+		_card_box.add_child(_row([_icon_rect("saude"), _label(fmt("UI_AWAY_SICK", {"n": int(summary["sick"])}), C_WARN)]))
 	if int(summary.get("fogs", 0)) > 0:
 		_card_box.add_child(_row([_icon_rect("lua"), _label(fmt("UI_AWAY_FOG", {"n": int(summary["fogs"])}), C_MUTED)]))
 	if int(summary.get("radio", 0)) > 0:
@@ -1373,6 +1379,11 @@ func _card_person() -> void:
 	var em := float(p.get("eat_mult", 1.0))
 	if em > 1.0:
 		_card_box.add_child(_stats([_stat("comida", "+%d%%" % int(round((em - 1.0) * 100.0)), fmt("TIP_EATS_MORE", {"n": int(round((em - 1.0) * 100.0))}), C_WARN)]))
+	# Saúde: só aparece quando não está bem (fraca, doente, grave).
+	var hs := sim.health_state(p)
+	if hs != "ok":
+		var hv := int(ceil(float(p["health"])))
+		_card_box.add_child(_stats([_stat("saude", "%d" % hv, fmt("TIP_HEALTH_" + hs, {"h": hv}), C_AMBER if hs == "weak" else C_WARN)]))
 	if p["hungry"]:
 		_card_box.add_child(_row([_icon_rect("comida"), _icon_rect("alerta"), _label(I18n.t("UI_HUNGRY"), C_WARN)]))
 	if p["thirsty"]:
@@ -1402,6 +1413,8 @@ func _doing_text(p: Dictionary) -> String:
 			return I18n.t("DO_sleep")
 		"to_bed":
 			return I18n.t("DO_to_bed")
+		"rest":
+			return I18n.t("DO_rest")
 		"move":
 			return I18n.t("DO_move")
 	return I18n.t("DO_idle")

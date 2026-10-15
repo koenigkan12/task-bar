@@ -97,6 +97,8 @@ func _make_hud() -> void:
 		if not b.is_empty() and String(b["type"]) != "torre":
 			hud.toast(hud.fmt("UI_DONE", {"b": hud.bname(String(b["type"]), int(b["level"]))})))
 	sim.fog_started.connect(func() -> void: hud.toast(I18n.t("UI_FOG_START")))
+	sim.person_grave.connect(func(id: int) -> void: hud.toast(hud.fmt("UI_GRAVE", {"name": hud.pname(sim.person(id))})))
+	sim.person_left.connect(func(nm: String) -> void: hud.toast(hud.fmt("UI_LEFT", {"name": nm})))
 	sim.fog_ended.connect(func() -> void: hud.toast(hud.fmt("UI_FOG_END", {"pct": int(round(float(sim.bal["fog"]["food_bonus"]) * 100.0))})))
 	sim.group_arrived.connect(func() -> void: hud.toast(hud.fmt("UI_GATE_BADGE", {"n": sim.gate_group.size()})))
 	sim.radio.connect(func(l: Dictionary) -> void:
