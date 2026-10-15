@@ -372,3 +372,8 @@ WHY_skill,"É bom nisso.","Good at this."
 WHY_need,"Está faltando {r}.","Short on {r}."
 WHY_free,"Onde mais ajuda agora.","Where it helps most right now."
 WHY_order,"Você mandou.","You sent them."
+UI_FOG,Névoa de pólen,Pollen fog
+TIP_FOG,"Noite de névoa de pólen: ninguém sai de casa. Quem dorme sem cama acorda cansado.","Pollen fog night: nobody goes out. Anyone sleeping without a bed wakes up tired."
+UI_FOG_WARN,"O vento está trazendo pólen: hoje à noite vem névoa. Quem não tiver cama vai passar mal.","The wind is bringing pollen: fog tonight. Anyone without a bed will feel it."
+UI_FOG_START,"Névoa de pólen! Todo mundo para dentro até amanhecer.","Pollen fog! Everyone inside until dawn."
+UI_FOG_END,"A névoa baixou e o pólen adubou a terra: hortas +{pct}% hoje.","The fog settled and the pollen fed the soil: gardens +{pct}% today."

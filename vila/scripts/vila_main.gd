@@ -96,6 +96,8 @@ func _make_hud() -> void:
 		var b := sim.by_id(id)
 		if not b.is_empty() and String(b["type"]) != "torre":
 			hud.toast(hud.fmt("UI_DONE", {"b": hud.bname(String(b["type"]), int(b["level"]))})))
+	sim.fog_started.connect(func() -> void: hud.toast(I18n.t("UI_FOG_START")))
+	sim.fog_ended.connect(func() -> void: hud.toast(hud.fmt("UI_FOG_END", {"pct": int(round(float(sim.bal["fog"]["food_bonus"]) * 100.0))})))
 	sim.group_arrived.connect(func() -> void: hud.toast(hud.fmt("UI_GATE_BADGE", {"n": sim.gate_group.size()})))
 	sim.radio.connect(func(l: Dictionary) -> void:
 		if hud != null and not sim.offline:
@@ -283,6 +285,8 @@ func _open_test_card() -> void:
 				cam.position = Vector2(Vector2i(pr["cell"])) * 16.0 + Vector2(90, 24)
 				_clamp_cam()
 		"radio": hud.show_radio()
+		"fog":   # capturas: noite de névoa de pólen
+			sim.fog_now = true
 		"tired":   # capturas: todo mundo com 2 noites viradas
 			for p in sim.people:
 				p["tired"] = 2
@@ -473,6 +477,9 @@ func _unhandled_input(ev: InputEvent) -> void:
 		return
 	if ev is InputEventMouseButton:
 		var mb := ev as InputEventMouseButton
+		var wheel := mb.button_index == MOUSE_BUTTON_WHEEL_UP or mb.button_index == MOUSE_BUTTON_WHEEL_DOWN
+		if wheel and (hud.mouse_over_ui(mb.position) or get_viewport().gui_get_hovered_control() != null):
+			return   # rolando dentro de um painel (lista no fim, por exemplo): o mapa não dá zoom junto
 		if mb.pressed and mb.button_index == MOUSE_BUTTON_WHEEL_UP:
 			_set_zoom(_zoom_i + 1, mb.position)
 		elif mb.pressed and mb.button_index == MOUSE_BUTTON_WHEEL_DOWN:

@@ -110,6 +110,14 @@
   "rest_nights_per_tired": 2,
   "no_bed_rest": 0.5
  },
+ "fog": {
+  "from_day": 3,
+  "chance": 0.25,
+  "no_bed_tired": 1,
+  "food_bonus": 0.25,
+  "bonus_s": 1125,
+  "warn_h": 3
+ },
  "demolish_refund": 0.5,
  "storage": {
   "hatch_cap": 20
@@ -118,6 +126,7 @@
   "speed_tiles_s": 2.4,
   "skill_pref": 3.0,
   "critical_stock": 6.0,
+  "site_wait_s": 90,
   "carry": 4,
   "eat_every_s": 240,
   "drink_every_s": 200,

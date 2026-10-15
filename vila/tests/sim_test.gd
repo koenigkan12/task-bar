@@ -156,6 +156,28 @@ func _init() -> void:
 	_check(int(jq["tired"]) == 1, "1 noite de descanso ainda não recupera")
 	sim.advance(cyc)
 	_check(int(jq["tired"]) == 0 and sim.rest_mult(jq) == 1.0, "2 noites de descanso recuperam a produção normal")
+	# Névoa de pólen: avisada de dia, ninguém vira a noite, sem cama acorda cansado, e a horta rende mais depois.
+	var fz := VilaSim.new()
+	fz.setup(bal, start, 0)
+	fz.set_cycle_hour(17.0)
+	fz.fog_next = true
+	var nobed: Dictionary = fz._add_person("Sem Cama", 0, [], Vector2i(fz.bal["map"]["hatch"][0], fz.bal["map"]["hatch"][1]) + Vector2i(0, 2))
+	fz._assign_homes()
+	var fm0 := fz.food_mult()
+	var guard := 0
+	while not fz.is_night() and guard < 2000:
+		fz.advance(5.0)
+		guard += 1
+	fz.advance(5.0)
+	fz.set_work_tonight(true)
+	_check(fz.fog_now and not fz.work_tonight, "névoa: chega com a noite e ninguém vira a noite")
+	guard = 0
+	while fz.is_night() and guard < 4000:
+		fz.advance(5.0)
+		guard += 1
+	fz.advance(5.0)
+	_check(not fz.fog_now and int(nobed["tired"]) >= 1 and fz.home_of(nobed) < 0, "névoa: quem dormiu sem cama acorda cansado")
+	_check(fz.food_mult() > fm0, "névoa: depois dela a horta rende mais")
 	# Desmontar: libera o chão, devolve metade e não deixa mexer no bunker nem na torre.
 	var pc: Dictionary = sim._first("poco")
 	var cell0: Vector2i = pc["cell"]
@@ -284,6 +306,24 @@ func _test_orders() -> void:
 	sim._m_urg.clear()
 	var pj := sim._pick_job(jo)
 	_check(String(pj.get("res", "")) == "agua" and String(pj.get("why", "")) == "skill", "habilidade: bom em água prefere o poço (%s)" % str(pj))
+	# Obra nova: vai quem é bom de obra; o bom em água fica no poço.
+	var bq: Dictionary = sim._add_person("Teste", 0, [{"id": "obra", "rar": "rara"}], Vector2i(cell) + Vector2i(0, 3))
+	var c2 := AutoPlayer.spot(sim, "poco")
+	sim.stock["madeira"] = 50.0
+	sim.stock["sucata"] = 50.0
+	sim.build("poco", c2)
+	sim._m_urg.clear()
+	var pj_w := sim._pick_job(jo)
+	var pj_b := sim._pick_job(bq)
+	_check(String(pj_b.get("kind", "")) == "build" and String(pj_w.get("kind", "")) != "build", "obra: vai quem é bom de obra, o da água fica (%s / %s)" % [str(pj_b), str(pj_w)])
+	sim.demolish(-1)
+	for b2 in sim.buildings.duplicate():
+		if String(b2["state"]) == "site":
+			sim._mark(b2, false)
+			sim.buildings.erase(b2)
+	sim.people.erase(bq)
+	sim._invalidate()
+	sim._rebuild_astar()
 	jo["passives"] = old_pas
 	sim.stock["comida"] = 0.0
 	sim.stock["agua"] = 0.0

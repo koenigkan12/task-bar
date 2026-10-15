@@ -12,6 +12,8 @@ signal person_joined(id: int)
 signal group_arrived                               # um grupo de 3 chegou ao portão
 signal harvested(id: int, res: String, amount: int) # alguém entregou no depósito (para o "+N")
 signal site_started(id: int)                       # obra nova, melhoria ou torre começou (som de martelo)
+signal fog_started                                 # noite de névoa de pólen começou
+signal fog_ended                                   # amanheceu depois da névoa (hortas rendem mais)
 signal merchant_arrived                            # o mercador chegou à praça
 signal merchant_left(sold: Dictionary)             # foi embora (o que vendeu sozinho, se a venda automática estava ligada)
 signal radio(line: Dictionary)                     # uma fala do rádio chegou: {id, speaker, text_key, cue, kind}
@@ -30,6 +32,9 @@ var t: float = 0.0
 var tz_bias_s: int = 0
 var cycle_t0: float = 0.0       # relógio da vila: instante em que o ciclo marcou 0h (balance "night.cycle_s")
 var work_tonight: bool = false  # "virar a noite": vale só para a noite atual
+var fog_next: bool = false      # a próxima noite vem com névoa de pólen (avisado durante o dia)
+var fog_now: bool = false       # esta noite tem névoa: ninguém sai, quem dorme sem cama passa mal
+var fog_bonus_until: float = 0.0   # depois da névoa o pólen aduba a terra: hortas rendem mais até aqui
 var _was_night: bool = false
 var start_t: float = 0.0       # quando a vila começou (para o "Dia N")          # fuso local em segundos (a vista põe o do sistema; os testes fixam)
 var stock: Dictionary = {}
@@ -48,6 +53,7 @@ var stats: Dictionary = {"commons_in_row": 0, "joined": 0, "built": 0}
 var offline: bool = false        # durante o alcance offline: produção e consumo pela fração
 var _next_id: int = 1
 var _astar: AStarGrid2D
+var _m_builders := -1     # cache por passo: quantos bons de obra estão livres
 var _day_flow := {}       # ritmo de cada recurso no último trecho de dia (de noite ninguém trabalha nem come)
 var _day_flow_t := 0.0
 var _reach_main := {}   # células alcançáveis a pé da escotilha (cache; vazio = refazer)
@@ -517,6 +523,8 @@ func rest_mult(p: Dictionary) -> float:
 
 ## Liga ou desliga "virar a noite". Ligando de noite, quem estava dormindo levanta.
 func set_work_tonight(on: bool) -> void:
+	if on and fog_now:
+		return   # névoa de pólen: ninguém sai
 	work_tonight = on
 	if on:
 		for p in people:
@@ -534,12 +542,31 @@ func _night_end() -> void:
 		if work_tonight:
 			p["tired"] = int(p["tired"]) + 1
 			p["rest"] = 0.0
+		elif fog_now and home_of(p) < 0:
+			p["tired"] = int(p["tired"]) + int(bal["fog"]["no_bed_tired"])   # dormiu no pólen
+			p["rest"] = 0.0
 		elif int(p["tired"]) > 0:
 			p["rest"] = float(p["rest"]) + (1.0 if home_of(p) >= 0 else float(nb["no_bed_rest"]))
 			if float(p["rest"]) >= float(nb["rest_nights_per_tired"]) - 0.001:
 				p["rest"] = 0.0
 				p["tired"] = int(p["tired"]) - 1
 	work_tonight = false
+	if fog_now:
+		fog_now = false
+		fog_bonus_until = t + float(bal["fog"]["bonus_s"])
+		fog_ended.emit()
+	var fb: Dictionary = bal["fog"]
+	fog_next = day_number() + 1 >= int(fb["from_day"]) and _rng.randf() < float(fb["chance"])
+
+
+## Começo da noite: se era noite de névoa, ela chega (e cancela o "virar a noite").
+func _night_start() -> void:
+	if not fog_next:
+		return
+	fog_next = false
+	fog_now = true
+	work_tonight = false
+	fog_started.emit()
 
 
 ## Dias da vila (ciclo de ~25 min), virando a cada amanhecer. Antes contava dias de verdade do
@@ -997,6 +1024,8 @@ func perk_bonus(id: String) -> float:
 ## Comida rende mais com cozinha pronta e com as sementes do mercador.
 func food_mult() -> float:
 	var m := 1.0 + perk_bonus("sementes")
+	if t < fog_bonus_until:
+		m += float(bal["fog"]["food_bonus"])
 	for b in buildings:
 		if _working(b):
 			m += float(level_def(b).get("food_bonus", def(String(b["type"])).get("food_bonus", 0.0)))
@@ -1067,7 +1096,19 @@ func _pick_job(p: Dictionary) -> Dictionary:
 			sites.append(b)
 	sites.sort_custom(func(a: Dictionary, c: Dictionary) -> bool: return float(a["queued_t"]) < float(c["queued_t"]))
 	if not sites.is_empty():
-		return {"kind": "build", "b": int(sites[0]["id"]), "why": "build"}
+		# Quem é bom de obra vai para a obra; os outros só pegam se não tem construtor bom livre
+		# para cada obra, ou se a obra já espera há muito tempo.
+		var mine := bonus(p, "build") > 1.0
+		if _m_builders < 0:   # construtores bons livres (conta uma vez por passo)
+			_m_builders = 0
+			for q in people:
+				if bonus(q, "build") > 1.0 and String(q["job"].get("kind", "")) != "build" \
+						and not bool(q["job"].get("manual", false)) and not q["asleep"]:
+					_m_builders += 1
+		var builders := _m_builders
+		var wait: float = float(bal["people"].get("site_wait_s", 90.0))
+		if mine or sites.size() > builders or t - float(sites[0]["queued_t"]) > wait:
+			return {"kind": "build", "b": int(sites[0]["id"]), "why": "skill" if mine else "build"}
 	var best := {}
 	var best_v := 0.0
 	# Entulho ou árvore marcados pelo jogador são ordem: vão na frente de tudo menos obra
@@ -1444,9 +1485,12 @@ func _secs_to_morning() -> float:
 func _step(dt: float) -> void:
 	t += dt
 	_m_urg.clear()   # o estoque muda a cada passo; limite e camas só mudam com prédio (_invalidate)
+	_m_builders = -1
 	var night := is_night()
 	if _was_night and not night:
 		_night_end()
+	elif night and not _was_night:
+		_night_start()
 	_was_night = night
 	night = night and not work_tonight   # virando a noite: todo mundo segue como se fosse dia
 	if not night:
@@ -2465,7 +2509,8 @@ func to_dict() -> Dictionary:
 			"stats": stats, "next_id": _next_id, "group_t": _group_ready_t, "story": _story_done.keys(),
 			"rng": _rng.state, "tower_t": tower_t, "perks": perks, "merchant": merchant, "auto_sell": auto_sell, "auto_pick": auto_pick,
 			"radio": radio_heard, "ela_t": ela_t, "merchant_key": _merchant_key,
-			"cycle_t0": cycle_t0, "work_tonight": work_tonight}
+			"cycle_t0": cycle_t0, "work_tonight": work_tonight, "fog_next": fog_next, "fog_now": fog_now,
+			"fog_bonus_until": fog_bonus_until}
 
 
 func from_dict(d: Dictionary, balance: Dictionary, tz_bias: int = 0) -> void:
@@ -2550,6 +2595,9 @@ func from_dict(d: Dictionary, balance: Dictionary, tz_bias: int = 0) -> void:
 	else:
 		set_cycle_hour(float(bal["night"]["start_hour"]))   # save antigo: começa de manhã
 	work_tonight = bool(d.get("work_tonight", false))
+	fog_next = bool(d.get("fog_next", false))
+	fog_now = bool(d.get("fog_now", false))
+	fog_bonus_until = float(d.get("fog_bonus_until", 0.0))
 	_was_night = is_night()
 	_lines_dirty = true
 	_invalidate()

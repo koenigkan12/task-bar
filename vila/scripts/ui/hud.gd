@@ -56,6 +56,7 @@ var _toast: Label
 var _toast_t: float = 0.0
 var _tip: Label
 var _night_btn: Button
+var _fog_warned := -1
 var _refresh_acc: float = 0.0
 var handle: WindowHandle
 var build_btn: Button
@@ -649,9 +650,18 @@ func refresh() -> void:
 		_goal_btn.tooltip_text = gt
 	var nb: Dictionary = sim.bal["night"]
 	_night_btn.visible = sim.is_night() or sim.work_tonight
-	_night_btn.text = I18n.t("UI_NIGHT_ON") if sim.work_tonight else I18n.t("UI_NIGHT_OFF")
+	_night_btn.disabled = sim.fog_now
+	_night_btn.text = I18n.t("UI_FOG") if sim.fog_now else (I18n.t("UI_NIGHT_ON") if sim.work_tonight else I18n.t("UI_NIGHT_OFF"))
 	_night_btn.add_theme_color_override("font_color", C_WARN if sim.work_tonight else C_TEXT)
-	_set_tip(_night_btn, fmt("TIP_NIGHT", {"pen": int(round(float(nb["tired_penalty"]) * 100.0)), "rest": int(nb["rest_nights_per_tired"])}))
+	if sim.fog_now:
+		_set_tip(_night_btn, I18n.t("TIP_FOG"))
+	else:
+		_set_tip(_night_btn, fmt("TIP_NIGHT", {"pen": int(round(float(nb["tired_penalty"]) * 100.0)), "rest": int(nb["rest_nights_per_tired"])}))
+	# Aviso da névoa no fim da tarde (uma vez por dia): dá tempo de fazer cama para todo mundo.
+	var to_night := fposmod(float(sim.bal["time"]["night_from_h"]) - sim.local_hour(), 24.0)
+	if sim.fog_next and not sim.is_night() and to_night < float(sim.bal["fog"].get("warn_h", 3.0)) and _fog_warned != sim.day_number():
+		_fog_warned = sim.day_number()
+		toast(I18n.t("UI_FOG_WARN"))
 	_gate_btn.visible = not sim.gate_group.is_empty()
 	_gate_btn.text = fmt("UI_GATE_BADGE", {"n": sim.gate_group.size()})
 	_gate_btn.size = Vector2(10, 14)

@@ -18,6 +18,9 @@ var _flies: VilaFireflies
 var _fly_layer: CanvasLayer
 var _smokes: Array = []             # {p: CPUParticles2D, base: Vector2}
 var _sparks: Array = []             # {p: CPUParticles2D, b: id}
+var _pollen: CPUParticles2D          # névoa de pólen: grãos amarelos boiando (na camada sem escuro)
+var _haze: ColorRect                 # véu amarelado na tela inteira durante a névoa
+var _fog := 0.0                      # 0 sem névoa .. 1 névoa cheia (entra e sai devagar)
 
 
 func setup(world_size: Vector2) -> void:
@@ -71,6 +74,29 @@ func setup(world_size: Vector2) -> void:
 	_flies = VilaFireflies.new()
 	_flies.setup(world_size)
 	_fly_layer.add_child(_flies)
+	_pollen = _emitter(320, 9.0)
+	_pollen.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+	_pollen.emission_rect_extents = world_size / 2.0 + Vector2(120, 120)
+	_pollen.position = world_size / 2.0
+	_pollen.direction = Vector2(1, -0.2)
+	_pollen.spread = 40.0
+	_pollen.gravity = Vector2(3, -1)
+	_pollen.initial_velocity_min = 2.0
+	_pollen.initial_velocity_max = 7.0
+	_pollen.scale_amount_min = 1.0
+	_pollen.scale_amount_max = 2.0
+	_pollen.color_ramp = _fade(Color(0.9, 0.8, 0.45, 0.85), 0.2, 0.75)
+	_pollen.emitting = false
+	_pollen.preprocess = 4.0
+	_fly_layer.add_child(_pollen)
+	var hl := CanvasLayer.new()
+	hl.layer = 1
+	add_child(hl)
+	_haze = ColorRect.new()
+	_haze.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_haze.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_haze.color = Color(0.78, 0.67, 0.36, 0.0)
+	hl.add_child(_haze)
 
 
 func _emitter(amount: int, life: float) -> CPUParticles2D:
@@ -185,7 +211,11 @@ func update_fx(delta: float, sim: VilaSim, night_k: float) -> void:
 	_dust.emitting = wind > 0.65 and night_k < 0.5
 	_streaks.emitting = wind > 0.55
 	_dust.gravity = Vector2(wind * 20.0, 0)
-	_flies.level = clampf((night_k - 0.4) / 0.4, 0.0, 1.0)
+	_fog = move_toward(_fog, 1.0 if sim.fog_now else 0.0, delta * 0.15)
+	_pollen.emitting = _fog > 0.05
+	_pollen.gravity = Vector2(3.0 + wind * 14.0, -1.0)
+	_haze.color.a = _fog * 0.22
+	_flies.level = clampf((night_k - 0.4) / 0.4, 0.0, 1.0) * (1.0 - _fog)   # na névoa os vaga-lumes somem
 	# Prédio desmontado leva o nó junto: confere antes de pôr numa variável tipada (dava erro).
 	_smokes = _smokes.filter(func(e: Dictionary) -> bool: return is_instance_valid(e["p"]))
 	for e in _smokes:
