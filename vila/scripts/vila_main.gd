@@ -259,6 +259,15 @@ func _open_test_card() -> void:
 						best = cc
 			_test_cell = best
 		"options": _show_options()
+		"port":   # capturas: o porto e o farol
+			var gp := sim._first("gate")
+			if Game.args.has("lit"):   # cama sobrando: farol aceso
+				sim.stock["madeira"] = 99.0
+				sim.stock["sucata"] = 99.0
+				sim.build("moradia", AutoPlayer.spot(sim, "moradia"))
+				sim._finish(sim.buildings[sim.buildings.size() - 1])
+			cam.position = Vector2(Vector2i(gp["cell"])) * 16.0 + Vector2(40, 10)
+			_clamp_cam()
 		"merchant_boat":   # capturas: o barco do mascate chegando (a animação começa agora)
 			world._m_seen = true
 			sim._merchant_arrive(sim.t + 1800.0)

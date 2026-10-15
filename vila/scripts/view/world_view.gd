@@ -16,6 +16,7 @@ var ghost_type: String = ""          # prédio sendo posicionado ("" = nenhum)
 var ghost_cell: Vector2i = Vector2i(-1, -1)
 
 var _ground: Sprite2D
+var _water: VilaWater                  # ondas, vento, peixe e o farol do porto
 var _boat: Sprite2D                     # bote no porto enquanto tem gente esperando para entrar
 const ICON_FRAMES := 21                 # icons.png: 21 ícones de 8 px
 var _objects: Node2D
@@ -76,6 +77,9 @@ func setup(s: VilaSim) -> void:
 	_modulate = CanvasModulate.new()
 	add_child(_modulate)
 	_terrain_cache = PackedByteArray()
+	_water = VilaWater.new()
+	add_child(_water)
+	_water.setup(sim, tex("farol"), _objects)
 	_boat = Sprite2D.new()
 	_boat.texture = tex("bote")
 	_boat.centered = false
@@ -543,6 +547,7 @@ func _process(delta: float) -> void:
 	_sync_people(delta)
 	_sync_boat()
 	_update_light()
+	_water.update_water(delta, _night_k)
 	_fx.update_fx(delta, sim, _night_k)
 	if _zone_level != sim.tower:
 		_zone_level = sim.tower

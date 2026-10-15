@@ -24,6 +24,10 @@
    20,
    33
   ],
+  "lighthouse": [
+   28,
+   34
+  ],
   "ring_rubble": 0.16,
   "outer_rubble": 0.05,
   "open_radius": {

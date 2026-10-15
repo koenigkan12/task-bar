@@ -394,6 +394,20 @@ def banca():
     return im
 
 
+def farol():
+    """O farol perto do porto (sprite à parte, não vai no chão): quadro 0 com a lâmpada acesa, 1 apagada.
+    Aceso = tem cama livre (o jogo gira o facho de luz)."""
+    on = peca('farol_ilhota')
+    off = on.copy()
+    px = off.load()
+    for y in range(off.height):
+        for x in range(off.width):
+            r, g, b, a = px[x, y]
+            if a and (r, g, b) in (Y, CR) and y < 20:
+                px[x, y] = LI + (a,) if (r, g, b) == Y else LC + (a,)
+    return folha([on, off], on.width, on.height)
+
+
 # ---------------------------------------------------------------- chão da ilha
 def chao_ilha(rows, seed=3):
     import numpy as np
@@ -487,9 +501,10 @@ def chao_ilha(rows, seed=3):
     out = Image.fromarray(im, 'RGB').convert('RGBA')
     # naufrágios e enfeites na água (só desenho), longe da ilha
     lugares = []
-    for nome in ('farol_ilhota', 'mastro_afundado', 'veleiro_virado', 'boia_1', 'boia_2', 'boia_1', 'mastro_afundado'):
+    for nome in ('mastro_afundado', 'veleiro_virado', 'boia_1', 'boia_2', 'boia_1', 'mastro_afundado',
+                 'barril', 'pneus', 'caixa_e_chapa', 'veleiro_virado', 'barril', 'boia_2', 'pneus', 'caixa_e_chapa'):
         s = peca(nome)
-        if nome == 'mastro_afundado' and lugares.count(nome) == 1:
+        if nome in ('mastro_afundado', 'veleiro_virado', 'pneus') and lugares.count(nome) == 1:
             s = s.transpose(Image.FLIP_LEFT_RIGHT)
         for _ in range(4000):
             x, y = R.randrange(8, W - s.width - 8), R.randrange(8, H - s.height - 8)
@@ -508,7 +523,7 @@ def chao_ilha(rows, seed=3):
 
 # ---------------------------------------------------------------- tudo
 TROCA = {'tree': arvores, 'tree_sombra': sombra_arvore, 'stump': toco, 'rubble': entulho,
-         'fogueira': fogueira, 'bote': bote, 'barco_mascate': barco_mascate, 'banca': banca,
+         'fogueira': fogueira, 'bote': bote, 'barco_mascate': barco_mascate, 'banca': banca, 'farol': farol,
          'hatch': lambda: peca('bunker'), 'moradia_1': lambda: peca('barraca'), 'gate': lambda: peca('pier')}
 MANTER = ('icons', 'light', 'ghost_ok', 'ghost_bad', 'selecao', 'ui_button', 'ui_button_off', 'ui_panel',
           'ground', 'person_sleep')
