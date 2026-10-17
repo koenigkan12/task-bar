@@ -1,6 +1,7 @@
 {
  "_comment": "Todo o balanceamento da vila. Tempos em segundos reais (o jogo usa o relógio real). Torre 1 a 5; números de partida.",
  "map": {
+  "building_walk_cost": 30,
   "w": 44,
   "h": 38,
   "seed": 7,

@@ -45,20 +45,35 @@ func _init() -> void:
 	sc.setup(bal, start, 0)
 	sc.stock["madeira"] = 999.0
 	sc.stock["sucata"] = 999.0
-	var cut_seen := false
 	for i in range(1, pth.size() - 1):
 		var pc := Vector2i(pth[i])
 		for ty in ["poco", "deposito", "moradia"]:
 			var why := sc.place_reason(ty, pc)
-			cut_seen = cut_seen or why == "cuts"
 			if why == "" and sc.unlocked(ty) and not sc.at_limit(ty):
 				sc.build(ty, pc)
 	sc._rebuild_astar()
-	_check(not sc._path(Vector2(from), hd).is_empty(), "porto: construir na trilha nunca fecha o caminho%s" % (" (bloqueou %s)" % "cuts" if cut_seen else ""))
-	# Corredor: prédio grande não cola em outro (uma célula livre em volta).
-	var tent: Dictionary = sc._first("moradia")
-	_check(sc.place_reason("poco", Vector2i(tent["cell"]) + Vector2i(-2, 0)) == "tight", "prédio colado em outro não pode (corredor de 1 célula)")
-	_check(sc.place_reason("deco_vaso", Vector2i(tent["cell"]) + Vector2i(-1, 0)) != "tight", "enfeite pode encostar")
+	_check(not sc._path(Vector2(from), hd).is_empty(), "porto: construir na trilha nunca fecha o caminho")
+	# Prédio encosta em prédio: só a sobreposição de casas bloqueia, e o pessoal ainda chega.
+	var sa := VilaSim.new()
+	sa.setup(bal, start, 0)
+	sa.stock["madeira"] = 999.0
+	sa.stock["sucata"] = 999.0
+	var pfp := sa._fp("poco")
+	var spot := Vector2i(-1, -1)
+	for y in sa.h:
+		for x in sa.w:
+			var c0 := Vector2i(x, y)
+			if spot.x < 0 and sa.place_reason("poco", c0) == "" and sa.place_reason("poco", c0 + Vector2i(pfp.x, 0)) == "" and sa.place_reason("poco", c0 + Vector2i(0, pfp.y)) == "":
+				spot = c0
+	_check(spot.x >= 0, "achou lugar para três poços colados")
+	if spot.x >= 0:
+		sa.build("poco", spot)
+		_check(sa.place_reason("poco", spot + Vector2i(pfp.x, 0)) == "", "prédio colado do lado pode")
+		_check(sa.place_reason("poco", spot + Vector2i(0, pfp.y)) == "", "prédio colado embaixo pode")
+		_check(sa.place_reason("poco", spot) == "busy", "em cima de outro prédio não pode")
+		sa.build("poco", spot + Vector2i(0, pfp.y))
+		sa._rebuild_astar()
+		_check(not sa._path(Vector2(sa._hatch_door()), sa._door(sa._first("poco"))).is_empty(), "prédio cercado: o pessoal ainda chega na porta")
 	# Sem caminho até o alvo: não trabalha de longe, larga a tarefa.
 	var sw := VilaSim.new()
 	sw.setup(bal, start, 0)

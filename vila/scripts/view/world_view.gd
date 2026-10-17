@@ -881,11 +881,10 @@ func _draw_overlay() -> void:
 		var t_ok := tex("ghost_ok")
 		var t_bad := tex("ghost_bad")
 		var bt := tex(_btex_name({"type": ghost_type, "level": ghost_level, "state": "built"}))
-		var cuts := sim.place_reason(ghost_type, ghost_cell) in ["cuts", "tight"]   # fecharia caminho ou colado: tudo vermelho
 		for dy in fp2.y:
 			for dx in fp2.x:
 				var gc := ghost_cell + Vector2i(dx, dy)
-				var t := t_ok if sim.cell_ok(gc, ghost_type) and not cuts else t_bad
+				var t := t_ok if sim.cell_ok(gc, ghost_type) else t_bad
 				if t != null:
 					_overlay.draw_texture(t, Vector2(gc) * TILE)
 		if bt != null:
@@ -893,13 +892,6 @@ func _draw_overlay() -> void:
 			var src := Rect2(0, 0, bt.get_width() / (4 if ghost_type == "fogueira" else 1), bt.get_height())
 			var gx := roundi((fp2.x * TILE - src.size.x) / 2.0)
 			_overlay.draw_texture_rect_region(bt, Rect2(bottom + Vector2(gx, -src.size.y), src.size), src, Color(1, 1, 1, 0.6))
-		# porta: onde as pessoas vão parar
-		var dc := sim.door_for(ghost_type, ghost_cell)
-		if dc.x >= 0:
-			_overlay.draw_rect(Rect2(Vector2(dc) * TILE + Vector2(5, 5), Vector2(6, 6)), Color(1, 1, 1, 0.35), false)
-		else:
-			# todo cercado: contorno vermelho em volta, ninguém conseguiria chegar
-			_overlay.draw_rect(Rect2(Vector2(ghost_cell) * TILE - Vector2(1, 1), Vector2(fp2) * TILE + Vector2(2, 2)), Color(1, 0.3, 0.3, 0.9), false)
 	# Entulho marcado para limpar: colchetes âmbar e um martelo
 	var mk := tex("icons")
 	for c in sim.marked:

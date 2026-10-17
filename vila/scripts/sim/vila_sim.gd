@@ -377,7 +377,7 @@ func _walkable_door(c: Vector2i, cell: Vector2i, fp: Vector2i) -> bool:
 
 
 ## Motivo de não dar para construir ali ("" = pode): o primeiro problema achado, para o jogo dizer
-## na hora junto do cursor. out = fora da área limpa, tree, rubble, busy = outro prédio, road, closed = sem lado livre.
+## na hora junto do cursor. out = fora da área limpa, tree, rubble, busy = outro prédio, road.
 func place_reason(type: String, cell: Vector2i) -> String:
 	var fp := _fp(type)
 	for dy in fp.y:
@@ -396,75 +396,12 @@ func place_reason(type: String, cell: Vector2i) -> String:
 				return "out"
 			if k != T_GROUND and k != T_STUMP:
 				return "road"
-	if bool(def(type).get("open", false)):
-		return ""
-	if door_for(type, cell).x < 0:
-		return "closed"
-	if _too_tight(type, cell):
-		return "tight"
-	if _cuts_port(type, cell):
-		return "cuts"
 	return ""
-
-
-## Prédio grande precisa de uma célula livre em volta (corredor para o pessoal passar e a vila
-## respirar). Fogueira, enfeites e a praça (que se anda por cima) não contam.
-func _spaced(type: String) -> bool:
-	var d := def(type)
-	return _fp(type) != Vector2i(1, 1) and not bool(d.get("open", false)) and not bool(d.get("walkable", false)) and not bool(d.get("deco", false))
-
-
-func _too_tight(type: String, cell: Vector2i) -> bool:
-	if not _spaced(type):
-		return false
-	var fp := _fp(type)
-	for dy in range(-1, fp.y + 1):
-		for dx in range(-1, fp.x + 1):
-			var c := cell + Vector2i(dx, dy)
-			if not _inside(c) or occ[_i(c)] < 0:
-				continue
-			var ob := by_id(occ[_i(c)])
-			if not ob.is_empty() and _spaced(String(ob["type"])):
-				return true
-	return false
 
 
 func _hatch_door() -> Vector2i:
 	var hb := _first("hatch")
 	return Vector2i(-1, -1) if hb.is_empty() else _door(hb)
-
-
-## O prédio ali deixaria alguém sem chegar (o porto, a porta de outro prédio ou a dele mesmo)?
-## Conta só o que hoje dá para alcançar a partir da escotilha.
-func _cuts_port(type: String, cell: Vector2i) -> bool:
-	if _first("hatch").is_empty() or _astar == null or bool(def(type).get("open", false)):
-		return false
-	var doors0: Array[Vector2i] = []
-	for b in buildings:
-		doors0.append(_door(b))
-	var reach0 := _reach(_hatch_door())
-	var fp := _fp(type)
-	var was: Array[Vector2i] = []
-	for dy in fp.y:
-		for dx in fp.x:
-			var c := cell + Vector2i(dx, dy)
-			if _inside(c) and occ[_i(c)] < 0:
-				occ[_i(c)] = 1 << 30   # ocupado de mentira, só para a conta
-				was.append(c)
-				if not _astar.is_point_solid(c):
-					_astar.set_point_solid(c, true)
-	var reach1 := _reach(_hatch_door())
-	var cut := not reach1.has(door_for(type, cell))
-	for i in buildings.size():
-		if cut:
-			break
-		if reach0.has(doors0[i]) and not reach1.has(_door(buildings[i])):
-			cut = true
-	for c in was:
-		occ[_i(c)] = -1
-		var k := terrain[_i(c)]
-		_astar.set_point_solid(c, k == T_TREE or k == T_RUBBLE or k == T_WATER)
-	return cut
 
 
 ## Fechar a célula c não separa nada? Os vizinhos livres dela continuam ligados entre si por um
@@ -860,7 +797,7 @@ func can_place(type: String, cell: Vector2i) -> bool:
 				return false
 	if bool(def(type).get("open", false)):   # muro e mina: gente passa por cima, não precisa de porta
 		return true
-	return door_for(type, cell).x >= 0 and not _too_tight(type, cell) and not _cuts_port(type, cell)
+	return true   # prédio pode encostar em prédio: só a sobreposição de casas bloqueia
 
 
 func tower_next() -> Dictionary:
@@ -1245,8 +1182,11 @@ func _rebuild_astar() -> void:
 			var c := Vector2i(x, y)
 			var k := terrain[_i(c)]
 			var o := occ[_i(c)]
-			if (o >= 0 and not bool(def(String(by_id(o).get("type", ""))).get("open", false))) or k == T_TREE or k == T_RUBBLE or k == T_WATER:
+			if k == T_TREE or k == T_RUBBLE or k == T_WATER:
 				_astar.set_point_solid(c, true)
+			elif o >= 0 and not bool(def(String(by_id(o).get("type", ""))).get("open", false)):
+				# Prédio não fecha caminho: o pessoal contorna e, se estiver cercado, passa por dentro.
+				_astar.set_point_weight_scale(c, float(bal["map"].get("building_walk_cost", 30.0)))
 
 
 func _path(from: Vector2, to: Vector2i) -> PackedVector2Array:

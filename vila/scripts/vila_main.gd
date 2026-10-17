@@ -352,6 +352,22 @@ func _open_test_card() -> void:
 			_start_moving(int(mb["id"]))
 			_test_cell = AutoPlayer.spot(sim, "moradia")
 		"ending": _show_ending()
+		"colado":   # capturas: barraca colada na primeira e o fantasma de outra encostada
+			sim.stock["madeira"] = 99.0
+			sim.stock["sucata"] = 99.0
+			var t0 := Vector2i(sim._first("moradia")["cell"])
+			var tf := sim._fp("moradia")
+			var offs: Array[Vector2i] = [Vector2i(tf.x, 0), Vector2i(-tf.x, 0), Vector2i(0, tf.y), Vector2i(0, -tf.y)]
+			var placed := false
+			for o2 in offs:
+				if not placed and sim.place_reason("moradia", t0 + o2) == "":
+					sim.build("moradia", t0 + o2)
+					sim._finish(sim.buildings[sim.buildings.size() - 1])
+					placed = true
+				elif placed and sim.place_reason("moradia", t0 + o2) == "":
+					_start_placing("moradia")
+					_test_cell = t0 + o2
+					break
 		"raid", "raid_build", "raid_card", "raid_wall":   # capturas: noite de ataque com muro, torres e zumbis chegando
 			_test_raid()
 			if op == "raid_build":
