@@ -1,0 +1,819 @@
+extends Node2D
+## Fluxo da vila: título (a vila parada ao fundo) -> jogo. Liga a simulação do autoload Game à vista
+## e à interface: câmera com zoom em degraus e arrastar, cliques no mundo, Opções por cima.
+## A janela (tamanho, posição, aba recolhida, bandeja) é do WindowService; o save, do Game.
+## Argumentos de teste ficam no Game; aqui só: --open=build|tower|gate|person|place abre um cartão,
+## --shot=caminho.png tira uma captura e sai, --shot_after=s espera antes.
+
+const ZOOMS: Array[float] = [0.5, 1.0, 2.0]
+
+var sim: VilaSim
+var world: WorldView
+var hud: VilaHud
+var cam: Camera2D
+var _layer: CanvasLayer
+var _title: TitleScreen
+var _options: OptionsScreen
+var _tut: VilaTutorial
+var _ending: EndingScreen
+var _pending_welcome: Dictionary = {}
+var _catch_label: Label
+var _tut_layer: CanvasLayer
+var _zoom_i: int = 1
+var _press_pos: Vector2 = Vector2(-1, -1)
+var _dragging: bool = false
+var _placing: String = ""
+var _shot: String = ""
+var _shot_t: float = -1.0
+var _test_cell: Vector2i = Vector2i(-1, -1)   # só para capturas: onde o fantasma aparece
+
+
+func _ready() -> void:
+	world = WorldView.new()
+	add_child(world)
+	cam = Camera2D.new()
+	add_child(cam)
+	cam.make_current()
+	_layer = CanvasLayer.new()
+	_layer.layer = 2   # a camada 1 é dos vaga-lumes (por cima do mundo, fora do escuro da noite)
+	add_child(_layer)
+	Game.sim_replaced.connect(_bind_sim)
+	AudioManager.set_station(true)
+	WindowService.layout_changed.connect(func(_l: Vector2i, _s: int) -> void: _clamp_cam())
+	Game.arrival_started.connect(func() -> void:
+		get_tree().create_timer(6.0).timeout.connect(_show_ending))
+	Game.welcome_back.connect(func(s: Dictionary) -> void:
+		if hud != null:
+			hud.show_welcome(s)
+		else:
+			_pending_welcome = s)
+	Game.catch_up_progress.connect(_on_catch_up)
+	var args: Dictionary = Game.args
+	_shot = String(args.get("shot", ""))
+	_bind_sim()
+	if args.has("fresh") or args.has("play"):
+		if not (args.has("play") and Game.load_game()):
+			Game.new_game()
+		_enter_game()
+	else:
+		_show_title()
+	if _shot != "":
+		_shot_t = float(args.get("shot_after", "2.0"))
+
+
+## Outra simulação no lugar (título, novo jogo): refaz a vista e a interface.
+func _bind_sim() -> void:
+	sim = Game.sim
+	_return_build = false
+	_stop_placing()
+	world.setup(sim)
+	var hatch := sim._first("hatch")
+	cam.position = Vector2(Vector2i(hatch["cell"])) * 16.0 + Vector2(40, 8)
+	if Game.args.has("zoom"):   # capturas: --zoom=0 abre de longe
+		_zoom_i = clampi(int(Game.args["zoom"]), 0, ZOOMS.size() - 1)
+	_apply_zoom()
+	if hud != null:
+		hud.queue_free()
+		hud = null
+	if _tut_layer != null:
+		_tut_layer.queue_free()
+		_tut_layer = null
+		_tut = null
+	if Game.in_game:
+		_make_hud()
+
+
+func _make_hud() -> void:
+	hud = VilaHud.new()
+	_layer.add_child(hud)
+	hud.setup(sim)
+	hud.build_chosen.connect(_start_placing)
+	hud.move_chosen.connect(_start_moving)
+	hud.zoom_step.connect(func(d: int) -> void: _set_zoom(_zoom_i + d, get_viewport().get_visible_rect().size / 2.0))
+	hud.quit_pressed.connect(func() -> void: WindowService.quit_game())
+	hud.options_pressed.connect(_show_options)
+	sim.tower_up.connect(func(n: int) -> void: hud.toast(hud.fmt("UI_TOWER_DONE", {"n": n})))
+	sim.person_joined.connect(func(id: int) -> void: hud.toast(hud.fmt("UI_JOINED", {"name": hud.pname(sim.person(id))})))
+	sim.building_done.connect(func(id: int) -> void:
+		var b := sim.by_id(id)
+		if not b.is_empty() and String(b["type"]) != "torre":
+			hud.toast(hud.fmt("UI_DONE", {"b": hud.bname(String(b["type"]), int(b["level"]))})))
+	sim.fog_started.connect(func() -> void: hud.toast(I18n.t("UI_FOG_START")))
+	sim.person_grave.connect(func(id: int) -> void: hud.toast(hud.fmt("UI_GRAVE", {"name": hud.pname(sim.person(id))})))
+	sim.person_left.connect(func(nm: String, died: bool) -> void: hud.toast(hud.fmt("UI_DIED" if died else "UI_LEFT", {"name": nm})))
+	sim.fog_ended.connect(func() -> void: hud.toast(hud.fmt("UI_FOG_END", {"pct": int(round(float(sim.bal["fog"]["food_bonus"]) * 100.0))})))
+	sim.group_arrived.connect(func() -> void: hud.toast(hud.fmt("UI_GATE_BADGE", {"n": sim.gate_group.size()})))
+	sim.raid_warning.connect(func(f: Dictionary, nxt: Dictionary) -> void:
+		if int(f["boss"]) > 0:
+			hud.toast(hud.fmt("UI_RAID_BOSS", {"n": f["n"]}))
+		elif bool(f["horde"]):
+			hud.toast(hud.fmt("UI_RAID_HORDE", {"n": f["n"]}))
+		elif int(f["n"]) > 0:
+			hud.toast(hud.fmt("UI_RAID_WARN", {"n": f["n"]}))
+		else:
+			hud.toast(I18n.t("UI_RAID_HORDE_TOMORROW")))
+	sim.raid_over.connect(func(rep: Dictionary) -> void:
+		if sim.offline:
+			return
+		var lost: int = (rep["broke"] as Array).size() + (rep["ruined"] as Array).size()
+		hud.toast(hud.fmt("UI_RAID_OVER_LOST" if lost > 0 else "UI_RAID_OVER", {"k": rep["killed"], "n": lost})))
+	sim.radio.connect(func(l: Dictionary) -> void:
+		if hud != null and not sim.offline:
+			hud.quiet = _tut != null and _tut.active()
+			hud.on_radio(l))
+	sim.merchant_arrived.connect(func() -> void:
+		if hud != null and not sim.offline:
+			hud.toast(I18n.t("UI_MERCHANT_HERE")))
+	sim.merchant_left.connect(func(sold: Dictionary) -> void:
+		if hud != null and not sim.offline and not sold.is_empty():
+			var p := 0
+			for r in sold:
+				p += int(sold[r])
+			hud.toast(hud.fmt("UI_MERCHANT_SOLD", {"p": p})))
+	_tut_layer = CanvasLayer.new()
+	_tut_layer.layer = 5
+	add_child(_tut_layer)
+	_tut = VilaTutorial.new()
+	_tut_layer.add_child(_tut)
+	_tut.setup(self, hud, sim)
+	# Capturas e testes jogam sem tutorial (--notut, ou quando o jogo andou sozinho com --demo).
+	if not (Game.args.has("notut") or Game.args.has("demo")):
+		_tut.start()
+
+
+# ================================================================ telas
+func _show_title() -> void:
+	cam.position.x -= 72.0   # a vila aparece à direita do painel do título
+	_clamp_cam()
+	_title = TitleScreen.new()
+	_title.game_started.connect(func(_is_new: bool) -> void: _enter_game())
+	_title.options_requested.connect(_show_options)
+	_layer.add_child(_title)
+	_title.focus_first()
+
+
+func _enter_game() -> void:
+	if _title != null:
+		_title.queue_free()
+		_title = null
+	if hud == null:
+		_make_hud()
+	var hatch := sim._first("hatch")
+	cam.position = Vector2(Vector2i(hatch["cell"])) * 16.0 + Vector2(40, 8)
+	_clamp_cam()
+	if not _pending_welcome.is_empty():
+		hud.show_welcome(_pending_welcome)
+		_pending_welcome = {}
+	_open_test_card()
+	if sim.ela_t >= 0.0 and not bool(Settings.get_value("ending_seen", false)):
+		_show_ending.call_deferred()
+
+
+## Voltando depois de um tempo fechado: aviso no meio da tela enquanto a vila alcança o relógio.
+func _on_catch_up(frac: float) -> void:
+	if frac >= 1.0:
+		if _catch_label != null:
+			_catch_label.queue_free()
+			_catch_label = null
+		return
+	if _catch_label == null:
+		_catch_label = Label.new()
+		_catch_label.theme = UiTheme.build()
+		_catch_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_catch_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		_catch_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		var bg := StyleBoxFlat.new()
+		bg.bg_color = Color(0.05, 0.04, 0.07, 1.0)   # opaco: a vila andando dias inteiros não aparece
+		_catch_label.add_theme_stylebox_override("normal", bg)
+		_catch_label.mouse_filter = Control.MOUSE_FILTER_STOP
+		var cl := CanvasLayer.new()
+		cl.layer = 30
+		add_child(cl)
+		cl.add_child(_catch_label)
+		_catch_label.tree_exited.connect(cl.queue_free)
+	_catch_label.text = I18n.t("UI_CATCHING_UP", {"p": int(frac * 100.0)})
+
+
+## O final: ela entrou pelo portão. Véu escuro com as páginas da chegada; depois a vila continua.
+func _show_ending() -> void:
+	if _ending != null:
+		return
+	if hud != null:
+		hud.close_card()
+	var el := CanvasLayer.new()
+	el.layer = 20
+	add_child(el)
+	_ending = EndingScreen.new()
+	el.add_child(_ending)
+	_ending.finished.connect(func(_k: String) -> void:
+		Settings.set_value("ending_seen", true)
+		el.queue_free()
+		_ending = null)
+	AudioManager.play_radio_cue("epilogue")
+	_ending.play_arrival([
+		[["VEND_knock"], 3.5, "LabelMuted"],
+		[["journey.arrival"], 4.0, ""],
+		[["VEND_light"], 3.5, "LabelMuted"],
+		[["ending.title"], 3.5, "LabelTitle"],
+		[["ending.line.1", "ending.line.2"], 4.0, ""],
+	])
+
+
+func _show_options() -> void:
+	if _options != null:
+		return
+	_options = OptionsScreen.new()
+	_options.closed.connect(_close_options)
+	_options.progress_erased.connect(func() -> void:
+		_close_options()
+		get_tree().reload_current_scene())
+	var top := CanvasLayer.new()
+	top.layer = 10
+	add_child(top)
+	top.add_child(_options)
+	_options.focus_first()
+
+
+func _close_options() -> void:
+	if _options == null:
+		return
+	_options.get_parent().queue_free()
+	_options = null
+	if _title != null:
+		_title.focus_first()
+
+
+## Capturas (--open=raid): torre arqueira, canhão e um muro na frente da escotilha, uma casa
+## avariada e zumbis já andando. O tiro sai sozinho nos quadros seguintes.
+func _test_raid() -> void:
+	sim.tower = maxi(sim.tower, 3)
+	for r in ["madeira", "sucata", "pecas"]:
+		sim.stock[r] = 999.0
+	for tp in ["torre_arq", "canhao", "holofote"]:
+		var res := sim.build(tp, AutoPlayer.spot(sim, tp))
+		if bool(res.get("ok", false)):
+			sim._finish(sim.buildings[sim.buildings.size() - 1])
+	var hc := Vector2i(sim._first("hatch")["cell"])
+	var row := hc.y + 5
+	var n := 0
+	for x in range(hc.x - 6, hc.x + 9):
+		var res2 := sim.build("muro", Vector2i(x, row))
+		if bool(res2.get("ok", false)):
+			var w: Dictionary = sim.buildings[sim.buildings.size() - 1]
+			w["level"] = 1 + (n / 4) % 4
+			if n == 5:
+				w["hp"] = sim.defense.max_hp(w) * 0.3
+			n += 1
+	var house := sim._first("moradia")
+	if not house.is_empty():
+		if not sim.defense.report.has("broke"):
+			sim.defense.report = {"broke": [], "ruined": []}
+		sim.defense._break(house)
+	sim.defense.dirty()
+	for i in 6:
+		sim.defense._spawn("fraco" if i < 5 else "chefe", Vector2i(hc.x - 4 + i * 3, row + 3 + (i % 2)))
+	sim.defense.zombies[0]["hp"] = 3.0
+	cam.position = Vector2(hc) * 16.0 + Vector2(40, 40)
+	_clamp_cam()
+
+
+func _open_test_card() -> void:
+	var op := String(Game.args.get("open", ""))
+	if op.begins_with("res:"):
+		hud.show_res(op.trim_prefix("res:"))
+	if op.begins_with("tip:"):   # capturas: a dica do recurso aberta embaixo do chip
+		var chip: Control = hud._res_chips[op.trim_prefix("tip:")]
+		var pc := PanelContainer.new()
+		pc.add_theme_stylebox_override("panel", hud._panel_box())
+		pc.add_child(chip._make_custom_tooltip(""))
+		hud.add_child(pc)
+		pc.position = chip.global_position + Vector2(0, 14)
+	match op:   # só para capturas
+		"build": hud.show_build_menu()
+		"tower": hud.show_tower()
+		"gate":
+			if sim.gate_group.is_empty():
+				sim._make_group()
+			hud.show_gate()
+		"person": hud.show_person(int(sim.people[sim.people.size() - 1]["id"]))
+		"place":
+			_start_placing("horta")
+			_test_cell = AutoPlayer.spot(sim, "horta")
+			if Game.args.has("cell"):   # --cell=dx,dy: desloca do lugar livre (para ver célula bloqueada)
+				var cs := String(Game.args["cell"]).split(",")
+				_test_cell += Vector2i(int(cs[0]), int(cs[1]))
+		"hover_tree", "hover_rubble":   # capturas: mouse parado na árvore/entulho mais perto da escotilha
+			var want := VilaSim.T_TREE if op == "hover_tree" else VilaSim.T_RUBBLE
+			var hc := Vector2i(sim._first("hatch")["cell"])
+			var best := Vector2i(-1, -1)
+			for y in sim.h:
+				for x in sim.w:
+					var cc := Vector2i(x, y)
+					if sim.terrain_at(cc) == want and (best.x < 0 or (cc - hc).length_squared() < (best - hc).length_squared()):
+						best = cc
+			_test_cell = best
+		"options": _show_options()
+		"port":   # capturas: o porto e o farol
+			var gp := sim._first("gate")
+			if Game.args.has("lit"):   # cama sobrando: farol aceso
+				sim.stock["madeira"] = 99.0
+				sim.stock["sucata"] = 99.0
+				sim.build("moradia", AutoPlayer.spot(sim, "moradia"))
+				sim._finish(sim.buildings[sim.buildings.size() - 1])
+			cam.position = Vector2(Vector2i(gp["cell"])) * 16.0 + Vector2(40, 10)
+			_clamp_cam()
+		"merchant_boat":   # capturas: o barco do mascate chegando (a animação começa agora)
+			world._m_seen = true
+			sim._merchant_arrive(sim.t + 1800.0)
+			var g := sim._first("gate")
+			cam.position = Vector2(Vector2i(g["cell"])) * 16.0 + Vector2(16, 0)
+			_clamp_cam()
+		"merchant":
+			if not sim.merchant_here():
+				sim._merchant_arrive(sim.t + 1800.0)
+			hud.show_merchant()
+			var pr := sim._first("praca")
+			if not pr.is_empty():
+				cam.position = Vector2(Vector2i(pr["cell"])) * 16.0 + Vector2(90, 24)
+				_clamp_cam()
+		"radio": hud.show_radio()
+		"vines":   # capturas: todo prédio largado há muito tempo (trepadeira)
+			for b in sim.buildings:
+				b["care_t"] = sim.t - 99999.0
+		"fog":   # capturas: noite de névoa de pólen
+			sim.fog_now = true
+		"tired":   # capturas: todo mundo com 2 noites viradas
+			for p in sim.people:
+				p["tired"] = 2
+			hud.show_person(int(sim.people[0]["id"]))
+		"manage": hud.set_manage(true)
+		"move":   # capturas: movendo a primeira moradia (fantasma num lugar livre)
+			var mb := sim._first("moradia")
+			_start_moving(int(mb["id"]))
+			_test_cell = AutoPlayer.spot(sim, "moradia")
+		"ending": _show_ending()
+		"range_place", "range_card":   # capturas: alcance da torre arqueira (posicionando / cartão aberto)
+			sim.tower = maxi(sim.tower, 2)
+			for r in ["madeira", "sucata", "pecas"]:
+				sim.stock[r] = 999.0
+			var rs := sim.build("torre_arq", AutoPlayer.spot(sim, "torre_arq"))
+			if bool(rs.get("ok", false)):
+				sim._finish(sim.buildings[sim.buildings.size() - 1])
+			var ta := sim._first("torre_arq")
+			cam.position = Vector2(Vector2i(ta["cell"])) * 16.0
+			if Game.args.has("look_arrival"):   # capturas: câmera entre a vila e por onde os zumbis chegam
+				var ar: Array = sim.defense.arrivals()
+				if not ar.is_empty():
+					cam.position = (cam.position + Vector2(Vector2i(ar[0]["cell"])) * 16.0) / 2.0
+			_clamp_cam()
+			if op == "range_card":
+				hud.show_building(int(ta["id"]))
+			else:
+				hud.build_tab = "defense"
+				hud.show_build_menu()
+				_start_placing("torre_arq")
+				_test_cell = AutoPlayer.spot(sim, "torre_arq")
+		"dtut":   # capturas: capítulo da defesa do tutorial (--dstep=N escolhe o passo)
+			Settings.set_value("dtut_done", false)
+			Settings.set_value("dtut_step", int(Game.args.get("dstep", 0)))
+			_tut._step = VilaTutorial.STEPS.size()
+		"colado":   # capturas: barraca colada na primeira e o fantasma de outra encostada
+			sim.stock["madeira"] = 99.0
+			sim.stock["sucata"] = 99.0
+			var t0 := Vector2i(sim._first("moradia")["cell"])
+			var tf := sim._fp("moradia")
+			var offs: Array[Vector2i] = [Vector2i(tf.x, 0), Vector2i(-tf.x, 0), Vector2i(0, tf.y), Vector2i(0, -tf.y)]
+			var placed := false
+			for o2 in offs:
+				if not placed and sim.place_reason("moradia", t0 + o2) == "":
+					sim.build("moradia", t0 + o2)
+					sim._finish(sim.buildings[sim.buildings.size() - 1])
+					placed = true
+				elif placed and sim.place_reason("moradia", t0 + o2) == "":
+					_start_placing("moradia")
+					_test_cell = t0 + o2
+					break
+		"raid", "raid_build", "raid_card", "raid_wall":   # capturas: noite de ataque com muro, torres e zumbis chegando
+			_test_raid()
+			if op == "raid_build":
+				hud.show_build_menu()
+			elif op == "raid_card":
+				hud.show_building(int(sim._first("moradia").get("id", sim._first("torre_arq")["id"])))
+			elif op == "raid_wall":
+				hud.show_building(int(sim._first("muro")["id"]))
+		var o:
+			# --open=b:deposito abre o cartão do primeiro prédio desse tipo.
+			if String(o).begins_with("b:"):
+				var fb := sim._first(String(o).trim_prefix("b:"))
+				if not fb.is_empty():
+					hud.show_building(int(fb["id"]))
+	# Capturas: mouse parado num ponto (--hover=x,y em pixels lógicos), para ver a explicação.
+	if Game.args.has("hover"):
+		var hv := String(Game.args["hover"]).split(",")
+		var at := Vector2(float(hv[0]), float(hv[1]))
+		get_tree().create_timer(0.5).timeout.connect(func() -> void:
+			get_viewport().warp_mouse(at)
+			var mm := InputEventMouseMotion.new()
+			mm.position = at
+			mm.global_position = at
+			Input.parse_input_event(mm))
+	# Capturas: janela maior que o padrão (--winpx=1500x700, em pixels de tela).
+	if Game.args.has("winpx"):
+		var wp := String(Game.args["winpx"]).split("x")
+		WindowService._user_px = Vector2i(int(wp[0]), int(wp[1]))
+		WindowService._apply_layout(true)
+
+
+## Clique em botão da interface: som de clique (o AudioManager só toca depois do primeiro clique).
+func _input(ev: InputEvent) -> void:
+	var mb := ev as InputEventMouseButton
+	if mb != null and mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT:
+		var over := get_viewport().gui_get_hovered_control()
+		if over is BaseButton:
+			AudioManager.play_sfx("click")
+
+
+func _process(delta: float) -> void:
+	if hud != null:
+		_update_hover()
+		var hk: String = hud._card_kind
+		world.hl_res = hk.trim_prefix("res:") if hud.card_open() and hk.begins_with("res:") else ""
+		# Pessoa selecionada = cartão dela aberto; fechou o cartão, solta a seleção.
+		world.selected = hud._card_id if hud.card_open() and hk == "person" else -1
+		world.build_grid = _in_build_mode() or _placing != ""
+		world.sel_building = hud._card_id if hud.card_open() and hk == "building" else -1
+	if _shot_t >= 0.0:
+		_shot_t -= delta
+		if _shot_t < 0.0:
+			await RenderingServer.frame_post_draw
+			get_viewport().get_texture().get_image().save_png(_shot)
+			get_tree().quit()
+
+
+# ================================================================ câmera
+func _apply_zoom() -> void:
+	var z := ZOOMS[_zoom_i]
+	cam.zoom = Vector2(z, z)
+	_clamp_cam()
+
+
+func _set_zoom(i: int, screen_at: Vector2) -> void:
+	i = clampi(i, 0, ZOOMS.size() - 1)
+	if i == _zoom_i:
+		return
+	var before := _screen_to_world(screen_at)
+	_zoom_i = i
+	_apply_zoom()
+	var after := _screen_to_world(screen_at)
+	cam.position += before - after
+	_clamp_cam()
+
+
+func _clamp_cam() -> void:
+	var view := get_viewport().get_visible_rect().size / cam.zoom
+	var ws := world.world_size()
+	var half := view / 2.0
+	cam.position.x = clampf(cam.position.x, half.x, maxf(half.x, ws.x - half.x)) if view.x < ws.x else ws.x / 2.0
+	cam.position.y = clampf(cam.position.y, half.y - 14.0 / cam.zoom.y, maxf(half.y, ws.y - half.y + 16.0 / cam.zoom.y)) if view.y < ws.y else ws.y / 2.0
+	cam.position = cam.position.round()
+
+
+func _screen_to_world(p: Vector2) -> Vector2:
+	return get_canvas_transform().affine_inverse() * p
+
+
+# ================================================================ entrada
+## Modo construção = a faixa de prédios aberta embaixo (hud cartão "build").
+func _in_build_mode() -> bool:
+	return hud != null and hud.card_open() and hud._card_kind == "build"
+
+
+var _drag_move := false      # arrastando um prédio no modo construção
+var _drag_from := Vector2i(-1, -1)
+var _return_build := false   # pôs ou moveu a partir do modo construção: volta para ele ao terminar
+
+
+func _start_placing(type: String) -> void:
+	_return_build = _in_build_mode() or _return_build
+	_placing = type
+	world.ghost_type = type
+	hud.close_card()
+	hud.toast(I18n.t("UI_PLACE_PAINT" if _paintable(type) else "UI_PLACE"))
+
+
+## Muro e mina saem na hora: segurando o botão e arrastando, faz uma fileira (Esc ou botão direito para).
+func _paintable(type: String) -> bool:
+	return bool(sim.def(type).get("instant", false))
+
+
+var _painting := false
+var _last_paint := Vector2i(-99, -99)
+
+
+func _paint_at(screen: Vector2) -> void:
+	var c := world.cell_at(_screen_to_world(screen))
+	if c == _last_paint:
+		return
+	_last_paint = c
+	var tp := _placing
+	var r := sim.build(tp, c)
+	if bool(r["ok"]):
+		return
+	match String(r["reason"]):
+		"limit":
+			hud.toast(hud._limit_tip(tp))
+			_painting = false
+			_stop_placing()
+		"cost":
+			hud.toast(I18n.t("UI_NO_MONEY"))
+			_painting = false
+			_stop_placing()
+
+
+func _stop_placing(back_to_build: bool = true) -> void:
+	_placing = ""
+	if _moving >= 0:   # desistiu de mover: o prédio volta para onde estava
+		_moving = -1
+		sim.cancel_lift()
+	if world != null:
+		world.ghost_type = ""
+		world.ghost_level = 1
+	if _return_build:
+		_return_build = false
+		if back_to_build and hud != null:
+			hud.show_build_menu()
+
+
+## Mover: o prédio sai do chão e o fantasma dele segue o mouse até o clique no lugar novo.
+var _moving: int = -1
+
+
+func _start_moving(id: int) -> void:
+	var from_build := _in_build_mode()
+	_stop_placing(false)
+	_return_build = from_build
+	var b := sim.by_id(id)
+	if not sim.lift(id):
+		return
+	_moving = id
+	_placing = String(b["type"])
+	world.ghost_type = _placing
+	world.ghost_level = int(b["level"])
+	hud.close_card()
+	hud.toast(I18n.t("UI_MOVE"))
+
+
+var _tip_text: String = ""
+var _tip_t: float = 0.0
+
+
+func _tip_under(n: Node, mp: Vector2) -> Control:
+	for ch in n.get_children():
+		var f := _tip_under(ch, mp)
+		if f != null:
+			return f
+	if n is Control and (n as Control).is_visible_in_tree() and (n as Control).tooltip_text != "" and (n as Control).get_global_rect().has_point(mp):
+		return n as Control
+	return null
+
+
+func _update_hover() -> void:
+	var mp := get_viewport().get_mouse_position()
+	# Botões, ícones e chips: a explicação vem do tooltip_text do controle debaixo do mouse
+	# (desenhada pelo próprio jogo; a dica nativa do Godot não aparece na janela sem borda).
+	var hc := get_viewport().gui_get_hovered_control()
+	# O cartão é refeito a cada 0,2 s e o Godot perde o controle debaixo do mouse parado:
+	# procura no próprio cartão quem tem explicação naquele ponto.
+	if (hc == null or not is_instance_valid(hc)) and hud.card_open():
+		hc = _tip_under(hud._card, mp)
+	if hc != null:
+		var tip := ""
+		var n: Node = hc
+		while n is Control:
+			if (n as Control).tooltip_text != "":
+				tip = (n as Control).tooltip_text
+				break
+			n = n.get_parent()
+		if tip != "":
+			_tip_t += get_process_delta_time()
+			if _tip_text != tip:   # o cartão é refeito a cada 0,2 s: compara o texto, não o nó
+				# Dica já aberta só troca o texto; esconder e esperar de novo fazia ela piscar.
+				if _tip_text == "" or _tip_t < 0.25:
+					_tip_t = 0.0
+				_tip_text = tip
+			hud.show_tip(tip if _tip_t >= 0.25 else "", mp)
+			world.hover_cell = Vector2i(-1, -1)
+			return
+	_tip_text = ""
+	if _test_cell.x < 0 and (hud.mouse_over_ui(mp) or hc != null or _options != null):
+		world.hover_cell = Vector2i(-1, -1)
+		if _placing == "":
+			hud.show_tip("", mp)
+		return
+	var wp := _screen_to_world(mp)
+	var c := world.cell_at(wp) if _test_cell.x < 0 else _test_cell
+	world.hover_cell = c
+	world.ghost_cell = c
+	if _placing != "":
+		# Diz na hora por que não dá para pôr ali.
+		var why := sim.place_reason(_placing, c) if c.x >= 0 else "out"
+		hud.show_tip(I18n.t("UI_PLACE_" + why) if why != "" else "", mp, true)
+		return
+	if _dragging:
+		hud.show_tip("", mp)
+		return
+	var pid := world.person_at(wp)
+	if pid >= 0:
+		var p := sim.person(pid)
+		var pe := sim.eta(p)
+		hud.show_tip(hud.pname(p) + " · " + hud._doing_text(p) + ((" · " + VilaHud.fmt_clock(pe)) if pe >= 0.0 else ""), mp)
+		return
+	if sim.terrain_at(c) == VilaSim.T_RUBBLE:
+		hud.show_tip(I18n.t("B_entulho") + " · " + I18n.t("UI_CLEAR"), mp)
+		return
+	if sim.terrain_at(c) == VilaSim.T_TREE:
+		hud.show_tip(I18n.t("B_arvore") + " · " + I18n.t("UI_CUT"), mp)
+		return
+	var b := sim.building_at(c)
+	if not b.is_empty():
+		var t := hud.bname(String(b["type"]), int(b["level"]))
+		if String(b["state"]) != "built":
+			t += " · " + VilaHud.fmt_clock(sim.site_eta(b))
+		if I18n.has_key("BD_" + String(b["type"])):
+			t += "\n" + I18n.t("BD_" + String(b["type"]))
+		hud.show_tip(t, mp)
+		return
+	hud.show_tip("", mp)
+
+
+func _unhandled_input(ev: InputEvent) -> void:
+	if hud == null or _options != null:
+		return
+	if ev is InputEventKey and ev.pressed and (ev as InputEventKey).keycode == KEY_ESCAPE and _placing == "" and not hud.card_open():
+		_show_options()
+		return
+	if ev is InputEventMouseButton:
+		var mb := ev as InputEventMouseButton
+		var wheel := mb.button_index == MOUSE_BUTTON_WHEEL_UP or mb.button_index == MOUSE_BUTTON_WHEEL_DOWN
+		if wheel and (hud.mouse_over_ui(mb.position) or get_viewport().gui_get_hovered_control() != null):
+			return   # rolando dentro de um painel (lista no fim, por exemplo): o mapa não dá zoom junto
+		if mb.pressed and mb.button_index == MOUSE_BUTTON_WHEEL_UP:
+			_set_zoom(_zoom_i + 1, mb.position)
+		elif mb.pressed and mb.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			_set_zoom(_zoom_i - 1, mb.position)
+		elif mb.button_index == MOUSE_BUTTON_RIGHT and mb.pressed:
+			if _placing == "" and world.selected >= 0 and not hud.mouse_over_ui(mb.position):
+				_order(world.selected, mb.position)
+				return
+			if _placing != "":
+				_stop_placing()   # desiste do que estava pondo; se veio do modo construção, volta para ele
+			else:
+				hud.close_card()
+		elif mb.button_index == MOUSE_BUTTON_LEFT or mb.button_index == MOUSE_BUTTON_MIDDLE:
+			if mb.pressed:
+				if hud.mouse_over_ui(mb.position):
+					return
+				if mb.button_index == MOUSE_BUTTON_LEFT and _in_build_mode():
+					# Modo construção: apertar num prédio já pega ele; soltando em outra casa, larga lá
+					# (arrastar). Soltando no mesmo lugar, ele segue o mouse até o próximo clique.
+					var wpb := _screen_to_world(mb.position)
+					var pb := world.building_at_px(wpb)
+					if pb.is_empty():
+						pb = sim.building_at(world.cell_at(wpb))
+					if not pb.is_empty() and sim.can_move(pb) and world.person_at(wpb) < 0:
+						_start_moving(int(pb["id"]))
+						_drag_move = true
+						_drag_from = world.cell_at(wpb)
+						return
+				if mb.button_index == MOUSE_BUTTON_LEFT and _placing != "" and _moving < 0 and _paintable(_placing):
+					_painting = true
+					_last_paint = Vector2i(-99, -99)
+					_paint_at(mb.position)
+					return
+				_press_pos = mb.position
+				_dragging = false
+			else:
+				if _painting:
+					_painting = false
+					return
+				if _drag_move:
+					_drag_move = false
+					if _moving >= 0 and world.cell_at(_screen_to_world(mb.position)) != _drag_from:
+						_click(mb.position)
+					return
+				if _press_pos.x >= 0.0 and not _dragging and mb.button_index == MOUSE_BUTTON_LEFT:
+					_click(mb.position)
+				_press_pos = Vector2(-1, -1)
+				_dragging = false
+	elif ev is InputEventMouseMotion and _painting:
+		_paint_at((ev as InputEventMouseMotion).position)
+	elif ev is InputEventMouseMotion and _press_pos.x >= 0.0:
+		var mm := ev as InputEventMouseMotion
+		if _dragging or mm.position.distance_to(_press_pos) > 3.0:
+			_dragging = true
+			cam.position -= mm.relative / cam.zoom
+			_clamp_cam()
+	elif ev is InputEventKey and ev.pressed and (ev as InputEventKey).keycode == KEY_ESCAPE:
+		if _placing != "":
+			_stop_placing()
+		else:
+			hud.close_card()
+
+
+## Clique direito com alguém selecionado: manda a pessoa para o prédio, obra, árvore, entulho ou chão.
+## Um anel marca o lugar; se não der, o motivo aparece ali do lado.
+func _order(pid: int, screen: Vector2) -> void:
+	var wp := _screen_to_world(screen)
+	var c := world.cell_at(wp)
+	var b := world.building_at_px(wp)
+	if not b.is_empty():
+		c = Vector2i(b["cell"])
+	var r := sim.order(pid, c)
+	var why := String(r.get("reason", ""))
+	var txt := ""
+	if why != "":
+		txt = hud.fmt("ORD_" + why, {"r": I18n.t("RES_" + String(r.get("res", "")))})
+	world.order_mark(wp, bool(r["ok"]), txt)
+	hud._rebuild_card()
+
+
+func _click(screen: Vector2) -> void:
+	var wp := _screen_to_world(screen)
+	var c := world.cell_at(wp)
+	if _moving >= 0:
+		var rm := sim.drop(c)
+		if bool(rm["ok"]):
+			var mb := sim.by_id(_moving)
+			_moving = -1
+			_stop_placing()
+			hud.toast(hud.fmt("UI_MOVED", {"b": hud.bname(String(mb["type"]), int(mb["level"]))}))
+		else:
+			var why := String(rm.get("reason", ""))
+			hud.toast(I18n.t("UI_PLACE_" + why) if why != "" else I18n.t("UI_NO_SPACE"))
+		return
+	if _placing != "":
+		var tp := _placing
+		var r := sim.build(_placing, c)
+		if bool(r["ok"]):
+			_stop_placing()
+			# Diz o que acontece agora: quem vai construir, ou que está esperando alguém livre.
+			var who := ""
+			for p in sim.people:
+				if String(p["job"].get("kind", "")) == "idle" and not p["asleep"]:
+					who = hud.pname(p)
+					break
+			if sim.is_night():
+				hud.toast(hud.fmt("UI_SITE_NIGHT", {"b": hud.bname(tp)}))
+			elif who != "":
+				hud.toast(hud.fmt("UI_SITE_WHO", {"b": hud.bname(tp), "name": who}))
+			else:
+				hud.toast(hud.fmt("UI_SITE_NEXT", {"b": hud.bname(tp)}))
+		elif String(r["reason"]) == "limit":
+			hud.toast(hud._limit_tip(tp))
+			_stop_placing()
+		elif String(r["reason"]) == "place":
+			var why := sim.place_reason(tp, c)
+			hud.toast(I18n.t("UI_PLACE_" + why) if why != "" else I18n.t("UI_NO_SPACE"))
+		else:
+			hud.toast(I18n.t("UI_MISSING").format({"list": ""}).strip_edges())
+			_stop_placing()
+		return
+	if _in_build_mode():
+		# Modo construção: clicar num prédio que muda de lugar pega ele; clicar em outra coisa (torre,
+		# pessoa, porto) sai do modo e abre o que foi clicado, como fora dele.
+		var mb2 := world.building_at_px(wp)
+		if mb2.is_empty():
+			mb2 = sim.building_at(c)
+		var on_person := world.person_at(wp) >= 0
+		if not mb2.is_empty() and sim.can_move(mb2) and not on_person:
+			_start_moving(int(mb2["id"]))
+			return
+		if mb2.is_empty() and not on_person and not world.merchant_rect().has_point(wp):
+			return   # chão vazio: continua no modo
+		hud.close_card()
+	if world.merchant_rect().has_point(wp):
+		hud.show_merchant()
+		return
+	var pid := world.person_at(wp)
+	if pid >= 0:
+		hud.show_person(pid)
+		return
+	var b := world.building_at_px(wp)
+	if b.is_empty():
+		b = sim.building_at(c)
+	if not b.is_empty():
+		hud.show_building(int(b["id"]))
+		return
+	var gate := sim._first("gate")
+	if not gate.is_empty() and Rect2i(Vector2i(gate["cell"]) - Vector2i(0, 1), Vector2i(3, 3)).has_point(c):
+		if not sim.gate_group.is_empty():
+			hud.show_gate()
+		return
+	if hud.card_open():
+		hud.close_card()
+		return
+	var k := sim.terrain_at(c)
+	if k == VilaSim.T_RUBBLE or k == VilaSim.T_TREE:
+		hud.show_rubble(c)
+	elif k == VilaSim.T_GROUND or k == VilaSim.T_STUMP:
+		hud.show_build_menu()

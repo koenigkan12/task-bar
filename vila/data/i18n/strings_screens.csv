@@ -1,0 +1,8 @@
+key,pt_BR,en
+screens.handle.drawer.open,Abrir o modo gestão (tudo num painel),Open management mode (everything in one panel)
+screens.handle.drawer.close,Fechar o modo gestão,Close management mode
+screens.handle.sound.on,Ligar o som,Sound on
+screens.handle.sound.off,Desligar o som,Sound off
+screens.ending.next,Seguir,Go on
+screens.handle.quit,Fechar o jogo (salva sozinho),Close the game (saves itself)
+screens.handle.quit.ask,Sair?,Quit?

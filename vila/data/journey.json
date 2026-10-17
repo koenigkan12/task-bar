@@ -1,0 +1,135 @@
+{
+ "on_item": {
+  "cama_dela": {
+   "text_key": "journey.on_cama_dela",
+   "cue": "static"
+  },
+  "cantinho": {
+   "text_key": "journey.on_cantinho",
+   "cue": "static"
+  },
+  "planta_dela": {
+   "text_key": "journey.on_planta_dela",
+   "cue": "static"
+  },
+  "cabide": {
+   "text_key": "journey.on_cabide",
+   "cue": "static"
+  },
+  "segunda_caneca": {
+   "text_key": "journey.on_segunda_caneca",
+   "cue": "static"
+  },
+  "foto_dela": {
+   "text_key": "journey.on_foto_dela",
+   "cue": "static"
+  }
+ },
+ "travel": [
+  {
+   "id": "t1",
+   "day_offset": 1,
+   "hour": 12.5,
+   "text_key": "journey.t1",
+   "cue": "static"
+  },
+  {
+   "id": "t2",
+   "day_offset": 2,
+   "hour": 19.0,
+   "text_key": "journey.t2",
+   "cue": "static"
+  },
+  {
+   "id": "t3",
+   "day_offset": 3,
+   "hour": 8.0,
+   "text_key": "journey.t3",
+   "cue": "static"
+  },
+  {
+   "id": "t4",
+   "day_offset": 4,
+   "hour": 13.5,
+   "text_key": "journey.t4",
+   "cue": "static"
+  },
+  {
+   "id": "t5",
+   "day_offset": 5,
+   "hour": 20.0,
+   "text_key": "journey.t5",
+   "cue": "static"
+  },
+  {
+   "id": "t6",
+   "day_offset": 6,
+   "hour": 12.0,
+   "text_key": "journey.t6",
+   "cue": "static"
+  },
+  {
+   "id": "t7",
+   "day_offset": 7,
+   "hour": 18.5,
+   "text_key": "journey.t7",
+   "cue": "static"
+  },
+  {
+   "id": "t8",
+   "day_offset": 8,
+   "hour": 9.5,
+   "text_key": "journey.t8",
+   "cue": "static"
+  },
+  {
+   "id": "t9",
+   "day_offset": 9,
+   "hour": 21.0,
+   "text_key": "journey.t9",
+   "cue": "static"
+  },
+  {
+   "id": "t10",
+   "day_offset": 10,
+   "hour": 14.0,
+   "text_key": "journey.t10",
+   "cue": "static"
+  }
+ ],
+ "arrival": {
+  "text_key": "journey.arrival",
+  "cue": "none"
+ },
+ "epilogue_notes": [
+  "note.1",
+  "note.2",
+  "note.3",
+  "note.4",
+  "note.5",
+  "note.6",
+  "note.7",
+  "note.8",
+  "note.9",
+  "note.10",
+  "note.11",
+  "note.12",
+  "note.13",
+  "note.14",
+  "note.15",
+  "note.16",
+  "note.17",
+  "note.18",
+  "note.19",
+  "note.20",
+  "note.21",
+  "note.22",
+  "note.23",
+  "note.24",
+  "note.25",
+  "note.26",
+  "note.27",
+  "note.28",
+  "note.29"
+ ]
+}
