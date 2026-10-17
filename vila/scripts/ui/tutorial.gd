@@ -12,12 +12,17 @@ const DIM := Color(0.02, 0.01, 0.04, 0.72)
 const STEPS: Array[String] = ["joaquim", "res", "build", "pick", "place", "wait", "goal", "horta", "tower", "zoom", "end"]
 ## Passos em que o resto da tela fica escuro e não aceita clique (só o alvo).
 const DIMMED: Array[String] = ["joaquim", "res", "build", "pick", "goal", "tower"]
+## Capítulo da defesa (depois do tutorial, ou para quem já tinha feito): mostra por onde os zumbis
+## chegam e faz montar a primeira torre arqueira. Fica salvo em Settings ("dtut_step"/"dtut_done").
+const DSTEPS: Array[String] = ["dz_intro", "dz_build", "dz_tab", "dz_pick", "dz_place", "dz_wait"]
+const DDIMMED: Array[String] = ["dz_build", "dz_tab", "dz_pick"]
 
 var main: Node          # vila_main: _placing, _zoom_i, world, cam
 var hud: VilaHud
 var sim: VilaSim
 
 var _step: int = -1
+var _dstep: int = -1
 var _hint: String = ""
 var _dims: Array[ColorRect] = []
 var _arrow: TextureRect
@@ -94,6 +99,61 @@ func active() -> bool:
 	return _step >= 0 and _step < STEPS.size()
 
 
+func d_active() -> bool:
+	return _dstep >= 0 and _dstep < DSTEPS.size()
+
+
+## Começa o capítulo da defesa quando dá: tutorial feito, torre arqueira liberada e ainda nenhuma.
+func _d_maybe_start() -> void:
+	if _hint != "" or bool(Settings.get_value("dtut_done", false)) or not sim.unlocked("torre_arq"):
+		return
+	if _has("torre_arq"):
+		Settings.set_value("dtut_done", true)
+		return
+	if hud.card_open() and hud._card_kind != "build":
+		return
+	_dgo(clampi(int(Settings.get_value("dtut_step", 0)), 0, DSTEPS.size() - 1))
+
+
+func _dgo(i: int) -> void:
+	_dstep = i
+	if i >= DSTEPS.size():
+		_dfinish()
+		return
+	var key := DSTEPS[i]
+	Settings.set_value("dtut_step", i)
+	hud.tut_only = "torre_arq" if key in ["dz_build", "dz_tab", "dz_pick"] else ""
+	if key == "dz_tab" or key == "dz_pick":
+		# a primeira torre tem que dar para pagar: o rádio completa o que faltar
+		var cost: Dictionary = sim.level_def({"type": "torre_arq", "level": 1}).get("cost", {})
+		for r in cost:
+			sim.stock[r] = maxf(float(sim.stock[r]), float(cost[r]))
+		if hud.card_open():
+			hud._rebuild_card()
+	if key == "dz_intro":   # câmera entre a vila e por onde eles chegam
+		var ar: Array = sim.defense.arrivals()
+		if not ar.is_empty():
+			var hc := Vector2(Vector2i(sim._first("hatch")["cell"])) * 16.0
+			main.cam.position = (hc + Vector2(Vector2i(ar[0]["cell"])) * 16.0) / 2.0
+			main._clamp_cam()
+	main.world.show_arrivals = true
+	_text.text = I18n.t("TUT_" + key)
+	_ok.visible = key == "dz_intro" or key == "dz_wait"
+	_skip.visible = true
+	_bubble.visible = true
+
+
+func _dfinish() -> void:
+	_dstep = DSTEPS.size()
+	hud.tut_only = ""
+	main.world.show_arrivals = false
+	Settings.set_value("dtut_done", true)
+	_bubble.visible = false
+	_arrow.visible = false
+	for d in _dims:
+		d.visible = false
+
+
 func _go(i: int) -> void:
 	_step = i
 	_goal_hit = false
@@ -121,6 +181,9 @@ func _finish() -> void:
 
 func _ask_skip() -> void:
 	ConfirmBox.ask(self, "TUT_skip_q", "TUT_skip_text", "TUT_skip", func() -> void:
+		if d_active():
+			_dfinish()
+			return
 		_step = STEPS.size()
 		_finish())
 
@@ -128,6 +191,8 @@ func _ask_skip() -> void:
 func _on_ok() -> void:
 	if active():
 		_go(_step + 1)
+	elif d_active():
+		_dgo(_dstep + 1)
 	elif _hint != "":
 		_close_hint()
 
@@ -142,8 +207,17 @@ func _process(delta: float) -> void:
 			_go(_step + 1)
 			return
 		_layout(_target(key), DIMMED.has(key))
+	elif d_active():
+		var dk := DSTEPS[_dstep]
+		if _done(dk):
+			_dgo(_dstep + 1)
+			return
+		_layout(_target(dk), DDIMMED.has(dk))
 	else:
-		_hints()
+		if _step >= STEPS.size():
+			_d_maybe_start()
+		if not d_active():
+			_hints()
 
 
 func _done(key: String) -> bool:
@@ -168,6 +242,16 @@ func _done(key: String) -> bool:
 			return hud._card_kind == "tower"
 		"zoom":
 			return int(main._zoom_i) != _zoom0
+		"dz_build":
+			return hud._card_kind == "build" or String(main._placing) == "torre_arq" or _has("torre_arq")
+		"dz_tab":
+			return (hud._card_kind == "build" and hud.build_tab == "defense") or String(main._placing) == "torre_arq" or _has("torre_arq")
+		"dz_pick":
+			return String(main._placing) == "torre_arq" or _has("torre_arq")
+		"dz_place":
+			return _has("torre_arq")
+		"dz_wait":
+			return _built("torre_arq")
 	return false
 
 
@@ -210,6 +294,27 @@ func _target(key: String) -> Rect2:
 			return hud.goal_btn.get_global_rect()
 		"tower":
 			return hud.tower_btn.get_global_rect()
+		"dz_intro":
+			var ar: Array = sim.defense.arrivals()
+			if ar.is_empty():
+				return Rect2()
+			var ac: Vector2 = main.get_canvas_transform() * (Vector2(Vector2i(ar[0]["cell"])) * 16.0)
+			var ar_r := Rect2(ac, Vector2(16, 16) * main.cam.zoom.x)
+			return ar_r if get_viewport_rect().grow(-20).encloses(ar_r) else Rect2()
+		"dz_build":
+			return hud.build_btn.get_global_rect()
+		"dz_tab":
+			var tb: Variant = hud.build_tab_btns.get("defense")
+			return (tb as Button).get_global_rect() if is_instance_valid(tb) and (tb as Button).is_visible_in_tree() else Rect2()
+		"dz_pick":
+			var bt: Variant = hud.build_btns.get("torre_arq")
+			return (bt as Button).get_global_rect() if is_instance_valid(bt) and (bt as Button).is_visible_in_tree() else Rect2()
+		"dz_wait":
+			var ta := sim._first("torre_arq")
+			if ta.is_empty():
+				return Rect2()
+			var tl3: Vector2 = main.get_canvas_transform() * (Vector2(Vector2i(ta["cell"])) * 16.0)
+			return Rect2(tl3, Vector2(sim._fp("torre_arq")) * 16.0 * main.cam.zoom.x)
 	return Rect2()
 
 

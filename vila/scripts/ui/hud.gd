@@ -1596,6 +1596,7 @@ func _card_gate() -> void:
 
 
 var build_tab := "base"   # aba do modo construção: base, defense, deco
+var build_tab_btns: Dictionary = {}   # aba -> botão (o tutorial aponta para a de defesa)
 
 
 ## Modo construção (estilo Clash): faixa embaixo com um cartão por prédio, em abas. Clicar num
@@ -1603,6 +1604,7 @@ var build_tab := "base"   # aba do modo construção: base, defense, deco
 func _card_build() -> void:
 	_clear_card()
 	build_btns.clear()
+	build_tab_btns.clear()
 	var head := HBoxContainer.new()
 	head.add_theme_constant_override("separation", 3)
 	head.add_child(_icon_rect("martelo"))
@@ -1614,6 +1616,7 @@ func _card_build() -> void:
 		tb.text = I18n.t(String(tab[1]))
 		tb.theme_type_variation = "FlatButton" if build_tab != key else ""
 		tb.toggle_mode = false
+		build_tab_btns[key] = tb
 		tb.pressed.connect(func() -> void:
 			build_tab = key
 			_rebuild_card())

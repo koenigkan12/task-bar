@@ -464,3 +464,9 @@ TIP_AWAY_LOOT,Levado pelos zumbis nas noites em que a defesa não deu conta (no 
 UI_TAB_BASE,Prédios,Buildings
 UI_BUILD_MOVE_HINT,Clique num prédio para mover,Click a building to move it
 TIP_BUILD_EXIT,Sair do modo construção (Esc ou botão direito),Leave build mode (Esc or right click)
+TUT_dz_intro,De noite chegam zumbis pela beira do rio. A marca vermelha e a trilha mostram por onde eles vêm.,At night zombies come from the riverbank. The red mark and the trail show where they come from.
+TUT_dz_build,Vamos montar uma defesa. Clique em Construir.,Let's set up a defense. Click Build.
+TUT_dz_tab,Abra a aba Defesa.,Open the Defense tab.
+TUT_dz_pick,Escolha a torre arqueira.,Pick the archer tower.
+TUT_dz_place,"O círculo amarelo é até onde ela atira. Ponha perto da trilha vermelha, entre os zumbis e as casas.","The yellow circle is how far it shoots. Put it near the red trail, between the zombies and the houses."
+TUT_dz_wait,"Quando a obra terminar, ela atira sozinha em quem entrar no círculo. Melhorar a torre aumenta o alcance.","Once it's built, it shoots anyone who enters the circle. Upgrading the tower increases its range."

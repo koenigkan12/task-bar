@@ -75,6 +75,55 @@ func zstats(kind: String) -> Dictionary:
 			"hit_s": float(z["hit_s"]), "wall_mult": float(z.get("wall_mult", 1.0))}
 
 
+## Alcance de tiro (ou de luz) de um prédio desse tipo nesse nível; 0 = não atira.
+func range_of(type: String, level: int) -> float:
+	if type == "hatch":
+		return float(D()["hatch_gun"]["range"])
+	var lvs: Array = sim.def(type).get("levels", [])
+	if lvs.is_empty() or String(sim.def(type).get("defense", "")) == "":
+		return 0.0
+	var lv: Dictionary = lvs[clampi(level, 1, lvs.size()) - 1]
+	return float(lv.get("range", lv.get("radius", 0.0)))
+
+
+## Dia da próxima noite com zumbi (de hoje até 10 dias à frente); -1 se nenhuma.
+func raid_day() -> int:
+	var d := sim.day_number()
+	for i in 11:
+		var f := forecast(d + i)
+		if int(f["n"]) + int(f["boss"]) > 0:
+			return d + i
+	return -1
+
+
+var _arr_key := ""
+var _arr: Array = []
+
+## Por onde eles chegam na próxima noite com zumbi: [{cell, path}] (o caminho até o primeiro prédio
+## que eles vão atacar). É a mesma conta da noite, então o que o mapa mostra é o que vai acontecer.
+func arrivals() -> Array:
+	var d := raid_day()
+	if d < 0:
+		return []
+	var key := "%d|%d|%d|%d" % [d, sim.buildings.size(), sim.tower, 1 if _zdirty else 0]
+	if key == _arr_key:
+		return _arr
+	if _zdirty:
+		_rebuild_grid()
+	_arr_key = "%d|%d|%d|0" % [d, sim.buildings.size(), sim.tower]
+	_arr = []
+	for sp in _spawn_spots(2 if bool(forecast(d)["horde"]) else 1, d):
+		var fake := {"pos": Vector2(sp), "kind": "fraco"}
+		var b := _pick_target(fake)
+		var path := PackedVector2Array()
+		if not b.is_empty():
+			var g := _goal_cell(fake, b)
+			if g.x >= 0:
+				path = _to_path(_zgrid.get_id_path(sp, g))
+		_arr.append({"cell": sp, "path": path})
+	return _arr
+
+
 # ================================================================ noite
 func night_start() -> void:
 	var day := sim.day_number()
@@ -95,7 +144,7 @@ func night_start() -> void:
 	if sim.offline:
 		_resolve_offline()
 		return
-	var spots := _spawn_spots(2 if bool(tonight["horde"]) else 1)
+	var spots := _spawn_spots(2 if bool(tonight["horde"]) else 1, day)
 	if spots.is_empty():
 		return
 	var night_len := _night_len()
@@ -202,7 +251,7 @@ func _spawn(kind: String, cell: Vector2i) -> void:
 
 
 ## Pontos de chegada: chão na beira da água, longe do porto e fora da área da vila.
-func _spawn_spots(n_sides: int) -> Array[Vector2i]:
+func _spawn_spots(n_sides: int, day: int) -> Array[Vector2i]:
 	var cands: Array[Vector2i] = []
 	var gate: Dictionary = sim._first("gate")
 	var gc: Vector2i = gate.get("cell", Vector2i(-99, -99))
@@ -225,7 +274,7 @@ func _spawn_spots(n_sides: int) -> Array[Vector2i]:
 		return []
 	var out: Array[Vector2i] = []
 	var r := RandomNumberGenerator.new()
-	r.seed = int(sim.t) ^ 0x51ed
+	r.seed = day * 7919 + 0x51ed   # pelo dia: o mapa mostra de dia por onde eles vão chegar
 	var first: Vector2i = cands[r.randi_range(0, cands.size() - 1)]
 	out.append(first)
 	if n_sides > 1:   # o segundo lado: o ponto da beira mais longe do primeiro
@@ -242,7 +291,7 @@ func _spawn_spots(n_sides: int) -> Array[Vector2i]:
 
 # ================================================================ caminho dos zumbis
 ## Grade própria: muro em pé não é parede, é caminho caro (eles preferem dar a volta; se não tem
-## volta, quebram o muro). Prédio e mata bloqueiam; mina e praça deixam passar.
+## volta, quebram o muro). Prédio bloqueia; mata e entulho só atrasam; mina e praça deixam passar.
 func _rebuild_grid() -> void:
 	_zdirty = false
 	_zgrid = AStarGrid2D.new()
@@ -256,8 +305,12 @@ func _rebuild_grid() -> void:
 		for x in sim.w:
 			var c := Vector2i(x, y)
 			var k := sim.terrain_at(c)
-			if k == VilaSim.T_WATER or k == VilaSim.T_TREE or k == VilaSim.T_RUBBLE:
+			if k == VilaSim.T_WATER:
 				_zgrid.set_point_solid(c, true)
+				continue
+			if k == VilaSim.T_TREE or k == VilaSim.T_RUBBLE:
+				# Mata e entulho atrasam mas não param (antes, quem nascia atrás da mata ficava preso).
+				_zgrid.set_point_weight_scale(c, float(D().get("forest_weight", 6.0)))
 				continue
 			var o := sim.occ[sim._i(c)]
 			if o < 0:

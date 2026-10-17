@@ -15,6 +15,8 @@ var hover_cell: Vector2i = Vector2i(-1, -1)
 var ghost_type: String = ""          # prédio sendo posicionado ("" = nenhum)
 var ghost_cell: Vector2i = Vector2i(-1, -1)
 var ghost_level: int = 1               # mover: o fantasma mostra o prédio no nível dele
+var sel_building := -1                 # prédio com o cartão aberto: torre mostra o alcance
+var show_arrivals := false             # tutorial: mostra por onde os zumbis chegam mesmo fora de hora
 
 var _ground: Sprite2D
 var _flora: VilaFlora                  # flores da mata que brilham de noite
@@ -892,6 +894,7 @@ func _draw_overlay() -> void:
 			var src := Rect2(0, 0, bt.get_width() / (4 if ghost_type == "fogueira" else 1), bt.get_height())
 			var gx := roundi((fp2.x * TILE - src.size.x) / 2.0)
 			_overlay.draw_texture_rect_region(bt, Rect2(bottom + Vector2(gx, -src.size.y), src.size), src, Color(1, 1, 1, 0.6))
+	_draw_defense_hints()
 	# Entulho marcado para limpar: colchetes âmbar e um martelo
 	var mk := tex("icons")
 	for c in sim.marked:
@@ -1165,3 +1168,107 @@ func merchant_rect() -> Rect2:
 		return Rect2()
 	var man: Sprite2D = _merchant_nodes[1]
 	return Rect2(man.position + Vector2(-8, -18), Vector2(16, 20))
+
+
+# ================================================================ alcance e chegada dos zumbis
+const RANGE_COL := Color(1.0, 0.85, 0.45)
+const ZOMBIE_COL := Color(0.95, 0.35, 0.3)
+
+
+## Círculo de alcance (raio em casas) em volta do meio de um prédio de pegada fp posto em cell.
+func _draw_range(cell: Vector2i, fp: Vector2i, r: float, col: Color, fill: float, dashed: bool = false) -> void:
+	if r <= 0.0:
+		return
+	var c := (Vector2(cell) + Vector2(fp) / 2.0) * TILE
+	var rr := r * TILE
+	if fill > 0.0:
+		_overlay.draw_circle(c, rr, Color(col, fill))
+	if dashed:
+		var n := 36
+		for i in n:
+			if i % 2 == 0:
+				_overlay.draw_arc(c, rr, TAU * i / n, TAU * (i + 1) / n, 3, col, 1.0)
+	else:
+		_overlay.draw_arc(c, rr, 0.0, TAU, 64, col, 1.0)
+
+
+func _draw_defense_hints() -> void:
+	var df := sim.defense
+	if df == null:
+		return
+	var placing_def := ghost_type != "" and df.range_of(ghost_type, ghost_level) > 0.0
+	var sb := sim.by_id(sel_building) if sel_building >= 0 else {}
+	var sel_def := not sb.is_empty() and df.range_of(String(sb["type"]), int(sb["level"])) > 0.0
+	# Modo construção ou posicionando defesa: alcance de todas as defesas que já existem (fraco).
+	if build_grid:
+		for b in sim.buildings:
+			var tp := String(b["type"])
+			var rb := df.range_of(tp, int(b["level"]))
+			if rb > 0.0 and int(b["id"]) != sel_building:
+				_draw_range(Vector2i(b["cell"]), sim._fp(tp), rb, Color(RANGE_COL, 0.45), 0.05)
+	if placing_def:
+		_draw_range(ghost_cell, sim._fp(ghost_type), df.range_of(ghost_type, ghost_level), RANGE_COL, 0.14)
+	if sel_def:
+		var tp2 := String(sb["type"])
+		var lv := int(sb["level"])
+		var fp := sim._fp(tp2)
+		_draw_range(Vector2i(sb["cell"]), fp, df.range_of(tp2, lv), RANGE_COL, 0.14)
+		var nlv: Array = sim.def(tp2).get("levels", [])
+		if lv < nlv.size():   # próximo nível: tracejado, para ver quanto a melhoria aumenta
+			_draw_range(Vector2i(sb["cell"]), fp, df.range_of(tp2, lv + 1), Color(RANGE_COL, 0.8), 0.0, true)
+	# Por onde os zumbis chegam: no dia da noite com zumbi, no modo construção, ao mexer em defesa
+	# e no tutorial. Some quando eles já estão no mapa.
+	var today := df.raid_day() == sim.day_number()
+	var show := show_arrivals or build_grid or placing_def or sel_def \
+			or (today and (not sim.is_night() or not df.pending.is_empty()))
+	if not show or (sim.is_night() and df.pending.is_empty() and not df.zombies.is_empty()):
+		return
+	var pulse := 0.6 + 0.4 * sin(_anim_t * 4.0)
+	for a in df.arrivals():
+		var path: PackedVector2Array = a["path"]
+		var from := Vector2(Vector2i(a["cell"])) * TILE + Vector2(8, 8)
+		# trilha pontilhada andando na direção da vila
+		var pts := PackedVector2Array([from])
+		for q in path:
+			pts.append(q * TILE + Vector2(8, 8))
+		var off := fmod(_anim_t * 10.0, 8.0)
+		var walked := 0.0
+		for i in range(1, pts.size()):
+			var a0 := pts[i - 1]
+			var a1 := pts[i]
+			var seg := a0.distance_to(a1)
+			var d := fmod(8.0 - fmod(walked - off, 8.0), 8.0)
+			while d < seg:
+				var pp := a0.lerp(a1, d / seg)
+				_overlay.draw_rect(Rect2(pp.round() - Vector2(2, 2), Vector2(4, 4)), Color(0.15, 0.05, 0.08, 0.6))
+				_overlay.draw_rect(Rect2(pp.round() - Vector2(1, 1), Vector2(2, 2)), ZOMBIE_COL)
+				d += 8.0
+			walked += seg
+		_overlay.draw_circle(from, 6.0, Color(ZOMBIE_COL, 0.25 * pulse))
+		_overlay.draw_arc(from, 6.0, 0.0, TAU, 20, Color(ZOMBIE_COL, pulse), 1.0)
+		var ic := tex("icons")
+		if ic != null:
+			_overlay.draw_texture_rect_region(ic, Rect2(from - Vector2(4, 16), Vector2(8, 8)), Rect2(23 * 8, 0, 8, 8))
+		# Fora da tela: uma seta na beira apontando para lá.
+		var xf := _overlay.get_global_transform_with_canvas()
+		var inv := xf.affine_inverse()
+		var vs := _overlay.get_viewport_rect().size
+		var view := Rect2(inv * Vector2(0, 20), inv.basis_xform(vs - Vector2(0, 40)))
+		if not view.has_point(from):
+			var mid := view.get_center()
+			var inner := view.grow(-10.0 / maxf(0.01, xf.get_scale().x))
+			var dir := (from - mid).normalized()
+			var k := 1e9
+			if absf(dir.x) > 1e-4:
+				k = minf(k, (inner.size.x / 2.0) / absf(dir.x))
+			if absf(dir.y) > 1e-4:
+				k = minf(k, (inner.size.y / 2.0) / absf(dir.y))
+			var at := mid + dir * k
+			var sc := 1.0 / maxf(0.01, xf.get_scale().x)
+			var tip := at + dir * 8.0 * sc
+			var side := Vector2(-dir.y, dir.x) * 5.0 * sc
+			_overlay.draw_colored_polygon(PackedVector2Array([tip, at + side, at - side]), Color(ZOMBIE_COL, pulse))
+			if ic != null:
+				_overlay.draw_set_transform(at - dir * 6.0 * sc, 0.0, Vector2(sc, sc))
+				_overlay.draw_texture_rect_region(ic, Rect2(Vector2(-4, -4), Vector2(8, 8)), Rect2(23 * 8, 0, 8, 8))
+				_overlay.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)

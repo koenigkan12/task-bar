@@ -352,6 +352,31 @@ func _open_test_card() -> void:
 			_start_moving(int(mb["id"]))
 			_test_cell = AutoPlayer.spot(sim, "moradia")
 		"ending": _show_ending()
+		"range_place", "range_card":   # capturas: alcance da torre arqueira (posicionando / cartão aberto)
+			sim.tower = maxi(sim.tower, 2)
+			for r in ["madeira", "sucata", "pecas"]:
+				sim.stock[r] = 999.0
+			var rs := sim.build("torre_arq", AutoPlayer.spot(sim, "torre_arq"))
+			if bool(rs.get("ok", false)):
+				sim._finish(sim.buildings[sim.buildings.size() - 1])
+			var ta := sim._first("torre_arq")
+			cam.position = Vector2(Vector2i(ta["cell"])) * 16.0
+			if Game.args.has("look_arrival"):   # capturas: câmera entre a vila e por onde os zumbis chegam
+				var ar: Array = sim.defense.arrivals()
+				if not ar.is_empty():
+					cam.position = (cam.position + Vector2(Vector2i(ar[0]["cell"])) * 16.0) / 2.0
+			_clamp_cam()
+			if op == "range_card":
+				hud.show_building(int(ta["id"]))
+			else:
+				hud.build_tab = "defense"
+				hud.show_build_menu()
+				_start_placing("torre_arq")
+				_test_cell = AutoPlayer.spot(sim, "torre_arq")
+		"dtut":   # capturas: capítulo da defesa do tutorial (--dstep=N escolhe o passo)
+			Settings.set_value("dtut_done", false)
+			Settings.set_value("dtut_step", int(Game.args.get("dstep", 0)))
+			_tut._step = VilaTutorial.STEPS.size()
 		"colado":   # capturas: barraca colada na primeira e o fantasma de outra encostada
 			sim.stock["madeira"] = 99.0
 			sim.stock["sucata"] = 99.0
@@ -416,6 +441,7 @@ func _process(delta: float) -> void:
 		# Pessoa selecionada = cartão dela aberto; fechou o cartão, solta a seleção.
 		world.selected = hud._card_id if hud.card_open() and hk == "person" else -1
 		world.build_grid = _in_build_mode() or _placing != ""
+		world.sel_building = hud._card_id if hud.card_open() and hk == "building" else -1
 	if _shot_t >= 0.0:
 		_shot_t -= delta
 		if _shot_t < 0.0:

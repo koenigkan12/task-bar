@@ -201,6 +201,7 @@
    "per_tile": 6
   },
   "wall_weight": 0.25,
+  "forest_weight": 6,
   "repair_frac": 0.25,
   "rebuild_frac": 0.5,
   "rebuild_time_frac": 0.5,
