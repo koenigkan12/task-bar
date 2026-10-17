@@ -182,7 +182,7 @@ func _on_catch_up(frac: float) -> void:
 		_catch_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		_catch_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		var bg := StyleBoxFlat.new()
-		bg.bg_color = Color(0.05, 0.04, 0.07, 0.75)
+		bg.bg_color = Color(0.05, 0.04, 0.07, 1.0)   # opaco: a vila andando dias inteiros não aparece
 		_catch_label.add_theme_stylebox_override("normal", bg)
 		_catch_label.mouse_filter = Control.MOUSE_FILTER_STOP
 		var cl := CanvasLayer.new()

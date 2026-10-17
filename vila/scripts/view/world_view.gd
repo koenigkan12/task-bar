@@ -389,26 +389,9 @@ func _make_building(b: Dictionary) -> Dictionary:
 		warn.position = Vector2(fp.x * TILE / 2.0, -fp.y * TILE - 10)
 		warn.visible = false
 		root.add_child(warn)
-	# Trepadeira (prédio largado): dois tufos pendendo dos cantos de cima e um subindo do chão.
+	# Sem trepadeira nos prédios: a vila está sendo construída e tem gente cuidando. A mata fica no
+	# mapa (flores, árvores voltando), não em cima das casas.
 	var vines: Node2D = null
-	var vt := tex("trepadeira")
-	if st == "built" and vt != null and spr.texture != null:
-		vines = Node2D.new()
-		vines.visible = false
-		var fw2 := spr.texture.get_width() / spr.hframes
-		var top := spr.offset.y + 2.0
-		for k in 3:
-			var v := Sprite2D.new()
-			v.texture = vt
-			v.hframes = 3
-			v.frame = k
-			v.centered = false
-			match k:
-				0: v.position = Vector2(spr.offset.x, top)
-				1: v.position = Vector2(spr.offset.x + fw2 - 16, top)
-				2: v.position = Vector2(spr.offset.x + fw2 * 0.55 - 8, -22)
-			vines.add_child(v)
-		root.add_child(vines)
 	return {"root": root, "sprite": spr, "overlay": ov, "crops": crops, "lights": lights, "key": "", "warn": warn, "tex_lit": tex_lit, "tex_dia": tex_dia,
 			"electric": sim.def(tp).has("power_use"), "vines": vines}
 

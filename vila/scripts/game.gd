@@ -121,7 +121,7 @@ func load_game() -> bool:
 	return true
 
 
-## Alcança o tempo fechado aos pedaços, sem travar a janela: ~1 h de vila por quadro.
+## Alcança o tempo fechado aos pedaços, sem travar a janela (até ~25 ms de conta por quadro).
 func _catch_up_async() -> void:
 	if catching_up:
 		return
@@ -131,8 +131,14 @@ func _catch_up_async() -> void:
 	catching_up = true
 	var s0 := sim
 	catch_up_progress.emit(0.0)
+	# Pedaços pequenos até ~25 ms por quadro: a janela não congela, e a tela de "recuperando"
+	# (opaca) aparece antes de qualquer conta. O jogador não vê os dias passando.
+	await get_tree().process_frame
 	while true:
-		var done := sim.catch_up_chunk(ctx, 3600.0)
+		var t0 := Time.get_ticks_msec()
+		var done := false
+		while not done and Time.get_ticks_msec() - t0 < 25:
+			done = sim.catch_up_chunk(ctx, 300.0)
 		catch_up_progress.emit(1.0 - float(ctx["left"]) / maxf(1.0, float(ctx["seconds"])))
 		if done:
 			break

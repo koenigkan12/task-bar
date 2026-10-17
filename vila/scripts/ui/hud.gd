@@ -59,6 +59,8 @@ var _toast: Label
 var _toast_t: float = 0.0
 var _tip: Label
 var _night_btn: Button
+var _box_for := ""                      # de qual cartão (tipo#id) é o conteúdo montado agora
+var _welcome: Dictionary = {}          # resumo da última volta (o cartão de volta se refaz a partir dele)
 var _raid_btn: Button                   # zumbis da próxima noite (ícone + número; a dica explica)
 var _fog_warned := -1
 var _refresh_acc: float = 0.0
@@ -714,6 +716,8 @@ func refresh() -> void:
 
 
 func toast(text: String) -> void:
+	if sim != null and sim.offline:
+		return   # alcançando o tempo fechado: o resumo vem no cartão de volta, não em avisos soltos
 	_toast.text = text
 	_toast.visible = true
 	_toast.modulate.a = 1.0
@@ -956,9 +960,18 @@ func _card_res() -> void:
 
 
 func show_welcome(summary: Dictionary) -> void:
+	_welcome = summary
+	radio_unread += int(summary.get("radio", 0))
 	_card_kind = "welcome"
 	_card.visible = true
 	_clear_card()
+	_card_welcome()
+	_place_card()
+
+
+## O cartão de volta é refeito como os outros (o refresh periódico apagava o conteúdo dele).
+func _card_welcome() -> void:
+	var summary := _welcome
 	_header("relogio", fmt("UI_WELCOME_BACK", {"t": fmt_time(float(summary["seconds"]))}))
 	var d: Dictionary = summary["delta"]
 	for r in VilaSim.RES:
@@ -978,7 +991,6 @@ func show_welcome(summary: Dictionary) -> void:
 	if int(summary.get("fogs", 0)) > 0:
 		_card_box.add_child(_row([_icon_rect("lua"), _label(fmt("UI_AWAY_FOG", {"n": int(summary["fogs"])}), C_MUTED)]))
 	if int(summary.get("radio", 0)) > 0:
-		radio_unread += int(summary["radio"])
 		_card_box.add_child(_row([_icon_rect("radio"), _label(fmt("UI_RADIO_NEW", {"n": summary["radio"]}))]))
 	if bool(summary.get("group", false)):
 		_card_box.add_child(_row([_icon_rect("pessoa"), _label(fmt("UI_GATE_BADGE", {"n": sim.gate_group.size()}))]))
@@ -997,7 +1009,6 @@ func show_welcome(summary: Dictionary) -> void:
 	ok.text = I18n.t("UI_OK")
 	ok.pressed.connect(close_card)
 	_card_box.add_child(ok)
-	_place_card()
 
 
 func _clear_card() -> void:
@@ -1070,11 +1081,15 @@ func _rebuild_card() -> void:
 	_offscreen = true
 	_build_card_kind()
 	_offscreen = false
-	if _sig(_card_box) == _sig(old_box):
+	# Mesmo texto mas outro prédio (duas serrarias iguais): os botões antigos apontam para o prédio
+	# anterior, então troca mesmo assim.
+	var key := "%s#%d" % [_card_kind, _card_id]
+	if _sig(_card_box) == _sig(old_box) and key == _box_for:
 		_card_box.free()
 		_card_box = old_box
 		build_btns = old_btns
 		return
+	_box_for = key
 	_card_scroll.remove_child(old_box)
 	old_box.queue_free()
 	_card_scroll.add_child(_card_box)
@@ -1124,6 +1139,8 @@ func _build_card_kind() -> void:
 			_card_radio()
 		"merchant":
 			_card_merchant()
+		"welcome":
+			_card_welcome()
 		_:
 			if _card_kind.begins_with("res:"):
 				_card_res()
