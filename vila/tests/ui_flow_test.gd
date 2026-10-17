@@ -30,6 +30,16 @@ func _initialize() -> void:
 	var n0: int = sim.buildings.size()
 	main._click(scr)
 	_check(sim.buildings.size() == n0 + 1 and main._placing == "", "clicar põe a obra")
+	_check(hud._card_kind == "build", "depois de pôr, continua no modo construção")
+	# Modo construção: clicar numa barraca pega ela; clicar num lugar livre larga lá.
+	var tent: Dictionary = sim._first("moradia")
+	var tent_c0: Vector2i = tent["cell"]
+	main._click(main.get_canvas_transform() * (Vector2(tent_c0) * 16.0 + Vector2(8, 8)))
+	_check(int(main._moving) == int(tent["id"]), "modo construção: clicar no prédio pega ele")
+	var dest: Vector2i = AutoPlayer.spot(sim, "moradia")
+	main._click(main.get_canvas_transform() * (Vector2(dest) * 16.0 + Vector2(8, 8)))
+	_check(Vector2i(tent["cell"]) == dest and int(main._moving) < 0 and hud._card_kind == "build", "modo construção: larga no lugar novo e volta para o modo")
+	hud.close_card()
 	var tb: Dictionary = sim.tower_building()
 	var tscr: Vector2 = main.get_canvas_transform() * (Vector2(Vector2i(tb["cell"])) * 16.0 + Vector2(8, 8))
 	main._click(tscr)

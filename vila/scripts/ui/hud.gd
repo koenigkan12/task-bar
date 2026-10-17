@@ -1051,6 +1051,8 @@ func _place_card() -> void:
 ## Tamanho do conteúdo + borda do painel, sem passar da faixa entre a barra de cima e a de baixo.
 func _card_target(inner: Vector2) -> Vector2:
 	var pad := _card.get_theme_stylebox("panel").get_minimum_size()
+	if _card_kind == "build":   # faixa do modo construção: largura toda (a fileira rola sozinha)
+		return Vector2(W - 4.0, inner.y + pad.y)
 	var avail := H - 17.0 - BOTTOM_H - 1.0
 	var tall := inner.y + pad.y > avail
 	var bar := _card_scroll.get_v_scroll_bar().get_combined_minimum_size().x + 1.0 if tall else 0.0
@@ -1061,6 +1063,16 @@ func _fit_card(inner: Vector2) -> void:
 	var pad := _card.get_theme_stylebox("panel").get_minimum_size()
 	var s := _card_target(inner)
 	_card_scroll.custom_minimum_size = s - pad
+	if _card_kind == "build":
+		_card_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+		_card_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+		_card.offset_right = -2.0
+		_card.offset_left = -2.0 - s.x
+		_card.offset_bottom = H - BOTTOM_H - 1.0
+		_card.offset_top = H - BOTTOM_H - 1.0 - s.y
+		return
+	_card_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_card_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	# Preso na direita: se o conteúdo ainda crescer, o cartão cresce para a esquerda, nunca para fora.
 	_card.offset_right = -2.0
 	_card.offset_left = -2.0 - s.x
@@ -1583,141 +1595,165 @@ func _card_gate() -> void:
 	_card_box.add_child(ap)
 
 
+var build_tab := "base"   # aba do modo construção: base, defense, deco
+
+
+## Modo construção (estilo Clash): faixa embaixo com um cartão por prédio, em abas. Clicar num
+## cartão põe o fantasma no mapa; com o modo aberto, clicar num prédio do mapa pega ele para mover.
 func _card_build() -> void:
 	_clear_card()
 	build_btns.clear()
-	_header("martelo", I18n.t("UI_BUILD"))
-	var locked: Array[String] = []
-	# Muitos prédios liberados: duas colunas, para a lista caber na altura da janela.
-	var n_open := 0
-	for tp in sim.bal["build_order"]:
-		if sim.unlocked(String(tp)):
-			n_open += 1
-	var grid := GridContainer.new()
-	grid.columns = 2 if n_open > 7 else 1
-	grid.add_theme_constant_override("h_separation", 6)
-	grid.add_theme_constant_override("v_separation", 2)
-	_card_box.add_child(grid)
-	for tp in sim.bal["build_order"]:
-		var type := String(tp)
-		if not sim.unlocked(type):
-			locked.append(type)
+	var head := HBoxContainer.new()
+	head.add_theme_constant_override("separation", 3)
+	head.add_child(_icon_rect("martelo"))
+	for tab in [["base", "UI_TAB_BASE"], ["defense", "UI_DEFENSE"], ["deco", "UI_DECO"]]:
+		var key := String(tab[0])
+		if key != "base" and _tab_types(key).filter(func(t: String) -> bool: return sim.unlocked(t)).is_empty():
 			continue
-		grid.add_child(_build_row(type))
-	# Defesa: muro, torres, holofote e minas (aparece quando a primeira libera).
-	var dgrid := GridContainer.new()
-	dgrid.columns = grid.columns
-	dgrid.add_theme_constant_override("h_separation", 6)
-	dgrid.add_theme_constant_override("v_separation", 2)
-	for tp in sim.bal.get("defense_order", []):
-		var type := String(tp)
-		if not sim.unlocked(type):
-			locked.append(type)
-			continue
-		dgrid.add_child(_build_row(type))
-	if dgrid.get_child_count() > 0:
-		var dh := _row([_icon_rect("escudo"), _label(I18n.t("UI_DEFENSE"), C_AMBER)])
+		var tb := Button.new()
+		tb.text = I18n.t(String(tab[1]))
+		tb.theme_type_variation = "FlatButton" if build_tab != key else ""
+		tb.toggle_mode = false
+		tb.pressed.connect(func() -> void:
+			build_tab = key
+			_rebuild_card())
+		head.add_child(tb)
+	if build_tab == "defense":
 		var nn := sim.defense.next_night()
 		if int(nn.get("n", 0)) > 0:
-			dh.add_child(_stat("zumbi", str(int(nn["n"])), _night_forecast_tip(nn), C_WARN if bool(nn.get("horde", false)) else C_MUTED))
-		_card_box.add_child(dh)
-		_card_box.add_child(dgrid)
-	else:
-		dgrid.queue_free()
-	# Decoração: só beleza; uma fileira de figurinhas (nome, custo e o que é ficam na dica).
-	var deco_row := HFlowContainer.new()
-	deco_row.add_theme_constant_override("h_separation", 2)
-	for tp in sim.bal.get("deco_order", []):
-		var dt := String(tp)
-		if not sim.unlocked(dt):
-			continue
-		var dl: Dictionary = sim.def(dt)["levels"][0]
-		var db := Button.new()
-		db.icon = load(ART + dt + ".png")
-		db.theme_type_variation = "FlatButton"
-		var dfull := sim.at_limit(dt)
-		db.disabled = dfull or not sim.can_afford(dl["cost"]) or not sim.has_spot(dt) or tut_only != ""
-		var cost_txt: PackedStringArray = []
-		for r in dl["cost"]:
-			cost_txt.append("%d %s" % [int(dl["cost"][r]), I18n.t("RES_" + r)])
-		db.tooltip_text = "%s (%d/%d): %s\n%s" % [bname(dt), sim._count_any(dt), sim.limit(dt), I18n.t("BD_" + dt), ", ".join(cost_txt)]
-		build_btns[dt] = db
-		db.pressed.connect(func() -> void:
-			close_card()
-			build_chosen.emit(dt))
-		deco_row.add_child(db)
-	if deco_row.get_child_count() > 0:
-		_card_box.add_child(_label(I18n.t("UI_DECO"), C_AMBER))
-		_card_box.add_child(deco_row)
-	else:
-		deco_row.queue_free()
-	# Trancados: uma linha por nível da torre ("🔒 Torre 3: Praça, Oficina…"); o que cada um faz vai na dica.
-	var by_t := {}
+			head.add_child(_stat("zumbi", str(int(nn["n"])), _night_forecast_tip(nn), C_WARN if bool(nn.get("horde", false)) else C_MUTED))
+	var hint := _label(I18n.t("UI_BUILD_MOVE_HINT"), C_MUTED)
+	hint.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	hint.clip_text = true
+	head.add_child(hint)
+	var x := Button.new()
+	x.text = "x"
+	x.custom_minimum_size = Vector2(10, 10)
+	x.tooltip_text = I18n.t("TIP_BUILD_EXIT")
+	x.pressed.connect(close_card)
+	head.add_child(x)
+	_card_box.add_child(head)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 2)
+	var locked: Array[String] = []
+	for type in _tab_types(build_tab):
+		if sim.unlocked(type):
+			row.add_child(_build_tile(type))
+		else:
+			locked.append(type)
 	for type in locked:
-		var need: int = int(sim.def(type).get("tower", 1))
-		if not by_t.has(need):
-			by_t[need] = []
-		(by_t[need] as Array).append(type)
-	var ts: Array = by_t.keys()
-	ts.sort()
-	for need in ts:
-		var names: PackedStringArray = []
-		var tips: PackedStringArray = []
-		for type in by_t[need]:
-			names.append(bname(type))
-			tips.append(bname(type) + ": " + I18n.t("BD_" + type))
-		var lrow := _row([_icon_rect("cadeado"), _wrap(fmt("UI_LOCKED_TOWER", {"n": need}) + ": " + ", ".join(names), C_MUTED, 136)])
-		lrow.tooltip_text = "\n".join(tips)
-		lrow.mouse_filter = Control.MOUSE_FILTER_PASS
-		_card_box.add_child(lrow)
+		row.add_child(_build_tile(type))
+	# Só a fileira rola de lado (a roda do mouse também); o cabeçalho com o X fica parado.
+	var sc := ScrollContainer.new()
+	sc.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	var wide := row.get_combined_minimum_size().x > W - 12.0
+	sc.custom_minimum_size = Vector2(W - 12.0, 50.0 + (8.0 if wide else 0.0))
+	sc.gui_input.connect(func(ev: InputEvent) -> void:
+		if ev is InputEventMouseButton and (ev as InputEventMouseButton).pressed:
+			var bi := (ev as InputEventMouseButton).button_index
+			if bi == MOUSE_BUTTON_WHEEL_UP or bi == MOUSE_BUTTON_WHEEL_DOWN:
+				sc.scroll_horizontal += -40 if bi == MOUSE_BUTTON_WHEEL_UP else 40
+				sc.accept_event())
+	sc.add_child(row)
+	_card_box.add_child(sc)
 
 
-## Uma linha do menu de obras: botão com o nome, limite, alerta de sem lugar, custo e tempo.
-func _build_row(type: String) -> HBoxContainer:
-	var lv: Dictionary = sim.def(type)["levels"][0]
+func _tab_types(tab: String) -> Array[String]:
+	var key: String = {"base": "build_order", "defense": "defense_order", "deco": "deco_order"}[tab]
+	var out: Array[String] = []
+	for t in sim.bal.get(key, []):
+		out.append(String(t))
+	return out
+
+
+## Figura do prédio no nível 1 (a mesma do mapa).
+func _type_tex(type: String) -> Texture2D:
+	for n in [type + "_1", type]:
+		if ResourceLoader.exists(ART + n + ".png"):
+			var t: Texture2D = load(ART + n + ".png")
+			if type == "fogueira":
+				var at := AtlasTexture.new()
+				at.atlas = t
+				at.region = Rect2(0, 0, t.get_width() / 4.0, t.get_height())
+				return at
+			return t
+	return null
+
+
+## Um cartão da faixa: figura, nome, custo (ou o cadeado com o nível da torre).
+func _build_tile(type: String) -> Button:
+	var d := sim.def(type)
+	var lv: Dictionary = d["levels"][0]
 	var btn := Button.new()
-	btn.text = bname(type)
-	btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	btn.custom_minimum_size = Vector2(62, 12)
+	btn.custom_minimum_size = Vector2(58, 50)
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 0)
+	box.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	box.offset_left = 2
+	box.offset_right = -2
+	box.offset_top = 2
+	box.offset_bottom = -1
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	btn.add_child(box)
+	var pic := TextureRect.new()
+	pic.texture = _type_tex(type)
+	pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	pic.custom_minimum_size = Vector2(0, 24)
+	pic.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_child(pic)
+	var nm := _label(bname(type))
+	nm.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	nm.clip_text = true
+	nm.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_child(nm)
+	var tip := bname(type) + ": " + I18n.t("BD_" + type)
+	if not sim.unlocked(type):
+		pic.modulate = Color(0.25, 0.22, 0.3)
+		var need: int = int(d.get("tower", 1))
+		var lk := _row([_icon_rect("cadeado"), _label(fmt("UI_LOCKED_TOWER", {"n": need}), C_MUTED)])
+		lk.alignment = BoxContainer.ALIGNMENT_CENTER
+		lk.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		box.add_child(lk)
+		btn.disabled = true
+		btn.tooltip_text = fmt("UI_LOCKED_TOWER", {"n": need}) + "\n" + tip
+		return btn
 	var full := sim.at_limit(type)
 	var no_spot := not full and not sim.has_spot(type)
 	var free := type == "mina" and sim.mine_credits > 0   # minas do mascate: saem de graça
-	btn.disabled = full or no_spot or not (free or sim.can_afford(lv["cost"])) or (tut_only != "" and tut_only != type)
-	btn.tooltip_text = I18n.t("BD_" + type)
-	if sim.def(type).has("defense"):
-		btn.tooltip_text += "\n" + _defense_tip(type, lv)
+	var cost_ok := free or sim.can_afford(lv["cost"])
+	btn.disabled = full or no_spot or not cost_ok or (tut_only != "" and tut_only != type)
+	var foot: Control
+	if full:
+		foot = _label("%d/%d" % [sim._count_any(type), sim.limit(type)], C_WARN)
+		tip = _limit_tip(type) + "\n" + tip
+	elif free:
+		foot = _stat("check", "x%d" % sim.mine_credits, fmt("TIP_FREE_MINES", {"n": sim.mine_credits}), C_GOOD)
+	else:
+		foot = _cost_row(lv["cost"])
+	if no_spot:
+		tip = _no_spot_tip() + "\n" + tip
+	if d.has("defense"):
+		tip += "\n" + _defense_tip(type, lv)
+	if sim.limit(type) >= 0 and not full:
+		tip += "\n" + _limit_tip(type) + " (%d/%d)" % [sim._count_any(type), sim.limit(type)]
+	if float(lv["time_s"]) > 0.0:
+		tip += "\n" + fmt_time(float(lv["time_s"]))
+	foot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if foot is BoxContainer:
+		(foot as BoxContainer).alignment = BoxContainer.ALIGNMENT_CENTER
+	else:
+		(foot as Label).horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	box.add_child(foot)
+	if btn.disabled:
+		pic.modulate = Color(1, 1, 1, 0.45)
+	btn.tooltip_text = tip
 	build_btns[type] = btn
 	btn.pressed.connect(func() -> void:
-		close_card()
 		build_chosen.emit(type))
-	var parts: Array = [btn]
-	# Limite estilo Clash: "2/3" do lado do nome; a explicação fica na dica.
-	var lim := sim.limit(type)
-	if lim >= 0:
-		var ll := _label("%d/%d" % [sim._count_any(type), lim], C_WARN if full else C_MUTED)
-		ll.tooltip_text = _limit_tip(type)
-		ll.mouse_filter = Control.MOUSE_FILTER_PASS
-		parts.append(ll)
-		if full:
-			btn.tooltip_text = _limit_tip(type) + "\n" + btn.tooltip_text
-	# Não cabe em lugar nenhum: diz na hora, em vez de deixar o jogador procurar.
-	if no_spot:
-		var nt := _no_spot_tip()
-		var ic := _icon_rect("alerta")
-		ic.tooltip_text = nt
-		ic.mouse_filter = Control.MOUSE_FILTER_PASS
-		parts.append(ic)
-		btn.tooltip_text = nt + "\n" + btn.tooltip_text
-	if free:
-		parts.append(_stat("check", "x%d" % sim.mine_credits, fmt("TIP_FREE_MINES", {"n": sim.mine_credits}), C_GOOD))
-	else:
-		parts.append(_cost_row(lv["cost"]))
-	if float(lv["time_s"]) > 0.0:
-		parts.append_array([_icon_rect("relogio"), _label(fmt_time(float(lv["time_s"])), C_MUTED)])
-	var row := _row(parts)
-	row.tooltip_text = btn.tooltip_text
-	row.mouse_filter = Control.MOUSE_FILTER_PASS
-	return row
+	return btn
 
 
 # ================================================================ defesa

@@ -64,6 +64,7 @@ func _ready() -> void:
 ## Outra simulação no lugar (título, novo jogo): refaz a vista e a interface.
 func _bind_sim() -> void:
 	sim = Game.sim
+	_return_build = false
 	_stop_placing()
 	world.setup(sim)
 	var hatch := sim._first("hatch")
@@ -398,6 +399,7 @@ func _process(delta: float) -> void:
 		world.hl_res = hk.trim_prefix("res:") if hud.card_open() and hk.begins_with("res:") else ""
 		# Pessoa selecionada = cartão dela aberto; fechou o cartão, solta a seleção.
 		world.selected = hud._card_id if hud.card_open() and hk == "person" else -1
+		world.build_grid = _in_build_mode() or _placing != ""
 	if _shot_t >= 0.0:
 		_shot_t -= delta
 		if _shot_t < 0.0:
@@ -439,7 +441,18 @@ func _screen_to_world(p: Vector2) -> Vector2:
 
 
 # ================================================================ entrada
+## Modo construção = a faixa de prédios aberta embaixo (hud cartão "build").
+func _in_build_mode() -> bool:
+	return hud != null and hud.card_open() and hud._card_kind == "build"
+
+
+var _drag_move := false      # arrastando um prédio no modo construção
+var _drag_from := Vector2i(-1, -1)
+var _return_build := false   # pôs ou moveu a partir do modo construção: volta para ele ao terminar
+
+
 func _start_placing(type: String) -> void:
+	_return_build = _in_build_mode() or _return_build
 	_placing = type
 	world.ghost_type = type
 	hud.close_card()
@@ -475,7 +488,7 @@ func _paint_at(screen: Vector2) -> void:
 			_stop_placing()
 
 
-func _stop_placing() -> void:
+func _stop_placing(back_to_build: bool = true) -> void:
 	_placing = ""
 	if _moving >= 0:   # desistiu de mover: o prédio volta para onde estava
 		_moving = -1
@@ -483,6 +496,10 @@ func _stop_placing() -> void:
 	if world != null:
 		world.ghost_type = ""
 		world.ghost_level = 1
+	if _return_build:
+		_return_build = false
+		if back_to_build and hud != null:
+			hud.show_build_menu()
 
 
 ## Mover: o prédio sai do chão e o fantasma dele segue o mouse até o clique no lugar novo.
@@ -490,7 +507,9 @@ var _moving: int = -1
 
 
 func _start_moving(id: int) -> void:
-	_stop_placing()
+	var from_build := _in_build_mode()
+	_stop_placing(false)
+	_return_build = from_build
 	var b := sim.by_id(id)
 	if not sim.lift(id):
 		return
@@ -604,12 +623,26 @@ func _unhandled_input(ev: InputEvent) -> void:
 			if _placing == "" and world.selected >= 0 and not hud.mouse_over_ui(mb.position):
 				_order(world.selected, mb.position)
 				return
-			_stop_placing()
-			hud.close_card()
+			if _placing != "":
+				_stop_placing()   # desiste do que estava pondo; se veio do modo construção, volta para ele
+			else:
+				hud.close_card()
 		elif mb.button_index == MOUSE_BUTTON_LEFT or mb.button_index == MOUSE_BUTTON_MIDDLE:
 			if mb.pressed:
 				if hud.mouse_over_ui(mb.position):
 					return
+				if mb.button_index == MOUSE_BUTTON_LEFT and _in_build_mode():
+					# Modo construção: apertar num prédio já pega ele; soltando em outra casa, larga lá
+					# (arrastar). Soltando no mesmo lugar, ele segue o mouse até o próximo clique.
+					var wpb := _screen_to_world(mb.position)
+					var pb := world.building_at_px(wpb)
+					if pb.is_empty():
+						pb = sim.building_at(world.cell_at(wpb))
+					if not pb.is_empty() and sim.can_move(pb) and world.person_at(wpb) < 0:
+						_start_moving(int(pb["id"]))
+						_drag_move = true
+						_drag_from = world.cell_at(wpb)
+						return
 				if mb.button_index == MOUSE_BUTTON_LEFT and _placing != "" and _moving < 0 and _paintable(_placing):
 					_painting = true
 					_last_paint = Vector2i(-99, -99)
@@ -620,6 +653,11 @@ func _unhandled_input(ev: InputEvent) -> void:
 			else:
 				if _painting:
 					_painting = false
+					return
+				if _drag_move:
+					_drag_move = false
+					if _moving >= 0 and world.cell_at(_screen_to_world(mb.position)) != _drag_from:
+						_click(mb.position)
 					return
 				if _press_pos.x >= 0.0 and not _dragging and mb.button_index == MOUSE_BUTTON_LEFT:
 					_click(mb.position)
@@ -634,8 +672,10 @@ func _unhandled_input(ev: InputEvent) -> void:
 			cam.position -= mm.relative / cam.zoom
 			_clamp_cam()
 	elif ev is InputEventKey and ev.pressed and (ev as InputEventKey).keycode == KEY_ESCAPE:
-		_stop_placing()
-		hud.close_card()
+		if _placing != "":
+			_stop_placing()
+		else:
+			hud.close_card()
 
 
 ## Clique direito com alguém selecionado: manda a pessoa para o prédio, obra, árvore, entulho ou chão.
@@ -696,6 +736,19 @@ func _click(screen: Vector2) -> void:
 			hud.toast(I18n.t("UI_MISSING").format({"list": ""}).strip_edges())
 			_stop_placing()
 		return
+	if _in_build_mode():
+		# Modo construção: clicar num prédio que muda de lugar pega ele; clicar em outra coisa (torre,
+		# pessoa, porto) sai do modo e abre o que foi clicado, como fora dele.
+		var mb2 := world.building_at_px(wp)
+		if mb2.is_empty():
+			mb2 = sim.building_at(c)
+		var on_person := world.person_at(wp) >= 0
+		if not mb2.is_empty() and sim.can_move(mb2) and not on_person:
+			_start_moving(int(mb2["id"]))
+			return
+		if mb2.is_empty() and not on_person and not world.merchant_rect().has_point(wp):
+			return   # chão vazio: continua no modo
+		hud.close_card()
 	if world.merchant_rect().has_point(wp):
 		hud.show_merchant()
 		return

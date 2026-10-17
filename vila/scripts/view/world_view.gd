@@ -29,6 +29,8 @@ var _merchant_nodes: Array = []          # banca, mascate e barco enquanto o mer
 var _overlay: Node2D
 var _zone: Node2D
 var _zone_level: int = -1
+var build_grid := false                  # modo construção: grade nas casas da área da vila
+var _grid_drawn := false
 var _modulate: CanvasModulate
 var _terrain_cache: PackedByteArray = PackedByteArray()
 var _terrain_nodes: Dictionary = {}     # célula -> Sprite2D (árvore, toco, entulho)
@@ -597,8 +599,9 @@ func _process(delta: float) -> void:
 	_flora.update_flora(delta, _night_k)
 	_fx.update_fx(delta, sim, _night_k)
 	_defense.update_defense(delta, _night_k, _anim_t)
-	if _zone_level != sim.tower:
+	if _zone_level != sim.tower or _grid_drawn != build_grid:
 		_zone_level = sim.tower
+		_grid_drawn = build_grid
 		_zone.queue_redraw()
 	_overlay.queue_redraw()
 
@@ -664,6 +667,16 @@ func _update_light() -> void:
 func _draw_zone() -> void:
 	var shade := Color(0.16, 0.12, 0.24, 0.26)
 	var edge := Color(0.95, 0.85, 0.6, 0.45)
+	if build_grid:
+		# Grade do modo construção: linha fina em cada casa da área (como a base do Clash).
+		var gc := Color(1.0, 0.97, 0.88, 0.16)
+		for y in sim.h:
+			for x in sim.w:
+				var gcell := Vector2i(x, y)
+				if sim.in_zone(gcell) and sim.terrain_at(gcell) != VilaSim.T_WATER:
+					var gp := Vector2(gcell) * TILE
+					_zone.draw_line(gp + Vector2(0.5, 0.5), gp + Vector2(TILE - 0.5, 0.5), gc, 1.0)
+					_zone.draw_line(gp + Vector2(0.5, 0.5), gp + Vector2(0.5, TILE - 0.5), gc, 1.0)
 	for y in sim.h:
 		for x in sim.w:
 			var c := Vector2i(x, y)
