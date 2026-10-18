@@ -119,7 +119,7 @@ func arrivals() -> Array:
 		if not b.is_empty():
 			var g := _goal_cell(fake, b)
 			if g.x >= 0:
-				path = _to_path(_zgrid.get_id_path(sp, g))
+				path = _to_path(_no_corner_cut(_zgrid.get_id_path(sp, g)))
 		_arr.append({"cell": sp, "path": path})
 	return _arr
 
@@ -147,19 +147,15 @@ func night_start() -> void:
 	var spots := _spawn_spots(2 if bool(tonight["horde"]) else 1, day)
 	if spots.is_empty():
 		return
-	var night_len := _night_len()
-	var win := night_len * float(D()["spawn_window"])
 	var kinds: Array[String] = []
 	for i in int(tonight["n"]):
 		kinds.append("horda" if bool(tonight["horde"]) else "fraco")
 	for i in int(tonight["boss"]):
 		kinds.append("chefe")
-	# Saem em bandos de até 3 (uma leva que dá para ver entrando junta), não um a um.
-	var groups := int(ceil(kinds.size() / 3.0))
+	# A horda da noite sai toda junta logo no começo (dividida entre os lados), com meio segundo
+	# entre um e outro só para não nascerem empilhados. Depois que morrem, nada até a próxima noite.
 	for i in kinds.size():
-		var at := sim.t + 3.0 + win * float(i / 3) / maxf(1.0, float(groups)) + float(i % 3) * 0.8
-		if kinds[i] == "chefe":
-			at = sim.t + win * 0.6
+		var at := sim.t + 3.0 + float(i / spots.size()) * 0.5
 		var sp: Vector2i = spots[i % spots.size()]
 		pending.append({"kind": kinds[i], "cell": sp, "at": at})
 
@@ -277,7 +273,10 @@ func covered(at: Vector2) -> bool:
 			continue
 		if tp != "hatch" and not sim._working(d):
 			continue
-		if center_of(d).distance_to(at) <= r + 1.0:
+		# Choque sem energia não atira (mesma regra de _towers): não conta como defesa.
+		if String(sim.def(tp).get("defense", "")) == "shock" and sim.power_frac() <= 0.0:
+			continue
+		if center_of(d).distance_to(at) <= r:
 			return true
 	return false
 
@@ -490,9 +489,31 @@ func _repath(z: Dictionary) -> void:
 		_zgrid.set_point_solid(from, false)
 		var ids := _zgrid.get_id_path(from, g)
 		_zgrid.set_point_solid(from, true)
-		z["path"] = _to_path(ids)
+		z["path"] = _to_path(_no_corner_cut(ids))
 	else:
-		z["path"] = _to_path(_zgrid.get_id_path(from, g))
+		z["path"] = _to_path(_no_corner_cut(_zgrid.get_id_path(from, g)))
+
+
+func _wall_up(c: Vector2i) -> bool:
+	var b := sim.building_at(c)
+	return not b.is_empty() and String(b["type"]) == "muro" and hp(b) > 0.0
+
+
+## Passo na diagonal entre dois muros em pé (a quina de uma cerca em escada) não existe: o zumbi
+## tem que entrar num dos dois, e aí para e quebra.
+func _no_corner_cut(ids: Array[Vector2i]) -> Array[Vector2i]:
+	var out: Array[Vector2i] = []
+	for i in ids.size():
+		if i > 0:
+			var a := ids[i - 1]
+			var b := ids[i]
+			if a.x != b.x and a.y != b.y:
+				var c1 := Vector2i(b.x, a.y)
+				var c2 := Vector2i(a.x, b.y)
+				if _wall_up(c1) and _wall_up(c2):
+					out.append(c1)
+		out.append(ids[i])
+	return out
 
 
 func _to_path(ids: Array[Vector2i]) -> PackedVector2Array:
@@ -532,7 +553,16 @@ func _zombie_step(z: Dictionary, dt: float) -> void:
 		var p0: Vector2 = z["pos"]
 		if p0.distance_to(tgt) > 0.6:
 			var st := float(s["speed"]) * dt
-			z["pos"] = p0 + (tgt - p0).normalized() * minf(st, p0.distance_to(tgt))
+			var np := p0 + (tgt - p0).normalized() * minf(st, p0.distance_to(tgt))
+			var ahead := sim.building_at(Vector2i((p0 + (tgt - p0).normalized() * 0.6).round()))
+			if not ahead.is_empty() and String(ahead["type"]) == "muro" and hp(ahead) > 0.0:
+				# Muro na frente: para e quebra (nunca passa por cima).
+				z["atk"] = int(ahead["id"])
+				if float(z["hit_t"]) <= 0.0:
+					z["hit_t"] = float(s["hit_s"])
+					hit_building(ahead, float(s["dmg"]) * float(s["wall_mult"]), z["pos"])
+				return
+			z["pos"] = np
 			if absf(tgt.x - p0.x) > 0.05:
 				z["facing"] = signf(tgt.x - p0.x)
 		return
@@ -540,7 +570,7 @@ func _zombie_step(z: Dictionary, dt: float) -> void:
 	var nc := Vector2i(nxt)
 	# Muro em pé no caminho: para e quebra.
 	var wb := sim.building_at(nc)
-	if not wb.is_empty() and String(wb["type"]) == "muro" and float(wb.get("hp", 1.0)) > 0.0:
+	if not wb.is_empty() and String(wb["type"]) == "muro" and hp(wb) > 0.0:
 		z["atk"] = int(wb["id"])
 		if float(z["hit_t"]) <= 0.0:
 			z["hit_t"] = float(s["hit_s"])
@@ -589,6 +619,7 @@ func hit_building(b: Dictionary, dmg: float, from: Vector2 = Vector2(-99, -99)) 
 		if h <= 0.0:
 			report["walls"] = int(report.get("walls", 0)) + 1
 			_zdirty = true
+			fx.append({"kind": "breach", "a": center_of(b), "b": center_of(b), "t": 0.0, "life": 1.2, "id": int(b["id"])})
 		return
 	if bool(b.get("broken", false)):
 		# Já avariado: o que passa disso vira ruína.
@@ -764,7 +795,8 @@ func _rate_mult(b: Dictionary) -> float:
 	var g := sim.person(int(b.get("guard", -1)))
 	if g.is_empty():
 		return 1.0
-	return 1.0 + float(D()["guard_rate"]) * sim.bonus(g, "guard")
+	# O mesmo % que o cartão da pessoa mostra no passivo (15/30/50% pela raridade).
+	return sim.bonus(g, "guard")
 
 
 func _mines() -> void:

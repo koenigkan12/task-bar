@@ -393,6 +393,53 @@ func _open_test_card() -> void:
 			var hb := sim._first("moradia")
 			hud.show_night_report({"day": 3, "came": 6, "killed": 4, "broke": [int(hb.get("id", -1))], "ruined": [],
 					"bitten": [int(sim.people[0]["id"])], "retreat": true})
+		"broken":   # capturas: de dia, uma casa quebrada (selo vermelho) e outra em obra de conserto
+			_test_raid()
+			sim.defense.zombies.clear()
+			sim.set_cycle_hour(10.0)
+			for r in ["madeira", "sucata", "pecas"]:
+				sim.stock[r] = 999.0
+			for tq in ["poco", "horta", "moradia"]:
+				var rq := sim.build(tq, AutoPlayer.spot(sim, tq))
+				if bool(rq.get("ok", false)):
+					sim._finish(sim.buildings[sim.buildings.size() - 1])
+			var hs: Array = []
+			for bq in sim.buildings:
+				if String(bq["type"]) in ["moradia", "horta", "poco", "deposito"] and String(bq["state"]) == "built":
+					hs.append(bq)
+			if hs.size() >= 2:
+				sim.defense._break(hs[1])
+				sim.repair(int(hs[1]["id"]))
+				hs[1]["progress"] = float(hs[1]["total"]) * 0.4
+			if Game.args.has("card") and not hs.is_empty():
+				hud.show_building(int(hs[0]["id"]))
+		"fence":   # capturas: vila fechada por cerca, zumbis parados nela batendo
+			for r in VilaSim.RES:
+				sim.stock[r] = 999.0
+			for tq in ["poco", "horta", "moradia"]:
+				var rq := sim.build(tq, AutoPlayer.spot(sim, tq))
+				if bool(rq.get("ok", false)):
+					sim._finish(sim.buildings[sim.buildings.size() - 1])
+			var box := Rect2i()
+			var first := true
+			for bq in sim.buildings:
+				if sim.defense.attackable(bq):
+					var br := Rect2i(Vector2i(bq["cell"]), sim._fp(String(bq["type"])))
+					box = br if first else box.merge(br)
+					first = false
+			box = box.grow(2)
+			for x in range(box.position.x, box.end.x):
+				for y in range(box.position.y, box.end.y):
+					var cq := Vector2i(x, y)
+					if (x == box.position.x or x == box.end.x - 1 or y == box.position.y or y == box.end.y - 1) and sim._inside(cq) and sim.building_at(cq).is_empty():
+						sim.terrain[sim._i(cq)] = VilaSim.T_GROUND
+						sim.build("muro", cq)
+			sim._rebuild_astar()
+			sim.defense.report = {"broke": [], "ruined": [], "walls": 0, "came": 6}
+			for i in 6:
+				sim.defense._spawn("fraco", Vector2i(box.position.x + 2 + i * 2, box.end.y + 2))
+			cam.position = Vector2(box.get_center()) * 16.0 + Vector2(0, 40)
+			_clamp_cam()
 		"lost":   # capturas: aviso de morte
 			hud.show_lost("Rosa", true, "hunger")
 		"sick":   # capturas: Joaquim doente com fome (cartão e cruz em cima)
@@ -636,6 +683,7 @@ func _update_hover() -> void:
 	var wp := _screen_to_world(mp)
 	var c := world.cell_at(wp) if _test_cell.x < 0 else _test_cell
 	world.hover_cell = c
+	world.hover_px = wp if _test_cell.x < 0 else Vector2(c) * 16.0 + Vector2(8, 8)
 	world.ghost_cell = c
 	if _placing != "":
 		# Diz na hora por que não dá para pôr ali.

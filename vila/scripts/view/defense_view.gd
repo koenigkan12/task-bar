@@ -172,10 +172,13 @@ func _draw_walls() -> void:
 		var frac := sim.defense.hp(b) / maxf(1.0, sim.defense.max_hp(b))
 		var base := Vector2(c.x * TILE + 8, c.y * TILE + 12)   # pé do poste
 		if frac <= 0.0:
-			# Derrubado: só entulho baixo no chão.
-			for k in 3:
-				var o := Vector2(-5 + k * 4, -1 - (k % 2))
-				_walls.draw_rect(Rect2(base + o, Vector2(3, 2)), front.darkened(0.25))
+			# Derrubado: rombo com entulho e um toco quebrado (dá para ver que ali está aberto).
+			_walls.draw_rect(Rect2(base + Vector2(-7, -1), Vector2(14, 2)), Color(0.12, 0.09, 0.1, 0.55))
+			for k in 4:
+				var o := Vector2(-6 + k * 4, -2 - (k % 2))
+				_walls.draw_rect(Rect2(base + o, Vector2(3, 2)), front.darkened(0.15))
+			_walls.draw_rect(Rect2(base + Vector2(-1, -4), Vector2(2, 4)), front.darkened(0.3))
+			_walls.draw_line(base + Vector2(-1, -4), base + Vector2(1, -5), top, 1.0)
 			continue
 		var right: bool = cells.has(c + Vector2i(1, 0))
 		var down: bool = cells.has(c + Vector2i(0, 1))
@@ -223,6 +226,10 @@ func _wall_vspan(a: Vector2, lv: int, hgt: int, front: Color, top: Color) -> voi
 	if lv == 1:
 		_walls.draw_line(a + Vector2(0, -hgt + 1), a + Vector2(0, 16 - hgt + 1), top, 1.0)
 		_walls.draw_line(a + Vector2(1, -hgt / 2 + 1), a + Vector2(1, 16 - hgt / 2 + 1), top, 1.0)
+		# Farpas e um poste no meio do vão: a cerca de lado precisa parecer cerca, não um tracejado.
+		for y in range(2, 16, 5):
+			_walls.draw_rect(Rect2(a + Vector2(-1, -hgt + y), Vector2(3, 1)), CR)
+		_walls.draw_rect(Rect2(a + Vector2(-1, 8 - hgt - 2), Vector2(2, hgt + 2)), D)
 		return
 	_walls.draw_rect(Rect2(a + Vector2(-2, -hgt), Vector2(4, 16)), top)
 	_walls.draw_rect(Rect2(a + Vector2(-2, 16 - hgt), Vector2(4, hgt)), front)
@@ -261,6 +268,16 @@ func _draw_bright() -> void:
 					var ang := PI / 4.0 + i * PI / 2.0
 					_bright.draw_line(b + Vector2(cos(ang), sin(ang)) * rr * 0.4, b + Vector2(cos(ang), sin(ang)) * rr, hc, 1.0)
 				_bright.draw_rect(Rect2(b.round() - Vector2(0.5, 0.5), Vector2(1, 1)), Color(1, 0.95, 0.8, 1.0 - k))
+			"breach":
+				# Muro caiu: poeira que abre e lascas voando (dá para ver onde a cerca rompeu).
+				var c0 := zworld(e["a"]) + Vector2(0, -2)
+				for i in 6:
+					var ang2 := -PI + i * PI / 5.0
+					var q2 := c0 + Vector2(cos(ang2), sin(ang2) * 0.6) * (3.0 + 9.0 * k) + Vector2(0, -sin(k * PI) * 5.0)
+					_bright.draw_circle(q2, 2.5 + 2.0 * k, Color(0.62, 0.55, 0.5, 0.7 * (1.0 - k)))
+				for i in 3:
+					var q3 := c0 + Vector2((i - 1) * 5.0 * (0.5 + k), -12.0 * sin(k * PI) - 2.0)
+					_bright.draw_rect(Rect2(q3.round(), Vector2(2, 1)), Color(0.85, 0.7, 0.5, 1.0 - k))
 			"zap":
 				var pts := PackedVector2Array()
 				for i in 6:
@@ -289,7 +306,18 @@ func _draw_bright() -> void:
 	# Prédios: barra de vida quando apanhou, alerta piscando quando avariou, tijolo quando virou ruína.
 	for b in sim.buildings:
 		var tp := String(b["type"])
-		if tp == "muro" or not b.has("hp") and not bool(b.get("broken", false)):
+		if tp == "muro":
+			var wh := df.hp(b)
+			var wm := df.max_hp(b)
+			if wh > 0.0 and wh < wm:
+				var whit := _hit_now(int(b["id"]))
+				var wsh := Vector2(roundf(sin(_t * 60.0)), 0) if whit else Vector2.ZERO
+				var wat := (Vector2(Vector2i(b["cell"]).x * TILE + 2, Vector2i(b["cell"]).y * TILE - 4) + wsh).round()
+				var wf := wh / wm
+				_bright.draw_rect(Rect2(wat - Vector2(1, 1), Vector2(14, 4)), Color(0.08, 0.05, 0.1, 0.9))
+				_bright.draw_rect(Rect2(wat, Vector2(12.0 * wf, 2)), VM if wf < 0.35 else (Y if wf < 0.7 else Color8(169, 196, 124)))
+			continue
+		if not b.has("hp") and not bool(b.get("broken", false)):
 			continue
 		var fp := sim._fp(tp)
 		var mid := Vector2((Vector2i(b["cell"]).x + fp.x / 2.0) * TILE, Vector2i(b["cell"]).y * TILE - 6)
@@ -301,12 +329,22 @@ func _draw_bright() -> void:
 				var ph := fposmod(_t * 0.5 + i / 3.0 + float(b["id"]) * 0.17, 1.0)
 				var sp := base + Vector2(sin(ph * 5.0 + i) * 3.0 + (i - 1) * 4.0, -ph * 18.0 - (4.0 if ruin else 10.0))
 				_bright.draw_circle(sp, 2.0 + ph * 2.5, Color(0.55, 0.5, 0.55, 0.45 * (1.0 - ph)))
-			# Selo fixo (não pisca): martelo = conserte; tijolo = reconstrua.
+			# Selo grande e vermelho (não pisca, só respira): martelo riscado = quebrado, conserte;
+			# tijolo riscado = ruína, reconstrua. Em obra de conserto fica âmbar, sem o X.
 			if _icons != null:
-				var at := (mid - Vector2(6, 10)).round()
-				_bright.draw_rect(Rect2(at - Vector2(1, 1), Vector2(12, 10)), Color(0.15, 0.08, 0.1, 0.9))
-				_bright.draw_rect(Rect2(at - Vector2(1, 1), Vector2(12, 10)), Color(VM, 0.95), false, 1.0)
-				_bright.draw_texture_rect_region(_icons, Rect2(at + Vector2(1, 0), Vector2(8, 8)), Rect2((25 if ruin else 8) * 8, 0, 8, 8))
+				var fixing := String(b["state"]) != "built"
+				var col := Color8(232, 168, 72) if fixing else Color8(214, 58, 52)
+				var pulse := 0.0 if fixing else roundf(sin(_t * 3.0) * 0.6 + 0.4)
+				var c := (Vector2(mid.x, base.y - 24.0 - pulse)).round()   # logo acima do telhado
+				_bright.draw_circle(c, 8.0, Color(0.08, 0.04, 0.06, 0.95))
+				_bright.draw_circle(c, 7.0, col)
+				_bright.draw_texture_rect_region(_icons, Rect2(c - Vector2(4, 4), Vector2(8, 8)), Rect2((25 if ruin else 8) * 8, 0, 8, 8), Color(1, 1, 1))
+				if not fixing:
+					# X branco no canto: "quebrado".
+					var xc := c + Vector2(5, -5)
+					_bright.draw_circle(xc, 3.5, Color(0.08, 0.04, 0.06, 0.95))
+					_bright.draw_line(xc + Vector2(-2, -2), xc + Vector2(2, 2), Color.WHITE, 1.0)
+					_bright.draw_line(xc + Vector2(-2, 2), xc + Vector2(2, -2), Color.WHITE, 1.0)
 			continue
 		var mh := df.max_hp(b)
 		var h := df.hp(b)

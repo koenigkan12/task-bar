@@ -12,6 +12,7 @@ const CREME := Color8(204, 198, 186)     # destaque de 1 px no hover (estilo da 
 
 var sim: VilaSim
 var hover_cell: Vector2i = Vector2i(-1, -1)
+var hover_px: Vector2 = Vector2(-1, -1)   # ponto do mouse no mundo (o destaque e o clique usam o mesmo prédio)
 var ghost_type: String = ""          # prédio sendo posicionado ("" = nenhum)
 var ghost_cell: Vector2i = Vector2i(-1, -1)
 var ghost_level: int = 1               # mover: o fantasma mostra o prédio no nível dele
@@ -175,9 +176,13 @@ func person_at(world: Vector2) -> int:
 	return best
 
 
-## Prédio pelo desenho, não só pelo chão que ocupa: o telhado que passa da base também conta
-## (antes o clique no alto do ferro-velho ou da serraria caía no vazio). O da frente ganha.
+## Prédio embaixo do mouse. Primeiro o chão que ele ocupa (a base); só fora de qualquer base conta o
+## desenho, e só onde ele tem pixel de verdade: a ponta fina da antena não rouba o clique de quem está
+## atrás. O destaque branco usa a mesma conta, então o que acende é o que abre.
 func building_at_px(world: Vector2) -> Dictionary:
+	var base := sim.building_at(cell_at(world))
+	if not base.is_empty() and _bnodes.has(int(base["id"])):
+		return base
 	var best := {}
 	var by := -1e9
 	for b in sim.buildings:
@@ -186,15 +191,46 @@ func building_at_px(world: Vector2) -> Dictionary:
 			continue
 		var fp := sim._fp(String(b["type"]))
 		var bottom := float(Vector2i(b["cell"]).y + fp.y) * TILE
-		var h := float(fp.y) * TILE
 		var sp: Sprite2D = n["sprite"]
-		if sp.texture != null and sp.visible:
-			h = maxf(h, float(sp.texture.get_height()))
+		if sp.texture == null or not sp.visible:
+			continue
+		var h := float(sp.texture.get_height())
 		var r := Rect2(float(Vector2i(b["cell"]).x) * TILE, bottom - h, float(fp.x) * TILE, h)
-		if r.has_point(world) and bottom > by:
+		if r.has_point(world) and bottom > by and _opaque_at(sp, world):
 			by = bottom
 			best = b
 	return best
+
+
+var _imgs: Dictionary = {}   # textura -> Image (para saber se o pixel embaixo do mouse é desenho)
+
+
+func _opaque_at(spr: Sprite2D, world: Vector2) -> bool:
+	var tid := spr.texture.get_instance_id()
+	if not _imgs.has(tid):
+		var img := spr.texture.get_image()
+		if img != null and img.is_compressed():
+			img.decompress()
+		_imgs[tid] = img
+	var img2: Image = _imgs[tid]
+	if img2 == null:
+		return true
+	var fw := img2.get_width() / spr.hframes
+	var fh := img2.get_height() / spr.vframes
+	var lp := spr.to_local(to_global(world))
+	var off := spr.offset
+	if spr.centered:
+		off -= Vector2(fw, fh) / 2.0
+	var q := Vector2i((lp - off).floor())
+	# 2 px de folga em volta do desenho, para não exigir mira de pixel.
+	for dy in range(-2, 3):
+		for dx in range(-2, 3):
+			var x := q.x + dx
+			var y := q.y + dy
+			if x >= 0 and y >= 0 and x < fw and y < fh:
+				if img2.get_pixel((spr.frame % spr.hframes) * fw + x, (spr.frame / spr.hframes) * fh + y).a > 0.5:
+					return true
+	return false
 
 
 ## Marcador de onde o jogador mandou alguém (anel que abre e some) e, se não deu, o motivo ali do lado.
@@ -481,7 +517,7 @@ func _update_building(b: Dictionary, node: Dictionary) -> void:
 		spm.scale = Vector2(1.0, 0.45)
 		spm.skew = 0.0
 	elif bool(b.get("broken", false)):
-		spm.modulate = Color(0.62, 0.52, 0.52)
+		spm.modulate = Color(0.78, 0.46, 0.44)
 		spm.scale = Vector2(1.0, 0.86)
 		spm.skew = 0.14
 	else:
@@ -832,7 +868,10 @@ func _draw_overlay() -> void:
 		var wpx := float(fp.x * TILE) - 4.0
 		var r := clampf(float(b["progress"]) / maxf(0.001, float(b["total"])), 0.0, 1.0)
 		_overlay.draw_rect(Rect2(top + Vector2(2, 0), Vector2(wpx, 4)), Color(0.05, 0.04, 0.06, 0.9))
-		_overlay.draw_rect(Rect2(top + Vector2(3, 1), Vector2((wpx - 2.0) * r, 2)), Color(1.0, 0.75, 0.3) if int(b["builder"]) >= 0 else Color(0.55, 0.5, 0.55))
+		# Conserto e reconstrução: barra vermelha (é estrago sendo desfeito); obra normal: âmbar.
+		var fixc := bool(b.get("repair", false)) or bool(b.get("rebuild", false))
+		var barc := (Color8(222, 72, 60) if fixc else Color(1.0, 0.75, 0.3)) if int(b["builder"]) >= 0 else (Color8(150, 70, 66) if fixc else Color(0.55, 0.5, 0.55))
+		_overlay.draw_rect(Rect2(top + Vector2(3, 1), Vector2((wpx - 2.0) * r, 2)), barc)
 		_timer_text(top + Vector2(3.0 + wpx, 2), sim.site_eta(b), Color(1.0, 0.85, 0.55) if int(b["builder"]) >= 0 else Color(0.7, 0.66, 0.7))
 	# Barrinha em cima de quem está trabalhando: quanto falta para levar a carga (ou derrubar a árvore,
 	# ou terminar a obra), com o ícone do que está fazendo.
@@ -914,7 +953,7 @@ func _draw_overlay() -> void:
 			_overlay.draw_texture_rect_region(mk, Rect2(r1.position + Vector2(4, -6), Vector2(8, 8)), Rect2(mi * 8, 0, 8, 8))
 	if ghost_type == "" and hover_cell.x >= 0:
 		var sel := tex("selecao")
-		var bh := sim.building_at(hover_cell)
+		var bh := building_at_px(hover_px) if hover_px.x >= 0.0 else sim.building_at(hover_cell)
 		if not bh.is_empty() and _bnodes.has(int(bh["id"])):
 			var bn: Dictionary = _bnodes[int(bh["id"])]
 			var bs: Sprite2D = bn["sprite"] if (bn["sprite"] as Sprite2D).visible else bn["overlay"]

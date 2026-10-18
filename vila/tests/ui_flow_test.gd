@@ -152,5 +152,24 @@ func _initialize() -> void:
 			txt += (n2 as Label).text + " "
 	_check(txt.contains("/%d" % int(sim.cap("comida"))) and txt.contains("/min"), "dica da comida mostra estoque/limite e ritmo (%s)" % txt)
 	tip.free()
+	# Clique pela base: em qualquer casa da pegada de um prédio, abre ele (a antena alta não rouba).
+	var wv = main.world
+	var wrong := ""
+	for b in sim.buildings:
+		var fp: Vector2i = sim._fp(String(b["type"]))
+		for dy in fp.y:
+			for dx in fp.x:
+				var pt := (Vector2(Vector2i(b["cell"]) + Vector2i(dx, dy)) + Vector2(0.5, 0.5)) * 16.0
+				var got: Dictionary = wv.building_at_px(pt)
+				if not got.is_empty() and int(got["id"]) != int(b["id"]):
+					wrong = "%s abriu %s" % [b["type"], got["type"]]
+	_check(wrong == "", "clique na base de cada prédio abre ele mesmo %s" % wrong)
+	# Pixel vazio do desenho da torre (canto de cima) não conta como torre.
+	var tw: Dictionary = sim.tower_building()
+	var tfp: Vector2i = sim._fp("torre")
+	var tsp: Sprite2D = wv._bnodes[int(tw["id"])]["sprite"]
+	var corner := Vector2(Vector2i(tw["cell"]).x * 16.0 + 1.0, (Vector2i(tw["cell"]).y + tfp.y) * 16.0 - float(tsp.texture.get_height()) + 1.0)
+	var gc: Dictionary = wv.building_at_px(corner)
+	_check(gc.is_empty() or int(gc["id"]) != int(tw["id"]) or sim.building_at(wv.cell_at(corner)) == tw, "canto vazio do desenho da torre não abre a torre")
 	print("FALHAS: ", fails)
 	quit(1 if fails > 0 else 0)

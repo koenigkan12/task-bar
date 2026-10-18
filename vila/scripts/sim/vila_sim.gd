@@ -966,6 +966,9 @@ func cancel(id: int) -> Dictionary:
 	elif bool(b.get("rebuild", false)):
 		cost = defense.rebuild_cost(b)
 		b.erase("rebuild")
+	elif bool(b.get("repair", false)):
+		cost = defense.repair_cost(b)
+		b.erase("repair")
 	elif String(b["state"]) == "upgrade":
 		cost = level_def(b, int(b["level"]) + 1)["cost"]
 	else:
@@ -1070,23 +1073,39 @@ func drop(cell: Vector2i) -> Dictionary:
 	return {"ok": true}
 
 
-## Prédio avariado por zumbi: paga o conserto (fração do custo do nível) e volta a funcionar na hora.
+## Prédio avariado por zumbi: paga o conserto e vira obra (um construtor vai lá e gasta tempo,
+## como na construção). Muro é a exceção: conserta na hora.
 func repair(id: int) -> Dictionary:
 	var b := by_id(id)
-	if b.is_empty() or bool(b.get("ruin", false)) or defense.hp(b) >= defense.max_hp(b):
+	if b.is_empty() or bool(b.get("ruin", false)) or String(b["state"]) != "built" or defense.hp(b) >= defense.max_hp(b):
 		return {"ok": false, "reason": "ok"}
 	var cost: Dictionary = defense.repair_cost(b)
 	if not can_afford(cost):
 		return {"ok": false, "reason": "cost"}
 	_pay(cost)
+	if String(b["type"]) == "muro":
+		_fix_now(b)
+		changed.emit()
+		return {"ok": true}
+	_release_workers(b)
+	b["repair"] = true
+	b["state"] = "upgrade"
+	b["progress"] = 0.0
+	b["total"] = maxf(15.0, float(level_def(b).get("time_s", 60)) * float(bal["defense"]["repair_time_frac"]))
+	b["queued_t"] = t
+	_invalidate()
+	changed.emit()
+	site_started.emit(int(b["id"]))
+	return {"ok": true}
+
+
+func _fix_now(b: Dictionary) -> void:
 	b.erase("broken")
 	b.erase("wreck")
 	b["hp"] = defense.max_hp(b)
 	b["care_t"] = t
 	_invalidate()
 	defense.dirty()
-	changed.emit()
-	return {"ok": true}
 
 
 ## Ruína: paga metade do nível e vira obra (alguém precisa reconstruir), no mesmo nível.
@@ -2614,6 +2633,11 @@ func _finish(b: Dictionary) -> void:
 		b.erase("hp")
 		b.erase("wreck")
 		b["state"] = "built"
+	elif bool(b.get("repair", false)):   # avariado consertado
+		b.erase("repair")
+		b.erase("ruin")
+		b["state"] = "built"
+		_fix_now(b)
 	elif String(b["state"]) == "upgrade":
 		b["level"] = int(b["level"]) + 1
 		b.erase("hp")
@@ -2889,7 +2913,7 @@ func goal() -> Dictionary:
 			return {"kind": "build", "type": type}
 	# Zumbi quebrou: consertar vem primeiro (o prédio parado não produz nada).
 	for b in buildings:
-		if bool(b.get("broken", false)) and not bool(b.get("ruin", false)):
+		if bool(b.get("broken", false)) and not bool(b.get("ruin", false)) and String(b["state"]) == "built":
 			return {"kind": "repair", "id": int(b["id"]), "type": String(b["type"])}
 	for b in buildings:
 		if bool(b.get("ruin", false)) and String(b["state"]) == "built":
@@ -3012,7 +3036,7 @@ func to_dict() -> Dictionary:
 		bs.append({"id": b["id"], "type": b["type"], "cell": [b["cell"].x, b["cell"].y], "level": b["level"],
 				"state": b["state"], "progress": b["progress"], "total": b["total"], "queued_t": b.get("queued_t", 0.0),
 				"care_t": b.get("care_t", t), "hp": b.get("hp", -1.0), "broken": b.get("broken", false),
-				"ruin": b.get("ruin", false), "wreck": b.get("wreck", 0.0), "rebuild": b.get("rebuild", false)})
+				"ruin": b.get("ruin", false), "wreck": b.get("wreck", 0.0), "rebuild": b.get("rebuild", false), "repair": b.get("repair", false)})
 	var ps: Array = []
 	for p in people:
 		ps.append({"id": p["id"], "name": p["name"], "look": p["look"], "passives": p["passives"],
@@ -3062,7 +3086,7 @@ func from_dict(d: Dictionary, balance: Dictionary, tz_bias: int = 0) -> void:
 				"care_t": float(e.get("care_t", d["t"]))}
 		if float(e.get("hp", -1.0)) >= 0.0:
 			b["hp"] = float(e["hp"])
-		for k in ["broken", "ruin", "rebuild"]:
+		for k in ["broken", "ruin", "rebuild", "repair"]:
 			if bool(e.get(k, false)):
 				b[k] = true
 		if float(e.get("wreck", 0.0)) > 0.0:

@@ -864,20 +864,31 @@ func _card_night() -> void:
 	_header("lua", fmt("UI_NIGHT_REPORT", {"n": int(rep.get("day", 0))}))
 	_card_box.add_child(_stats([_stat("zumbi", str(int(rep.get("came", 0))), I18n.t("TIP_NIGHT_CAME")),
 			_stat("espada", str(int(rep.get("killed", 0))), I18n.t("TIP_NIGHT_KILLED"), C_GOOD)]))
-	var broke: Array = (rep.get("broke", []) as Array) + (rep.get("ruined", []) as Array)
 	var names: Array[String] = []
+	var ruins: Array[String] = []
 	var to_fix: Array[int] = []
-	for id in broke:
+	for id in rep.get("broke", []):
 		var b := sim.by_id(int(id))
 		if b.is_empty():
 			continue
 		names.append(bname(String(b["type"])))
-		if bool(b.get("broken", false)) and not bool(b.get("ruin", false)):
+		if bool(b.get("broken", false)) and not bool(b.get("ruin", false)) and String(b["state"]) == "built":
 			to_fix.append(int(id))
-	if names.is_empty():
+	for id in rep.get("ruined", []):
+		var b := sim.by_id(int(id))
+		if not b.is_empty():
+			ruins.append(bname(String(b["type"])))
+	# Muros que caíram e não voltaram de manhã (faltou recurso): o rombo continua aberto.
+	var walls_down := int(rep.get("walls", 0)) - int(rep.get("walls_fixed", 0))
+	if names.is_empty() and ruins.is_empty() and walls_down <= 0:
 		_card_box.add_child(_wrap_row("check", I18n.t("UI_NIGHT_SAFE"), C_GOOD))
-	else:
+	if not names.is_empty():
 		_card_box.add_child(_wrap_row("avariado", fmt("UI_NIGHT_BROKE", {"list": ", ".join(names)}), C_WARN))
+	if not ruins.is_empty():
+		_card_box.add_child(_wrap_row("ruina", fmt("UI_NIGHT_RUINED", {"list": ", ".join(ruins)}), C_WARN))
+	if walls_down > 0:
+		var wr := _stats([_stat("escudo", "%d" % walls_down, I18n.t("TIP_NIGHT_WALLS_DOWN"), C_WARN)])
+		_card_box.add_child(wr)
 	var bit: Array[String] = []
 	for pid in rep.get("bitten", []):
 		var bp := sim.person(int(pid))
@@ -1490,7 +1501,13 @@ func _res_list() -> String:
 
 func _progress_lines(b: Dictionary) -> void:
 	var left := sim.site_eta(b)
-	var lbl := I18n.t("UI_UPGRADING") if String(b["state"]) == "upgrade" else I18n.t("UI_BUILDING")
+	var lbl := I18n.t("UI_BUILDING")
+	if bool(b.get("repair", false)):
+		lbl = I18n.t("UI_REPAIRING")
+	elif bool(b.get("rebuild", false)):
+		lbl = I18n.t("UI_REBUILDING")
+	elif String(b["state"]) == "upgrade":
+		lbl = I18n.t("UI_UPGRADING")
 	_card_box.add_child(_row([_icon_rect("relogio"), _label("%s · %s" % [lbl, fmt_clock(left)])]))
 	if int(b["builder"]) < 0:
 		var why := sim.site_wait_reason()
@@ -2003,7 +2020,7 @@ func _defense_stats(tp: String, lv: Dictionary, b: Dictionary) -> Array:
 	if not b.is_empty() and int(b.get("guard", -1)) >= 0:
 		var gp := sim.person(int(b["guard"]))
 		if not gp.is_empty():
-			out.append(_stat("pessoa", pname(gp), fmt("TIP_GUARD", {"n": int(round(float(sim.bal["defense"]["guard_rate"]) * 100.0))}), C_GOOD))
+			out.append(_stat("pessoa", pname(gp), fmt("TIP_GUARD", {"n": int(round((sim.defense._rate_mult(b) - 1.0) * 100.0))}), C_GOOD))
 	return out
 
 
@@ -2256,7 +2273,7 @@ func _rebuild_manage() -> void:
 		btn.clip_text = true
 		btn.custom_minimum_size = Vector2(140, 0)
 		btn.icon = icon("martelo")
-		btn.text = "%s · %s" % [bname(String(bd["type"]), int(bd["level"]) + (1 if st == "upgrade" else 0)), fmt_time(float(bd["total"]) - float(bd["progress"]))]
+		btn.text = "%s · %s" % [bname(String(bd["type"]), int(bd["level"]) + (1 if st == "upgrade" and not bool(bd.get("repair", false)) and not bool(bd.get("rebuild", false)) else 0)), fmt_time(float(bd["total"]) - float(bd["progress"]))]
 		btn.tooltip_text = who
 		var id := int(bd["id"])
 		btn.pressed.connect(func() -> void: show_building(id))

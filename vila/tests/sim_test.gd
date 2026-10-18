@@ -643,7 +643,10 @@ func _test_defense() -> void:
 		sim._finish(house)
 	df._break(house)
 	_check(bool(house.get("broken", false)) and not sim._working(house), "defesa: prédio avariado para")
-	_check(bool(sim.repair(int(house["id"]))["ok"]) and not house.has("broken"), "defesa: consertar volta a funcionar")
+	_check(bool(sim.repair(int(house["id"]))["ok"]) and String(house["state"]) == "upgrade" and house.has("broken"), "defesa: consertar vira obra (não volta na hora)")
+	_check(String(sim.goal()["kind"]) != "repair" or int(sim.goal()["id"]) != int(house["id"]), "defesa: obra de conserto não pede conserto de novo")
+	sim._finish(house)
+	_check(not house.has("broken") and not house.has("repair") and sim._working(house), "defesa: terminada a obra, volta a funcionar")
 	df._break(house)
 	df._ruin(house)
 	_check(bool(sim.rebuild(int(house["id"]))["ok"]) and String(house["state"]) == "upgrade", "defesa: ruína vira obra para reconstruir")
@@ -681,4 +684,15 @@ func _test_defense() -> void:
 	var nf := df.forecast(sim.day_number() + 1)
 	_check(bool(nf["horde"]), "defesa: a horda perdida vem na próxima noite aberta")
 	df.owed_horde = false
+	df.report = {}
+	# Aberto: a horda da noite sai toda junta no começo, não em levas espalhadas pela noite.
+	df.night_start()
+	if not df.pending.is_empty():
+		var first := INF
+		var last := -INF
+		for pd in df.pending:
+			first = minf(first, float(pd["at"]))
+			last = maxf(last, float(pd["at"]))
+		_check(last - first <= 6.0, "defesa: a horda sai toda junta (%.1f s entre o primeiro e o último)" % (last - first))
+	df.pending.clear()
 	df.report = {}

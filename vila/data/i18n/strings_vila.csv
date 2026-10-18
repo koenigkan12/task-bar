@@ -401,7 +401,7 @@ B_muro_1,Cerca de arame,Wire fence
 B_muro_2,Muro de madeira,Wooden wall
 B_muro_3,Muro de concreto,Concrete wall
 B_muro_4,Muro de aço,Steel wall
-BD_muro,Segura os zumbis. Arraste para fazer uma fileira.,Holds zombies back. Drag to make a row.
+BD_muro,Bloqueia o caminho: o zumbi tem que quebrar para passar. Feche sem abertura.,Blocks the way: zombies must break it to pass. Close it with no gap.
 B_torre_arq,Torre arqueira,Archer tower
 BD_torre_arq,Atira flechas sozinha nos zumbis.,Shoots arrows at zombies on its own.
 B_canhao,Canhão,Cannon
@@ -409,7 +409,7 @@ BD_canhao,Tiro lento que acerta um grupo.,Slow shot that hits a group.
 B_choque,Torre de choque,Shock tower
 BD_choque,Raio que pula de zumbi em zumbi. Gasta energia.,Bolt that jumps between zombies. Uses power.
 B_holofote,Holofote,Searchlight
-BD_holofote,Ilumina a noite: as torres perto acertam mais forte.,Lights the night: nearby towers hit harder.
+BD_holofote,Ilumina a noite: as torres perto acertam mais forte. Gasta energia.,Lights the night: nearby towers hit harder. Uses power.
 B_mina,Mina,Mine
 BD_mina,Explode quando um zumbi pisa. Some depois.,Blows up when a zombie steps on it. Gone after.
 PAS_vigia,Vigia,Lookout
@@ -424,16 +424,16 @@ UI_RUIN,Virou ruína. Precisa reconstruir para voltar a funcionar.,It's in ruins
 UI_BROKEN,Avariado pelos zumbis: parado até consertar.,Damaged by zombies: stopped until repaired.
 UI_REPAIR,Consertar,Repair
 UI_REBUILD,Reconstruir,Rebuild
-TIP_REPAIR,Consertar volta a vida cheia na hora.,Repair restores full health at once.
+TIP_REPAIR,Um construtor vai até lá e conserta; volta com a vida cheia.,A builder goes there and repairs it; back to full health.
 TIP_REPAIR_WALL,"Muro se conserta sozinho de manhã, se tiver recurso. Aqui conserta agora.",Walls repair themselves at dawn if you have resources. This repairs now.
 TIP_REBUILD,"Vira obra no mesmo nível, pela metade do custo. Alguém precisa construir.","Becomes a site at the same level, for half the cost. Someone has to build it."
 TIP_HP,Vida: quanto aguenta de zumbi antes de avariar.,Health: how much zombie it takes before breaking.
-TIP_HP_WALL,Vida do muro: zumbi preso nele bate até derrubar.,Wall health: a stuck zombie hits it until it falls.
+TIP_HP_WALL,"Vida do muro: o zumbi para nele e bate até derrubar. Se tiver abertura perto, ele vai por ela.","Wall health: zombies stop and hit it until it falls. If there is a gap nearby, they use it."
 TIP_DEF_DMG,Dano por tiro: {n},Damage per shot: {n}
 TIP_DEF_RANGE,Alcance: {n} casas,Range: {n} tiles
 TIP_DEF_RATE,Um tiro a cada {n} s,One shot every {n} s
 TIP_DEF_SPLASH,Acerta todo mundo num raio de {n} casas,Hits everyone within {n} tiles
-TIP_DEF_CHAIN,Pula para até {n} zumbis,Jumps to up to {n} zombies
+TIP_DEF_CHAIN,Acerta até {n} zumbis em cadeia,Hits up to {n} zombies in a chain
 TIP_DEF_LIGHT,Torres a até {r} casas acertam {n}% mais forte de noite,Towers within {r} tiles hit {n}% harder at night
 TIP_GUARD,De vigia: a torre atira {n}% mais rápido,On watch: the tower fires {n}% faster
 TIP_FREE_MINES,{n} minas do mascate: saem de graça,{n} mines from the trader: free
@@ -445,7 +445,7 @@ TIP_RAID_NEXT,Próxima noite: {n} zumbis,Next night: {n} zombies
 TIP_RAID_HORDE,Noite de horda: vêm de dois lados.,Horde night: they come from two sides.
 TIP_RAID_BOSS,Com {n} chefão: bate forte em muro.,With {n} boss: hits walls hard.
 TIP_RAID_HORDE_TOMORROW,Amanhã é noite de horda.,Tomorrow is a horde night.
-TIP_RAID_HOW,"Ninguém da vila luta: só muros, torres e minas. De manhã eles voltam para a água. Com o jogo fechado nada quebra, e horda e chefão esperam você.","Nobody in the village fights: only walls, towers and mines. At dawn they go back to the water. With the game closed nothing breaks, and hordes and bosses wait for you."
+TIP_RAID_HOW,"Ninguém sai para lutar: muros, torres, minas e a espingarda da escotilha. De manhã eles voltam para a água. Com o jogo fechado nada quebra, e horda e chefão esperam você.","Nobody goes out to fight: walls, towers, mines and the hatch shotgun. At dawn they go back to the water. With the game closed nothing breaks, and hordes and bosses wait for you."
 UI_RAID_WARN,Zumbis esta noite: {n},Zombies tonight: {n}
 UI_RAID_HORDE,"Horda esta noite: {n} zumbis, de dois lados","Horde tonight: {n} zombies, from two sides"
 UI_RAID_BOSS,Horda com chefão esta noite: {n} zumbis,Horde with a boss tonight: {n} zombies
@@ -505,7 +505,7 @@ UI_SICK_LINE,Doente: {why}. {cure},Sick: {why}. {cure}
 UI_LOST_DIED,{name} morreu,{name} died
 UI_LOST_LEFT,{name} foi embora,{name} left
 UI_LOST_WHY,Motivo: {why}.,Cause: {why}.
-LOST_TIP_bite,Os zumbis morderam quem estava fora de casa. Ponha torres e muros entre a trilha deles e as casas.,Zombies bit whoever was outside. Put towers and walls between their trail and the houses.
+LOST_TIP_bite,Os zumbis morderam quem estava acordado de noite. Não vire a noite em noite de zumbi e ponha torres na trilha deles.,Zombies bit whoever was awake at night. Don't pull all-nighters on zombie nights and put towers on their trail.
 LOST_TIP_both,Faltou comida e água por muito tempo. Mantenha os dois acima de zero: mais hortas e barris.,Food and water ran out for too long. Keep both above zero: more gardens and barrels.
 LOST_TIP_hunger,"Faltou comida por muito tempo. Mais hortas, ou melhore as que tem.","Food ran out for too long. More gardens, or upgrade them."
 LOST_TIP_thirst,"Faltou água por muito tempo. Mais barris de chuva, ou melhore os que tem.","Water ran out for too long. More rain barrels, or upgrade them."
@@ -518,3 +518,7 @@ UI_NIGHT_BROKE,Quebrados: {list}. Parados até consertar.,Broken: {list}. Stoppe
 UI_NIGHT_BITTEN,Mordidos: {list}.,Bitten: {list}.
 UI_NIGHT_RETREAT,"Depois de quebrar o que deu, voltaram para a água.","After breaking what they could, they went back to the water."
 UI_REPAIR_ALL,Consertar tudo,Repair all
+UI_REPAIRING,Consertando,Repairing
+UI_REBUILDING,Reconstruindo,Rebuilding
+UI_NIGHT_RUINED,Em ruína: {list}. Precisa reconstruir.,Ruined: {list}. Needs rebuilding.
+TIP_NIGHT_WALLS_DOWN,Muros no chão: faltou recurso para consertar de manhã. Conserte no cartão do muro.,Walls down: not enough resources to fix them at dawn. Repair from the wall card.
