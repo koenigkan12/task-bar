@@ -168,13 +168,23 @@ func _night_len() -> float:
 
 ## Amanheceu: quem sobrou foge do sol; os muros se consertam sozinhos se der (como no Clash);
 ## a sequência de noites sem perder prédio conta para o recorde.
+## Amanheceu: quem ainda está vivo volta para a água (o sol espanta) e a noite fecha com "fugiram".
 func night_end() -> void:
+	var alive := zombies.size() + pending.size()
 	for z in zombies:
 		fx.append({"kind": "flee", "a": z["pos"], "b": z["pos"], "t": 0.0, "life": 1.2, "boss": String(z["kind"]) == "chefe"})
 	zombies.clear()
 	pending.clear()
 	if report.is_empty():
 		return
+	report["fled"] = alive
+	report["result"] = "survived" if alive == 0 else "fled"
+	_close_raid()
+
+
+## Fecha a noite de ataque: conta, guarda o relatório e avisa a interface (na hora em que o último
+## zumbi cai, ou no amanhecer se sobrou alguém).
+func _close_raid() -> void:
 	# Aberto, nada se conserta sozinho: muro caído espera alguém ir lá (obra). Fechado, volta de graça.
 	report["walls_fixed"] = _repair_walls() if sim.offline else 0
 	var lost: int = (report["broke"] as Array).size() + (report["ruined"] as Array).size()
@@ -231,11 +241,6 @@ func step(dt: float, night: bool) -> void:
 		_zombie_step(z, dt)
 	_mines()
 	_hurt_people(dt)
-	# Já levaram o máximo da noite: voltam para a água (antes ficavam batendo num prédio que não caía,
-	# parados no mapa sem nada acontecer).
-	if _lost_tonight() >= int(D()["max_lost_night"]) and not report.is_empty():
-		retreat()
-		return
 	var dead: Array[Dictionary] = []
 	for z in zombies:
 		if float(z["hp"]) <= 0.0:
@@ -244,6 +249,11 @@ func step(dt: float, night: bool) -> void:
 		zombies.erase(z)
 		report["killed"] = int(report.get("killed", 0)) + 1
 		fx.append({"kind": "zdie", "a": z["pos"], "b": z["pos"], "t": 0.0, "life": 1.0, "boss": String(z["kind"]) == "chefe", "facing": z["facing"]})
+	# O último caiu: a noite está ganha agora (não espera o amanhecer para dizer o resultado).
+	if zombies.is_empty() and pending.is_empty() and not report.is_empty() and int(report.get("came", 0)) > 0:
+		report["fled"] = 0
+		report["result"] = "survived"
+		_close_raid()
 
 
 ## Meta durante o ataque: quantos, o prédio que mais apanha e se alguma defesa alcança ele.
@@ -613,8 +623,8 @@ func hit_building(b: Dictionary, dmg: float, from: Vector2 = Vector2(-99, -99)) 
 	if from.x > -90.0:   # pancada: faísca no ponto onde o zumbi bate (o jogador vê que está apanhando)
 		fx.append({"kind": "hit", "a": from, "b": from.lerp(center_of(b), 0.45), "t": 0.0, "life": 0.35, "id": int(b["id"])})
 	var tp := String(b["type"])
-	# Teto por noite (defense.max_lost_night): passado dele, o prédio aguenta no fio.
-	var capped := _lost_tonight() >= int(D()["max_lost_night"])
+	# Sem teto: enquanto tiver zumbi vivo, ele destrói (muro, depois prédio, depois a ruína).
+	var capped := false
 	if tp == "muro":
 		b["hp"] = maxf(0.0, h)
 		if h <= 0.0:
@@ -646,6 +656,8 @@ func _break(b: Dictionary) -> void:
 	sim._invalidate()
 	(report["broke"] as Array).append(int(b["id"]))
 	sim.changed.emit()
+	if not sim.offline:
+		sim.building_fell.emit(int(b["id"]), false)
 
 
 func _ruin(b: Dictionary) -> void:
@@ -654,6 +666,8 @@ func _ruin(b: Dictionary) -> void:
 	(report["ruined"] as Array).append(int(b["id"]))
 	sim._invalidate()
 	sim.changed.emit()
+	if not sim.offline:
+		sim.building_fell.emit(int(b["id"]), true)
 
 
 ## Muros: no amanhecer voltam inteiros pagando o conserto, se o estoque der (fechado, de graça).

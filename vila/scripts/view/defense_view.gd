@@ -307,6 +307,15 @@ func _draw_bright() -> void:
 	for b in sim.buildings:
 		var tp := String(b["type"])
 		if tp == "muro":
+			var wk := 0.0
+			for e in df.fx:
+				if String(e["kind"]) == "hit" and int(e.get("id", -1)) == int(b["id"]):
+					wk = maxf(wk, 1.0 - float(e["t"]) / 0.25)
+			if wk > 0.0:
+				var wlook := wall_look(int(b["level"]))
+				var hgt: int = wlook[0]
+				var wb := Vector2(Vector2i(b["cell"]).x * TILE + 8, Vector2i(b["cell"]).y * TILE + 12)
+				_bright.draw_rect(Rect2(wb + Vector2(-8, -hgt - 3), Vector2(16, hgt + 4)), Color(1.0, 0.25, 0.2, 0.75 * wk))
 			var wh := df.hp(b)
 			var wm := df.max_hp(b)
 			if wh > 0.0 and wh < wm:

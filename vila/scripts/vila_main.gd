@@ -123,7 +123,9 @@ func _make_hud() -> void:
 	sim.raid_over.connect(func(rep: Dictionary) -> void:
 		if sim.offline:
 			return
+		hud.on_raid_closed(rep)
 		hud.show_night_report(rep))
+	sim.building_fell.connect(func(id: int, ruin: bool) -> void: hud.on_building_fell(id, ruin))
 	sim.raid_retreat.connect(func(rep: Dictionary) -> void:
 		if not sim.offline:
 			hud.toast(hud.fmt("UI_RAID_RETREAT", {"n": (rep["broke"] as Array).size() + (rep["ruined"] as Array).size()})))
@@ -453,6 +455,21 @@ func _open_test_card() -> void:
 				sim.defense._spawn("fraco", Vector2i(box.position.x + 2 + i * 2, box.end.y + 2))
 			cam.position = Vector2(box.get_center()) * 16.0 + Vector2(0, 40)
 			_clamp_cam()
+		"raid_live":   # capturas: placar do ataque no alto (vivos, mortos, o que caiu agora)
+			_test_raid()
+			sim.defense.report = {"day": sim.day_number(), "came": 8, "killed": 2, "broke": [], "ruined": [], "walls": 1, "horde": false}
+			var hl := sim._first("moradia")
+			if not hl.is_empty():
+				sim.defense._break(hl)
+		"raid_won", "raid_fled":   # capturas: fim da noite (resultado no alto e o cartão)
+			_test_raid()
+			sim.defense.zombies.clear()
+			var hw := sim._first("moradia")
+			var won := op == "raid_won"
+			var rp := {"day": 3, "came": 6, "killed": 6 if won else 4, "fled": 0 if won else 2, "result": "survived" if won else "fled",
+					"broke": [] if won else [int(hw.get("id", -1))], "ruined": [], "walls": 2, "walls_fixed": 0, "bitten": []}
+			hud.on_raid_closed(rp)
+			hud.show_night_report(rp)
 		"lost":   # capturas: aviso de morte
 			hud.show_lost("Rosa", true, "hunger")
 		"sick":   # capturas: Joaquim doente com fome (cartão e cruz em cima)

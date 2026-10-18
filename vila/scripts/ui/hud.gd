@@ -57,6 +57,13 @@ const BOTTOM_H := 16.0   # altura da barra de baixo
 var _card_kind: String = ""
 var _card_id: int = -1
 var _toast: Label
+var _raid_bar: PanelContainer      # placar do ataque no alto: contagem antes, vivos/mortos durante, resultado no fim
+var _raid_label: Label
+var _raid_icon: TextureRect
+var _raid_event := ""              # "Barraca caiu!" (fica uns segundos no placar)
+var _raid_event_t := 0.0
+var _raid_result := ""             # "Noite sobrevivida!" (fica um tempo depois do fim)
+var _raid_result_t := 0.0
 var _toast_t: float = 0.0
 var _tip: Label
 var _night_btn: Button
@@ -119,6 +126,7 @@ func setup(s: VilaSim) -> void:
 	_icons = load(ART + "icons.png")
 	theme = _make_theme()
 	_build_top()
+	_build_raid_bar()
 	_build_bottom()
 	_card = PanelContainer.new()
 	_card.anchor_left = 1.0
@@ -314,6 +322,93 @@ func _cost_row(cost: Dictionary) -> HBoxContainer:
 
 
 # ================================================================ barra de cima e de baixo
+func _build_raid_bar() -> void:
+	_raid_bar = PanelContainer.new()
+	_raid_bar.mouse_filter = Control.MOUSE_FILTER_PASS
+	_raid_bar.visible = false
+	var h := HBoxContainer.new()
+	h.add_theme_constant_override("separation", 3)
+	_raid_bar.add_child(h)
+	_raid_icon = _icon_rect("zumbi")
+	h.add_child(_raid_icon)
+	_raid_label = _label("")
+	h.add_child(_raid_label)
+	add_child(_raid_bar)
+
+
+## Placar do ataque no alto da tela, onde o jogador olha: antes (quantos e em quanto tempo), durante
+## (vivos de quantos, mortos, prédios caídos, o último que caiu) e no fim (o resultado da noite).
+func _update_raid_bar(delta: float) -> void:
+	_raid_event_t = maxf(0.0, _raid_event_t - delta)
+	_raid_result_t = maxf(0.0, _raid_result_t - delta)
+	var df := sim.defense
+	var txt := ""
+	var col := C_TEXT
+	var ic := "zumbi"
+	var rep: Dictionary = df.report
+	var who := I18n.t("RAID_HORDE") if bool(rep.get("horde", false)) or bool(df.tonight.get("horde", false)) else I18n.t("RAID_ZOMBIES")
+	if not df.zombies.is_empty() or (sim.is_night() and not df.pending.is_empty()):
+		var came := int(rep.get("came", df.zombies.size() + df.pending.size()))
+		var dead := int(rep.get("killed", 0))
+		var alive := df.zombies.size() + df.pending.size()
+		var fell := (rep.get("broke", []) as Array).size() + (rep.get("ruined", []) as Array).size()
+		txt = fmt("RAID_BAR_LIVE", {"who": who, "a": alive, "n": came}) + " · " + fmt("RAID_DEAD1" if dead == 1 else "RAID_DEAD", {"k": dead})
+		if fell > 0:
+			txt += " · " + fmt("RAID_BAR_FELL1" if fell == 1 else "RAID_BAR_FELL", {"n": fell})
+		if _raid_event_t > 0.0:
+			txt += " · " + _raid_event
+		col = C_WARN
+		_raid_bar.tooltip_text = I18n.t("TIP_RAID_BAR_LIVE")
+	elif _raid_result_t > 0.0:
+		txt = _raid_result
+		col = C_GOOD if _raid_result_good else C_AMBER
+		ic = "check" if _raid_result_good else "lua"
+		_raid_bar.tooltip_text = ""
+	else:
+		var rs := df.raid_soon()
+		if not rs.is_empty():
+			var dn: Array[String] = []
+			for d in rs["dirs"]:
+				dn.append(I18n.t("DIR_" + String(d)))
+			txt = fmt("RAID_BAR_SOON1" if int(rs["n"]) == 1 else "RAID_BAR_SOON", {"who": who, "n": rs["n"], "t": fmt_clock(float(rs["left_s"])), "d": I18n.t("UI_AND_JOIN").join(dn)})
+			col = C_AMBER
+			_raid_bar.tooltip_text = I18n.t("TIP_RAID_BAR_SOON")
+	_raid_bar.visible = txt != ""
+	if not _raid_bar.visible:
+		return
+	_raid_label.text = txt
+	_raid_label.add_theme_color_override("font_color", col)
+	_raid_icon.texture = icon(ic)
+	_raid_bar.size = Vector2.ZERO
+	var ms := _raid_bar.get_minimum_size()
+	_raid_bar.position = Vector2(roundf(W / 2.0 - ms.x / 2.0), 16)
+	# O aviso solto (rádio, toasts) desce para baixo do placar em vez de cobrir.
+	if _toast.visible and _toast.position.y < 30.0:
+		_toast.position.y = 34.0
+
+
+var _raid_result_good := true
+
+
+## Um prédio caiu agora: aparece no placar por uns segundos (e no aviso).
+func on_building_fell(id: int, ruin: bool) -> void:
+	var b := sim.by_id(id)
+	if b.is_empty():
+		return
+	_raid_event = fmt("RAID_RUINED" if ruin else "RAID_FELL", {"b": bname(String(b["type"]))})
+	_raid_event_t = 4.0
+
+
+## A noite de ataque fechou (todos mortos ou amanheceu): o resultado fica no placar um tempo.
+func on_raid_closed(rep: Dictionary) -> void:
+	_raid_result_good = String(rep.get("result", "")) == "survived"
+	if _raid_result_good:
+		_raid_result = fmt("RAID_WON", {"k": int(rep.get("killed", 0)), "n": int(rep.get("came", 0))})
+	else:
+		_raid_result = fmt("RAID_FLED", {"n": int(rep.get("fled", 0)), "k": int(rep.get("killed", 0))})
+	_raid_result_t = 20.0
+
+
 func _build_top() -> void:
 	var bar := PanelContainer.new()
 	bar.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
@@ -598,6 +693,7 @@ func _process(delta: float) -> void:
 	H = vs.y
 	if sim == null:
 		return
+	_update_raid_bar(delta)
 	_refresh_acc += delta
 	if _refresh_acc >= 0.2:
 		_refresh_acc = 0.0
@@ -785,7 +881,7 @@ func toast(text: String) -> void:
 	var x1 := _card.position.x if _card.visible else W
 	var ts := _toast.get_minimum_size()
 	if ts.x <= x1 - x0 - 4.0:
-		_toast.position = Vector2(roundf(x0 + (x1 - x0) / 2.0 - ts.x / 2.0), 18)
+		_toast.position = Vector2(roundf(x0 + (x1 - x0) / 2.0 - ts.x / 2.0), 34 if _raid_bar.visible else 18)
 	else:
 		_toast.position = Vector2(roundf(W / 2.0 - ts.x / 2.0), H - BOTTOM_H - ts.y - 2.0)
 
@@ -861,7 +957,11 @@ func _card_lost() -> void:
 func _card_night() -> void:
 	_clear_card()
 	var rep: Dictionary = _notice.get("rep", {})
-	_header("lua", fmt("UI_NIGHT_REPORT", {"n": int(rep.get("day", 0))}))
+	# O título é o resultado: ganhou a noite (todos derrubados) ou amanheceu com zumbi vivo.
+	var won := String(rep.get("result", "survived")) == "survived"
+	var title := fmt("RAID_WON", {"k": int(rep.get("killed", 0)), "n": int(rep.get("came", 0))}) if won \
+			else fmt("RAID_FLED", {"n": int(rep.get("fled", 0)), "k": int(rep.get("killed", 0))})
+	_header("check" if won else "lua", title, fmt("UI_NIGHT_REPORT", {"n": int(rep.get("day", 0))}))
 	_card_box.add_child(_stats([_stat("zumbi", str(int(rep.get("came", 0))), I18n.t("TIP_NIGHT_CAME")),
 			_stat("espada", str(int(rep.get("killed", 0))), I18n.t("TIP_NIGHT_KILLED"), C_GOOD)]))
 	var names: Array[String] = []
@@ -896,8 +996,6 @@ func _card_night() -> void:
 			bit.append(pname(bp))
 	if not bit.is_empty():
 		_card_box.add_child(_wrap_row("saude", fmt("UI_NIGHT_BITTEN", {"list": ", ".join(bit)}), C_WARN))
-	if bool(rep.get("retreat", false)):
-		_card_box.add_child(_wrap_row("zumbi", I18n.t("UI_NIGHT_RETREAT"), C_MUTED))
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_END
 	if not to_fix.is_empty():

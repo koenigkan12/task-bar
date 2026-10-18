@@ -112,7 +112,7 @@ func setup(s: VilaSim) -> void:
 	_water.setup(sim, tex("farol"), _objects)
 	_boat = Sprite2D.new()
 	_boat.texture = tex("bote")
-	_boat.centered = false
+	_boat.centered = true   # gira em volta do meio quando o barqueiro vira a proa para ir embora
 	_boat.visible = false
 	_boat.z_index = -5
 	add_child(_boat)
@@ -244,6 +244,15 @@ func _opaque_at(spr: Sprite2D, world: Vector2) -> bool:
 				if img2.get_pixel((spr.frame % spr.hframes) * fw + x, (spr.frame / spr.hframes) * fh + y).a > 0.5:
 					return true
 	return false
+
+
+## Golpe recente no prédio: 1 logo na pancada, cai a 0 em ~0,25 s (para piscar a cada golpe).
+func _hit_k(id: int) -> float:
+	var best := 0.0
+	for e in sim.defense.fx:
+		if String(e["kind"]) == "hit" and int(e.get("id", -1)) == id:
+			best = maxf(best, 1.0 - float(e["t"]) / 0.25)
+	return clampf(best, 0.0, 1.0)
 
 
 ## Marcador de onde o jogador mandou alguém (anel que abre e some) e, se não deu, o motivo ali do lado.
@@ -537,6 +546,13 @@ func _update_building(b: Dictionary, node: Dictionary) -> void:
 		spm.modulate = Color.WHITE
 		spm.scale = Vector2.ONE
 		spm.skew = 0.0
+	# Cada golpe de zumbi: o prédio pisca vermelho e dá um tranco (feedback de que está apanhando).
+	var hk := _hit_k(int(b["id"]))
+	if hk > 0.0:
+		spm.modulate = spm.modulate.lerp(Color(1.0, 0.25, 0.2), hk)
+		spm.position.x = roundf(sin(_anim_t * 70.0) * hk * 1.5)
+	elif spm.position.x != 0.0:
+		spm.position.x = 0.0
 	var crops: Array = node["crops"]
 	if not crops.is_empty():
 		var stage := 0
@@ -693,34 +709,53 @@ func _sync_boat(delta: float) -> void:
 	_boat.visible = true
 	var path := func(f: float) -> Vector2:   # 0 = longe, 1 = no píer
 		return away.lerp(lane, f / 0.8) if f < 0.8 else lane.lerp(dock, (f - 0.8) / 0.2)
+	var half := _boat.texture.get_size() / 2.0 if _boat.texture != null else Vector2.ZERO
+	_boat_rot = 0.0
 	match _boat_state:
 		"in":
-			_boat.position = (path.call(k) as Vector2).round() + bob
+			_boat_tl = (path.call(k) as Vector2).round() + bob
 			_boat_dir = 1.0
 			if _boat_t >= BOAT_SAIL_S:
 				_boat_state = "here"
 		"here":
-			_boat.position = dock.round() + bob
+			_boat_tl = dock.round() + bob
+			_boat_dir = 1.0
 		"out":
-			_boat.position = (path.call(1.0 - k) as Vector2).round() + bob
-			_boat_dir = -1.0
-			if _boat_t >= BOAT_SAIL_S:
-				_boat_state = ""
-				_boat.visible = false
+			# Primeiro desencosta e vira a proa (meia-volta no lugar), depois rema embora de frente.
+			if _boat_t < BOAT_TURN_S:
+				var kt := _boat_t / BOAT_TURN_S
+				kt = kt * kt * (3.0 - 2.0 * kt)
+				_boat_tl = dock.lerp(lane, kt).round() + bob
+				_boat_rot = PI * kt
+				_boat_dir = 1.0
+			else:
+				var ko := clampf((_boat_t - BOAT_TURN_S) / BOAT_SAIL_S, 0.0, 1.0)
+				ko = ko * ko * (3.0 - 2.0 * ko)
+				_boat_tl = lane.lerp(away, ko).round() + bob
+				_boat_dir = -1.0
+				if _boat_t >= BOAT_TURN_S + BOAT_SAIL_S:
+					_boat_state = ""
+					_boat.visible = false
+	_boat.position = _boat_tl + half
+	_boat.rotation = _boat_rot
 
 
 var _boat_dir := 1.0   # para onde a proa aponta (1 = direita)
+var _boat_tl := Vector2.ZERO   # canto de cima do bote (o sprite gira em volta do meio)
+var _boat_rot := 0.0
+const BOAT_TURN_S := 1.6
 
 
 ## Quem está no bote: o barqueiro na popa remando e, enquanto espera no píer, as cabeças de quem veio.
+## Desenhado em volta do meio do bote, girando junto quando ele vira.
 func _draw_boat_crew() -> void:
 	if _boat_state == "" or not _boat.visible or _boat.texture == null:
 		return
 	var w := float(_boat.texture.get_width())
-	var o := _boat.position
+	var h := float(_boat.texture.get_height())
 	var moving := _boat_state != "here"
-	var stern := o + Vector2(5.0 if _boat_dir > 0.0 else w - 5.0, 5.0)
-	# barqueiro: chapéu, rosto e corpo
+	_overlay.draw_set_transform(_boat_tl + Vector2(w, h) / 2.0, _boat_rot, Vector2(_boat_dir, 1.0))
+	var stern := Vector2(-w / 2.0 + 5.0, 5.0 - h / 2.0)
 	_overlay.draw_rect(Rect2(stern + Vector2(-2, -3), Vector2(4, 4)), Color8(92, 74, 96))
 	_overlay.draw_rect(Rect2(stern + Vector2(-1, -6), Vector2(3, 3)), Color8(226, 186, 150))
 	_overlay.draw_rect(Rect2(stern + Vector2(-2, -7), Vector2(5, 1)), Color8(150, 112, 70))
@@ -728,15 +763,14 @@ func _draw_boat_crew() -> void:
 	var ph := sin(_anim_t * 6.0) if moving else 0.0
 	for sg in [-1.0, 1.0]:
 		var a := stern + Vector2(0, -1)
-		var z := a + Vector2(-_boat_dir * (3.0 + ph * 2.0), sg * 6.0)
-		_overlay.draw_line(a, z, Color8(150, 112, 70), 1.0)
+		_overlay.draw_line(a, a + Vector2(-(3.0 + ph * 2.0), sg * 6.0), Color8(150, 112, 70), 1.0)
 	if _boat_state == "here" or _boat_state == "in":
 		var n := mini(3, sim.gate_group.size())
 		for i in n:
-			var hx := (o.x + w / 2.0 - 5.0 + i * 5.0) if _boat_dir > 0.0 else (o.x + w / 2.0 + 5.0 - i * 5.0)
-			var hp := Vector2(hx, o.y + 3.0)
+			var hp := Vector2(-5.0 + i * 5.0, 3.0 - h / 2.0)
 			_overlay.draw_rect(Rect2(hp + Vector2(-1, -1), Vector2(3, 3)), Color8(226, 186, 150))
 			_overlay.draw_rect(Rect2(hp + Vector2(-1, 2), Vector2(3, 2)), Color8(120, 140, 170))
+	_overlay.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 
 var _boat_seen := false
@@ -758,7 +792,7 @@ func boat_waiting() -> bool:
 func boat_rect() -> Rect2:
 	if _boat_state == "" or _boat.texture == null:
 		return Rect2()
-	return Rect2(_boat.position + Vector2(-4, -22), _boat.texture.get_size() + Vector2(8, 26))
+	return Rect2(_boat_tl + Vector2(-4, -22), _boat.texture.get_size() + Vector2(8, 26))
 
 
 func boat_screen_rect() -> Rect2:
@@ -774,7 +808,7 @@ func boat_screen_rect() -> Rect2:
 func _draw_boat_sign() -> void:
 	if _boat_state != "here":
 		return
-	var top := _boat.position + Vector2(_boat.texture.get_width() / 2.0, -4.0 - absf(sin(_anim_t * 3.0)) * 3.0)
+	var top := _boat_tl + Vector2(_boat.texture.get_width() / 2.0, -4.0 - absf(sin(_anim_t * 3.0)) * 3.0)
 	var r := Rect2((top - Vector2(5, 13)).round(), Vector2(10, 12))
 	_overlay.draw_rect(r.grow(1), Color(0.12, 0.08, 0.12, 0.95))
 	_overlay.draw_rect(r, BOAT_COL)

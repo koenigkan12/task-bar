@@ -525,3 +525,18 @@ TIP_NIGHT_WALLS_DOWN,Muros no chão: o caminho está aberto até alguém consert
 UI_WALLS_FIX_ALL,Consertar os {n},Repair all {n}
 TIP_WALLS_FIX_ALL,Paga o conserto dos {n} muros caídos ou rachados; os construtores vão de um em um.,Pays to repair all {n} fallen or cracked walls; builders go one by one.
 UI_WALLS_FIXED,{n} muros para consertar,{n} walls to repair
+RAID_ZOMBIES,Zumbis,Zombies
+RAID_HORDE,Horda,Horde
+RAID_BAR_SOON,{who}: {n} saem da água em {t} ({d}),{who}: {n} come out of the water in {t} ({d})
+RAID_BAR_LIVE,{who}: {a} de {n} vivos,{who}: {a} of {n} alive
+RAID_BAR_FELL,{n} caídos,{n} fallen
+RAID_FELL,{b} caiu!,{b} fell!
+RAID_RUINED,{b} virou ruína!,{b} is in ruins!
+RAID_WON,Noite sobrevivida! {k} de {n} derrubados,Night survived! {k} of {n} taken down
+RAID_FLED,Amanheceu: {n} zumbis voltaram para a água ({k} derrubados),Dawn: {n} zombies went back to the water ({k} taken down)
+TIP_RAID_BAR_SOON,Contagem até os zumbis saírem da água. A trilha vermelha no mapa mostra por onde vêm.,Countdown until the zombies come out of the water. The red trail on the map shows where they come from.
+TIP_RAID_BAR_LIVE,Eles quebram os muros e depois os prédios até morrer ou amanhecer. Torres e minas derrubam.,"They break walls, then buildings, until they die or dawn comes. Towers and mines take them down."
+RAID_BAR_FELL1,{n} caído,{n} fallen
+RAID_BAR_SOON1,{who}: {n} sai da água em {t} ({d}),{who}: {n} comes out of the water in {t} ({d})
+RAID_DEAD,{k} mortos,{k} down
+RAID_DEAD1,{k} morto,{k} down
