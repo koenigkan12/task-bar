@@ -425,7 +425,7 @@ UI_BROKEN,Avariado pelos zumbis: parado até consertar.,Damaged by zombies: stop
 UI_REPAIR,Consertar,Repair
 UI_REBUILD,Reconstruir,Rebuild
 TIP_REPAIR,Um construtor vai até lá e conserta; volta com a vida cheia.,A builder goes there and repairs it; back to full health.
-TIP_REPAIR_WALL,"Muro se conserta sozinho de manhã, se tiver recurso. Aqui conserta agora.",Walls repair themselves at dawn if you have resources. This repairs now.
+TIP_REPAIR_WALL,Paga o conserto e um construtor vai até o muro. Nada se conserta sozinho.,Pay for the repair and a builder goes to the wall. Nothing fixes itself.
 TIP_REBUILD,"Vira obra no mesmo nível, pela metade do custo. Alguém precisa construir.","Becomes a site at the same level, for half the cost. Someone has to build it."
 TIP_HP,Vida: quanto aguenta de zumbi antes de avariar.,Health: how much zombie it takes before breaking.
 TIP_HP_WALL,"Vida do muro: o zumbi para nele e bate até derrubar. Se tiver abertura perto, ele vai por ela.","Wall health: zombies stop and hit it until it falls. If there is a gap nearby, they use it."
@@ -521,7 +521,7 @@ UI_REPAIR_ALL,Consertar tudo,Repair all
 UI_REPAIRING,Consertando,Repairing
 UI_REBUILDING,Reconstruindo,Rebuilding
 UI_NIGHT_RUINED,Em ruína: {list}. Precisa reconstruir.,Ruined: {list}. Needs rebuilding.
-TIP_NIGHT_WALLS_DOWN,Muros no chão: faltou recurso para consertar de manhã. Conserte no cartão do muro.,Walls down: not enough resources to fix them at dawn. Repair from the wall card.
+TIP_NIGHT_WALLS_DOWN,Muros no chão: o caminho está aberto até alguém consertar. Conserte no cartão do muro.,Walls down: the way is open until someone repairs them. Repair from the wall card.
 UI_WALLS_FIX_ALL,Consertar os {n},Repair all {n}
-TIP_WALLS_FIX_ALL,"Conserta de uma vez os {n} muros caídos ou rachados, pagando por todos.","Repairs all {n} fallen or cracked walls at once, paying for all."
-UI_WALLS_FIXED,{n} muros consertados,{n} walls repaired
+TIP_WALLS_FIX_ALL,Paga o conserto dos {n} muros caídos ou rachados; os construtores vão de um em um.,Pays to repair all {n} fallen or cracked walls; builders go one by one.
+UI_WALLS_FIXED,{n} muros para consertar,{n} walls to repair

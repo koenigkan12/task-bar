@@ -206,6 +206,7 @@
   "rebuild_frac": 0.5,
   "rebuild_time_frac": 0.5,
   "repair_time_frac": 0.4,
+  "wall_repair_s": 8,
   "people_dmg": 8,
   "guard_rate": 0.5,
   "offline": {

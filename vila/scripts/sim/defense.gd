@@ -175,7 +175,8 @@ func night_end() -> void:
 	pending.clear()
 	if report.is_empty():
 		return
-	report["walls_fixed"] = _repair_walls()
+	# Aberto, nada se conserta sozinho: muro caído espera alguém ir lá (obra). Fechado, volta de graça.
+	report["walls_fixed"] = _repair_walls() if sim.offline else 0
 	var lost: int = (report["broke"] as Array).size() + (report["ruined"] as Array).size()
 	var st := sim.stats
 	if int(report["came"]) > 0:

@@ -100,7 +100,7 @@ func _make_hud() -> void:
 	sim.person_joined.connect(func(id: int) -> void: hud.toast(hud.fmt("UI_JOINED", {"name": hud.pname(sim.person(id))})))
 	sim.building_done.connect(func(id: int) -> void:
 		var b := sim.by_id(id)
-		if not b.is_empty() and String(b["type"]) != "torre":
+		if not b.is_empty() and String(b["type"]) not in ["torre", "muro"]:
 			hud.toast(hud.fmt("UI_DONE", {"b": hud.bname(String(b["type"]), int(b["level"]))})))
 	sim.fog_started.connect(func() -> void: hud.toast(I18n.t("UI_FOG_START")))
 	sim.person_grave.connect(func(id: int) -> void: hud.toast(hud.fmt("UI_GRAVE", {"name": hud.pname(sim.person(id))})))

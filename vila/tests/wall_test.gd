@@ -145,7 +145,25 @@ func _init() -> void:
 	var wf := sim4.walls_to_fix()
 	_check((wf["ids"] as Array).size() == 5 and not (wf["cost"] as Dictionary).is_empty(), "lista os 5 muros com estrago e o custo total")
 	var rr := sim4.repair_all_walls()
-	_check(bool(rr["ok"]) and (sim4.walls_to_fix()["ids"] as Array).is_empty(), "consertar todos deixa os muros inteiros")
+	var obras := 0
+	for b in sim4.buildings:
+		if bool(b.get("repair", false)):
+			obras += 1
+	_check(bool(rr["ok"]) and obras == 5, "consertar todos vira 5 obras de conserto (%d)" % obras)
+	for b in sim4.buildings:
+		if bool(b.get("repair", false)):
+			sim4._finish(b)
+	_check((sim4.walls_to_fix()["ids"] as Array).is_empty(), "terminadas as obras, os muros ficam inteiros")
+	# Amanhecer com o jogo aberto: muro caído continua caído.
+	var w0: Dictionary = {}
+	for b in sim4.buildings:
+		if String(b["type"]) == "muro":
+			w0 = b
+			break
+	sim4.defense.hit_building(w0, 9999.0)
+	sim4.defense.report = {"broke": [], "ruined": [], "walls": 1, "came": 0, "horde": false, "killed": 0}
+	sim4.defense.night_end()
+	_check(sim4.defense.hp(w0) == 0.0, "amanhecer aberto não conserta muro sozinho")
 	if fails > 0:
 		printerr("FALHAS: ", fails)
 	else:

@@ -612,7 +612,9 @@ func _test_defense() -> void:
 	df.hit_building(wall, 999.0)
 	_check(df.hp(wall) == 0.0 and not wall.has("broken"), "defesa: muro derrubado não avaria, só cai")
 	var suc0 := float(sim.stock["sucata"])
-	_check(df._repair_walls() == 1 and df.hp(wall) == df.max_hp(wall) and float(sim.stock["sucata"]) < suc0, "defesa: de manhã o muro volta pagando o conserto")
+	_check(bool(sim.repair(int(wall["id"]))["ok"]) and String(wall["state"]) == "upgrade" and df.hp(wall) == 0.0 and float(sim.stock["sucata"]) < suc0, "defesa: consertar muro vira obra (não volta sozinho)")
+	sim._finish(wall)
+	_check(df.hp(wall) == df.max_hp(wall) and String(wall["state"]) == "built", "defesa: terminada a obra, o muro volta inteiro")
 	# Torre derruba zumbi que chega perto.
 	var tr := sim.build("torre_arq", AutoPlayer.spot(sim, "torre_arq"))
 	_check(bool(tr["ok"]), "defesa: dá para pôr torre arqueira")

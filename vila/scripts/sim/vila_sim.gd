@@ -1073,8 +1073,8 @@ func drop(cell: Vector2i) -> Dictionary:
 	return {"ok": true}
 
 
-## Prédio avariado por zumbi: paga o conserto e vira obra (um construtor vai lá e gasta tempo,
-## como na construção). Muro é a exceção: conserta na hora.
+## Prédio ou muro avariado por zumbi: paga o conserto e vira obra (um construtor vai lá e gasta tempo,
+## como na construção). Nada se conserta sozinho.
 func repair(id: int) -> Dictionary:
 	var b := by_id(id)
 	if b.is_empty() or bool(b.get("ruin", false)) or String(b["state"]) != "built" or defense.hp(b) >= defense.max_hp(b):
@@ -1083,15 +1083,14 @@ func repair(id: int) -> Dictionary:
 	if not can_afford(cost):
 		return {"ok": false, "reason": "cost"}
 	_pay(cost)
-	if String(b["type"]) == "muro":
-		_fix_now(b)
-		changed.emit()
-		return {"ok": true}
 	_release_workers(b)
 	b["repair"] = true
 	b["state"] = "upgrade"
 	b["progress"] = 0.0
-	b["total"] = maxf(15.0, float(level_def(b).get("time_s", 60)) * float(bal["defense"]["repair_time_frac"]))
+	if String(b["type"]) == "muro":
+		b["total"] = float(bal["defense"]["wall_repair_s"])   # muro: obra curta, mas alguém tem que ir lá
+	else:
+		b["total"] = maxf(15.0, float(level_def(b).get("time_s", 60)) * float(bal["defense"]["repair_time_frac"]))
 	b["queued_t"] = t
 	_invalidate()
 	changed.emit()
