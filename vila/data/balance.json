@@ -1,0 +1,1590 @@
+{
+ "_comment": "Todo o balanceamento da vila. Tempos em segundos reais (o jogo usa o relógio real). Torre 1 a 5; números de partida.",
+ "map": {
+  "building_walk_cost": 30,
+  "w": 44,
+  "h": 38,
+  "seed": 7,
+  "center": [
+   22,
+   19
+  ],
+  "hatch": [
+   21,
+   18
+  ],
+  "tower": [
+   24,
+   16
+  ],
+  "tent": [
+   18,
+   18
+  ],
+  "gate": [
+   20,
+   33
+  ],
+  "lighthouse": [
+   28,
+   34
+  ],
+  "ring_rubble": 0.16,
+  "outer_rubble": 0.05,
+  "open_radius": {
+   "1": 7.0,
+   "2": 9.0,
+   "3": 12.0,
+   "4": 14.5,
+   "5": 17.0
+  },
+  "island": [
+   "............................................",
+   "............................................",
+   "......................####..................",
+   "...............#......#####.................",
+   ".........###..################..............",
+   "........######################..............",
+   ".......###########################..........",
+   "......############################..........",
+   "......##############################........",
+   "......###############################.......",
+   "......#################################.....",
+   "......#################################.....",
+   ".....################################.......",
+   ".....##################################.....",
+   ".....##################################.....",
+   "....###################################.....",
+   "....####################################....",
+   "....####################################....",
+   "....#####################################...",
+   "....#####################################...",
+   "...######################################...",
+   "..#######################################...",
+   "...######################################...",
+   "...####################################.....",
+   "...###################################......",
+   "...###################################......",
+   "....###################################.....",
+   "....#################################.......",
+   "......##############################........",
+   ".......#############################........",
+   "..........##########################........",
+   "..........########################..........",
+   "............##..########..######............",
+   "............##..########..####..............",
+   "....................####..##................",
+   "............................................",
+   "............................................",
+   "............................................"
+  ],
+  "shore_rubble": 0.3
+ },
+ "open_scrap_share": 0.5,
+ "time": {
+  "step_s": 0.25,
+  "offline_step_s": 60.0,
+  "offline_rethink_s": 120.0,
+  "offline_fraction": 1.0,
+  "offline_prod_h": 4,
+  "offline_cap_h": 72,
+  "offline_min_s": 120,
+  "night_from_h": 22,
+  "night_to_h": 4,
+  "show_day_from_h": 6,
+  "show_night_from_h": 18,
+  "save_every_s": 30
+ },
+ "start": {
+  "stock": {
+   "comida": 16,
+   "agua": 8,
+   "madeira": 10,
+   "sucata": 6,
+   "pecas": 0
+  }
+ },
+ "night": {
+  "cycle_s": 1500,
+  "start_hour": 7,
+  "tired_penalty": 0.1,
+  "tired_min_mult": 0.3,
+  "rest_nights_per_tired": 2,
+  "no_bed_rest": 0.5
+ },
+ "fog": {
+  "from_day": 3,
+  "chance": 0.25,
+  "no_bed_tired": 1,
+  "food_bonus": 0.25,
+  "bonus_s": 1125,
+  "warn_h": 3
+ },
+ "vines_after_s": 1500,
+ "demolish_refund": 0.5,
+ "storage": {
+  "hatch_cap": 20,
+  "box_mult": 2
+ },
+ "people": {
+  "speed_tiles_s": 2.4,
+  "skill_pref": 3.0,
+  "critical_stock": 6.0,
+  "site_wait_s": 90,
+  "carry": 4,
+  "eat_every_s": 240,
+  "drink_every_s": 200,
+  "hungry_speed": 0.5,
+  "rethink_s": 4,
+  "move_hold_s": 10,
+  "max_builders": 3
+ },
+ "health": {
+  "warn_min": 2.0,
+  "hungry_loss_min": 2.0,
+  "thirsty_loss_min": 3.0,
+  "regen_min": 1.0,
+  "rest_regen_mult": 2.0,
+  "weak_below": 70,
+  "sick_below": 40,
+  "sick_until": 60,
+  "grave_below": 15,
+  "weak_mult": 0.7,
+  "offline_floor": 45, "sick_work_mult": 0.5, "rest_min_stock": 2,
+  "at_zero": "die"
+ },
+ "defense": {
+  "_comment": "Zumbis à noite (defense.gd). Toda noite poucos a partir de from_day; horda a cada horde_every; chefe a cada boss_every. Vida e dano crescem scale_per_day por dia.",
+  "from_day": 2,
+  "warn_h": 18,
+  "daily": {
+   "base": 1,
+   "rand": 1,
+   "per_days": 8
+  },
+  "horde_every": 5,
+  "horde": {
+   "base": 5,
+   "per_day": 0.5,
+   "per_tower": 1.5
+  },
+  "boss_every": 10,
+  "boss": {
+   "base": 1,
+   "per_days": 30
+  },
+  "spawn_window": 0.35,
+  "zombies": {
+   "fraco": {
+    "hp": 8,
+    "speed": 0.7,
+    "dmg": 1,
+    "hit_s": 1.5
+   },
+   "horda": {
+    "hp": 12,
+    "speed": 0.9,
+    "dmg": 2,
+    "hit_s": 1.2
+   },
+   "chefe": {
+    "hp": 140,
+    "speed": 0.5,
+    "dmg": 10,
+    "hit_s": 1.6,
+    "wall_mult": 3
+   }
+  },
+  "scale_per_day": 0.04,
+  "building_hp": {
+   "base": 40,
+   "per_level": 60,
+   "per_tile": 5,
+   "round": 10
+  },
+  "wall_weight": 0.25,
+  "forest_weight": 6,
+  "repair_frac": 0.25,
+  "rebuild_frac": 0.5,
+  "rebuild_time_frac": 0.5,
+  "repair_time_frac": 0.4,
+  "wall_repair_s": 8,
+  "people_dmg": 8,
+  "guard_rate": 0.5,
+  "offline": {
+   "fight_s": 90,
+   "wall_k": 0.6,
+   "wall_chip": 0.3,
+   "splash_k": 2.0,
+   "loot_frac": 0.03,
+   "loot_max": 0.1
+  },
+  "hatch_gun": {
+   "dmg": 2,
+   "range": 6.5,
+   "rate_s": 1.2
+  }
+ },
+ "forage": {
+  "madeira": {
+   "work_s": 5,
+   "yield": 3,
+   "regrow_s": 900
+  },
+  "sucata": {
+   "work_s": 6,
+   "yield": 2
+  }
+ },
+ "rubble_amount": 8,
+ "horta_water_per_food": 0.5,
+ "no_water_horta_speed": 0.25,
+ "buildings": {
+  "torre": {
+   "fp": [
+    2,
+    2
+   ],
+   "fixed": true
+  },
+  "hatch": {
+   "fp": [
+    2,
+    2
+   ],
+   "fixed": true,
+   "storage": true,
+   "defense": "arrow"
+  },
+  "gate": {
+   "fp": [
+    2,
+    2
+   ],
+   "fixed": true,
+   "walkable": true
+  },
+  "moradia": {
+   "fp": [
+    2,
+    2
+   ],
+   "tower": 1,
+   "levels": [
+    {
+     "cost": {
+      "madeira": 6,
+      "sucata": 2
+     },
+     "time_s": 40,
+     "beds": 1
+    },
+    {
+     "cost": {
+      "madeira": 12,
+      "sucata": 6
+     },
+     "time_s": 90,
+     "beds": 2
+    },
+    {
+     "cost": {
+      "madeira": 30,
+      "sucata": 10
+     },
+     "time_s": 240,
+     "beds": 3,
+     "tower": 2
+    },
+    {
+     "cost": {
+      "madeira": 60,
+      "sucata": 30
+     },
+     "time_s": 600,
+     "beds": 4,
+     "tower": 3
+    }
+   ]
+  },
+  "poco": {
+   "fp": [
+    2,
+    2
+   ],
+   "tower": 1,
+   "limit": {
+    "base": 3,
+    "per_tower": 2
+   },
+   "res": "agua",
+   "levels": [
+    {
+     "cost": {
+      "madeira": 3,
+      "sucata": 1
+     },
+     "time_s": 20,
+     "slots": 1,
+     "rate_s": 30
+    },
+    {
+     "cost": {
+      "madeira": 12,
+      "sucata": 6
+     },
+     "time_s": 150,
+     "slots": 1,
+     "rate_s": 18,
+     "tower": 2
+    },
+    {
+     "cost": {
+      "madeira": 40,
+      "sucata": 25,
+      "pecas": 5
+     },
+     "time_s": 900,
+     "slots": 2,
+     "rate_s": 14,
+     "tower": 4
+    }
+   ]
+  },
+  "horta": {
+   "fp": [
+    2,
+    2
+   ],
+   "tower": 1,
+   "limit": {
+    "base": 3,
+    "per_tower": 2
+   },
+   "res": "comida",
+   "levels": [
+    {
+     "cost": {
+      "madeira": 4
+     },
+     "time_s": 30,
+     "slots": 1,
+     "rate_s": 50
+    },
+    {
+     "cost": {
+      "madeira": 12,
+      "sucata": 4
+     },
+     "time_s": 120,
+     "slots": 1,
+     "rate_s": 38
+    },
+    {
+     "cost": {
+      "madeira": 25,
+      "sucata": 10
+     },
+     "time_s": 300,
+     "slots": 2,
+     "rate_s": 30,
+     "tower": 2
+    }
+   ]
+  },
+  "deposito": {
+   "fp": [
+    2,
+    2
+   ],
+   "tower": 1,
+   "storage": true,
+   "levels": [
+    {
+     "cost": {
+      "madeira": 6
+     },
+     "time_s": 40,
+     "cap": 40
+    },
+    {
+     "cost": {
+      "madeira": 20,
+      "sucata": 8
+     },
+     "time_s": 180,
+     "cap": 100,
+     "tower": 2
+    },
+    {
+     "cost": {
+      "madeira": 40,
+      "sucata": 25
+     },
+     "time_s": 480,
+     "cap": 220,
+     "tower": 3
+    },
+    {
+     "cost": {
+      "madeira": 90,
+      "sucata": 60,
+      "pecas": 10
+     },
+     "time_s": 1500,
+     "cap": 500,
+     "tower": 4
+    }
+   ]
+  },
+  "fogueira": {
+   "fp": [
+    1,
+    1
+   ],
+   "tower": 1,
+   "limit": 1,
+   "levels": [
+    {
+     "cost": {
+      "madeira": 4
+     },
+     "time_s": 20
+    }
+   ]
+  },
+  "serraria": {
+   "fp": [
+    3,
+    2
+   ],
+   "tower": 2,
+   "res": "madeira",
+   "levels": [
+    {
+     "cost": {
+      "madeira": 20,
+      "sucata": 10
+     },
+     "time_s": 180,
+     "slots": 2,
+     "rate_s": 6
+    },
+    {
+     "cost": {
+      "madeira": 40,
+      "sucata": 20
+     },
+     "time_s": 600,
+     "slots": 2,
+     "rate_s": 4.5,
+     "tower": 3
+    },
+    {
+     "cost": {
+      "madeira": 80,
+      "sucata": 40,
+      "pecas": 8
+     },
+     "time_s": 1500,
+     "slots": 3,
+     "rate_s": 3.5,
+     "tower": 4
+    }
+   ]
+  },
+  "ferrovelho": {
+   "fp": [
+    3,
+    2
+   ],
+   "tower": 2,
+   "res": "sucata",
+   "levels": [
+    {
+     "cost": {
+      "madeira": 15,
+      "sucata": 5
+     },
+     "time_s": 180,
+     "slots": 2,
+     "rate_s": 9
+    },
+    {
+     "cost": {
+      "madeira": 35,
+      "sucata": 15
+     },
+     "time_s": 600,
+     "slots": 2,
+     "rate_s": 7,
+     "tower": 3
+    },
+    {
+     "cost": {
+      "madeira": 70,
+      "sucata": 35,
+      "pecas": 8
+     },
+     "time_s": 1500,
+     "slots": 3,
+     "rate_s": 5.5,
+     "tower": 4
+    }
+   ]
+  },
+  "praca": {
+   "fp": [
+    3,
+    3
+   ],
+   "tower": 3,
+   "limit": 1,
+   "open": true,
+   "levels": [
+    {
+     "cost": {
+      "madeira": 30,
+      "sucata": 20
+     },
+     "time_s": 600
+    }
+   ]
+  },
+  "oficina": {
+   "fp": [
+    3,
+    2
+   ],
+   "tower": 3,
+   "limit": 1,
+   "res": "pecas",
+   "power_use": 2,
+   "levels": [
+    {
+     "cost": {
+      "madeira": 40,
+      "sucata": 30
+     },
+     "time_s": 900,
+     "slots": 1,
+     "rate_s": 40,
+     "input": {
+      "sucata": 2
+     }
+    },
+    {
+     "cost": {
+      "madeira": 80,
+      "sucata": 60,
+      "pecas": 10
+     },
+     "time_s": 2400,
+     "slots": 2,
+     "rate_s": 30,
+     "input": {
+      "sucata": 2
+     },
+     "tower": 4
+    },
+    {
+     "cost": {
+      "madeira": 140,
+      "sucata": 100,
+      "pecas": 25
+     },
+     "time_s": 3600,
+     "slots": 3,
+     "rate_s": 24,
+     "input": {
+      "sucata": 2
+     },
+     "tower": 5
+    }
+   ]
+  },
+  "gerador": {
+   "fp": [
+    2,
+    2
+   ],
+   "tower": 3,
+   "power_out": 4,
+   "levels": [
+    {
+     "cost": {
+      "madeira": 20,
+      "sucata": 40
+     },
+     "time_s": 600
+    }
+   ]
+  },
+  "painel": {
+   "fp": [
+    2,
+    2
+   ],
+   "tower": 4,
+   "power_out": 3,
+   "levels": [
+    {
+     "cost": {
+      "madeira": 20,
+      "sucata": 30,
+      "pecas": 15
+     },
+     "time_s": 1200
+    }
+   ]
+  },
+  "galinheiro": {
+   "fp": [
+    2,
+    2
+   ],
+   "tower": 3,
+   "res": "comida",
+   "levels": [
+    {
+     "cost": {
+      "madeira": 30,
+      "sucata": 10
+     },
+     "time_s": 600,
+     "slots": 1,
+     "rate_s": 40,
+     "no_water": true
+    },
+    {
+     "cost": {
+      "madeira": 60,
+      "sucata": 25,
+      "pecas": 5
+     },
+     "time_s": 1800,
+     "slots": 2,
+     "rate_s": 32,
+     "no_water": true,
+     "tower": 4
+    },
+    {
+     "cost": {
+      "madeira": 100,
+      "sucata": 50,
+      "pecas": 15
+     },
+     "time_s": 2700,
+     "slots": 3,
+     "rate_s": 26,
+     "no_water": true,
+     "tower": 5
+    }
+   ]
+  },
+  "cozinha": {
+   "fp": [
+    2,
+    2
+   ],
+   "tower": 4,
+   "food_bonus": 0.3,
+   "levels": [
+    {
+     "cost": {
+      "madeira": 60,
+      "sucata": 40,
+      "pecas": 10
+     },
+     "time_s": 1800
+    },
+    {
+     "cost": {
+      "madeira": 120,
+      "sucata": 80,
+      "pecas": 25
+     },
+     "time_s": 3000,
+     "food_bonus": 0.5,
+     "tower": 5
+    }
+   ]
+  },
+  "estufa": {
+   "fp": [
+    3,
+    2
+   ],
+   "tower": 4,
+   "res": "comida",
+   "power_use": 2,
+   "levels": [
+    {
+     "cost": {
+      "madeira": 70,
+      "sucata": 50,
+      "pecas": 20
+     },
+     "time_s": 2400,
+     "slots": 2,
+     "rate_s": 20
+    },
+    {
+     "cost": {
+      "madeira": 120,
+      "sucata": 80,
+      "pecas": 25
+     },
+     "time_s": 3000,
+     "slots": 3,
+     "rate_s": 15,
+     "tower": 5
+    }
+   ]
+  },
+  "deco_banco": {
+   "fp": [
+    1,
+    1
+   ],
+   "tower": 2,
+   "deco": true,
+   "limit": 6,
+   "levels": [
+    {
+     "cost": {
+      "madeira": 4
+     },
+     "time_s": 15
+    }
+   ]
+  },
+  "deco_vaso": {
+   "fp": [
+    1,
+    1
+   ],
+   "tower": 2,
+   "deco": true,
+   "limit": 6,
+   "levels": [
+    {
+     "cost": {
+      "madeira": 2,
+      "sucata": 1
+     },
+     "time_s": 10
+    }
+   ]
+  },
+  "deco_varal": {
+   "fp": [
+    1,
+    1
+   ],
+   "tower": 3,
+   "deco": true,
+   "limit": 6,
+   "levels": [
+    {
+     "cost": {
+      "madeira": 3
+     },
+     "time_s": 15
+    }
+   ]
+  },
+  "deco_lampiao": {
+   "fp": [
+    1,
+    1
+   ],
+   "tower": 3,
+   "deco": true,
+   "limit": 6,
+   "levels": [
+    {
+     "cost": {
+      "madeira": 2,
+      "sucata": 4
+     },
+     "time_s": 20
+    }
+   ]
+  },
+  "deco_espantalho": {
+   "fp": [
+    1,
+    1
+   ],
+   "tower": 4,
+   "deco": true,
+   "limit": 6,
+   "levels": [
+    {
+     "cost": {
+      "madeira": 4,
+      "sucata": 2
+     },
+     "time_s": 20
+    }
+   ]
+  },
+  "deco_placa": {
+   "fp": [
+    1,
+    1
+   ],
+   "tower": 5,
+   "deco": true,
+   "limit": 6,
+   "levels": [
+    {
+     "cost": {
+      "madeira": 10,
+      "sucata": 6,
+      "pecas": 2
+     },
+     "time_s": 40
+    }
+   ]
+  },
+  "muro": {
+   "fp": [
+    1,
+    1
+   ],
+   "tower": 1,
+   "open": true,
+   "instant": true,
+   "wall": true,
+   "levels": [
+    {
+     "cost": {
+      "sucata": 2
+     },
+     "time_s": 0,
+     "hp": 40
+    },
+    {
+     "cost": {
+      "madeira": 4
+     },
+     "time_s": 0,
+     "hp": 100
+    },
+    {
+     "cost": {
+      "sucata": 6,
+      "pecas": 1
+     },
+     "time_s": 0,
+     "hp": 220,
+     "tower": 3
+    },
+    {
+     "cost": {
+      "sucata": 4,
+      "pecas": 3
+     },
+     "time_s": 0,
+     "hp": 450,
+     "tower": 4
+    }
+   ]
+  },
+  "torre_arq": {
+   "fp": [
+    2,
+    2
+   ],
+   "tower": 1,
+   "defense": "arrow",
+   "limit": {
+    "base": 1,
+    "per_tower": 1
+   },
+   "levels": [
+    {
+     "cost": {
+      "madeira": 20,
+      "sucata": 10
+     },
+     "time_s": 90,
+     "dmg": 3,
+     "range": 5.0,
+     "rate_s": 1.0,
+     "hp": 70
+    },
+    {
+     "cost": {
+      "madeira": 40,
+      "sucata": 25
+     },
+     "time_s": 300,
+     "dmg": 5,
+     "range": 5.5,
+     "rate_s": 0.9,
+     "hp": 110,
+     "tower": 2
+    },
+    {
+     "cost": {
+      "madeira": 60,
+      "sucata": 40,
+      "pecas": 6
+     },
+     "time_s": 900,
+     "dmg": 8,
+     "range": 6.0,
+     "rate_s": 0.8,
+     "hp": 170,
+     "tower": 3
+    }
+   ]
+  },
+  "canhao": {
+   "fp": [
+    2,
+    2
+   ],
+   "tower": 3,
+   "defense": "cannon",
+   "limit": {
+    "base": 1,
+    "per_tower": 1
+   },
+   "levels": [
+    {
+     "cost": {
+      "madeira": 30,
+      "sucata": 40,
+      "pecas": 4
+     },
+     "time_s": 600,
+     "dmg": 10,
+     "range": 4.5,
+     "rate_s": 2.4,
+     "splash": 1.3,
+     "hp": 120
+    },
+    {
+     "cost": {
+      "madeira": 50,
+      "sucata": 60,
+      "pecas": 8
+     },
+     "time_s": 1200,
+     "dmg": 16,
+     "range": 4.8,
+     "rate_s": 2.2,
+     "splash": 1.4,
+     "hp": 170,
+     "tower": 4
+    },
+    {
+     "cost": {
+      "madeira": 80,
+      "sucata": 90,
+      "pecas": 14
+     },
+     "time_s": 1800,
+     "dmg": 24,
+     "range": 5.0,
+     "rate_s": 2.0,
+     "splash": 1.5,
+     "hp": 240,
+     "tower": 5
+    }
+   ]
+  },
+  "choque": {
+   "fp": [
+    2,
+    2
+   ],
+   "tower": 4,
+   "defense": "shock",
+   "power_use": 3,
+   "limit": 2,
+   "levels": [
+    {
+     "cost": {
+      "sucata": 50,
+      "pecas": 12
+     },
+     "time_s": 900,
+     "dmg": 7,
+     "range": 4.0,
+     "rate_s": 1.6,
+     "chain": 3,
+     "hp": 100
+    },
+    {
+     "cost": {
+      "sucata": 80,
+      "pecas": 20
+     },
+     "time_s": 1500,
+     "dmg": 11,
+     "range": 4.5,
+     "rate_s": 1.4,
+     "chain": 4,
+     "hp": 150,
+     "tower": 5
+    }
+   ]
+  },
+  "holofote": {
+   "fp": [
+    1,
+    1
+   ],
+   "tower": 3,
+   "defense": "light",
+   "power_use": 1,
+   "limit": 2,
+   "levels": [
+    {
+     "cost": {
+      "sucata": 20,
+      "pecas": 3
+     },
+     "time_s": 240,
+     "radius": 5.0,
+     "buff": 0.3,
+     "hp": 40
+    }
+   ]
+  },
+  "mina": {
+   "fp": [
+    1,
+    1
+   ],
+   "tower": 2,
+   "open": true,
+   "instant": true,
+   "anywhere": true,
+   "limit": 10,
+   "levels": [
+    {
+     "cost": {
+      "sucata": 8
+     },
+     "time_s": 0,
+     "dmg": 30,
+     "splash": 1.6
+    }
+   ]
+  }
+ },
+ "build_order": [
+  "poco",
+  "horta",
+  "deposito",
+  "moradia",
+  "fogueira",
+  "serraria",
+  "ferrovelho",
+  "praca",
+  "oficina",
+  "gerador",
+  "galinheiro",
+  "cozinha",
+  "estufa",
+  "painel"
+ ],
+ "tower": {
+  "2": {
+   "cost": {
+    "madeira": 18,
+    "sucata": 10
+   },
+   "time_s": 270
+  },
+  "3": {
+   "cost": {
+    "madeira": 90,
+    "sucata": 70
+   },
+   "time_s": 1800
+  },
+  "4": {
+   "cost": {
+    "madeira": 250,
+    "sucata": 200,
+    "pecas": 40
+   },
+   "time_s": 7200
+  },
+  "5": {
+   "cost": {
+    "madeira": 450,
+    "sucata": 400,
+    "pecas": 120,
+    "comida": 150
+   },
+   "time_s": 21600
+  }
+ },
+ "tower_unlocks": {
+  "2": [
+   "area",
+   "estrada",
+   "serraria",
+   "ferrovelho",
+   "moradia@3",
+   "horta@3",
+   "poco@2",
+   "deposito@2"
+  ],
+  "3": [
+   "area",
+   "moradia@4",
+   "deposito@3",
+   "praca",
+   "oficina",
+   "gerador",
+   "galinheiro",
+   "serraria@2",
+   "ferrovelho@2"
+  ],
+  "4": [
+   "area",
+   "deposito@4",
+   "cozinha",
+   "estufa",
+   "painel",
+   "oficina@2",
+   "galinheiro@2",
+   "serraria@3",
+   "ferrovelho@3",
+   "poco@3"
+  ],
+  "5": [
+   "area",
+   "ela",
+   "oficina@3",
+   "galinheiro@3",
+   "cozinha@2",
+   "estufa@2"
+  ]
+ },
+ "prototype_max_tower": 5,
+ "arrivals": {
+  "first_group_delay_s": 90,
+  "group_cooldown_s": 600,
+  "fire_cooldown_mult": 0.5,
+  "walk_in_from": [
+   21,
+   34
+  ],
+  "pity_after_commons": 15,
+  "two_passives_chance": 0.2,
+  "power_points": {
+   "comum": 1,
+   "rara": 2,
+   "excelente": 3
+  },
+  "brings_by_power": {
+   "1": [
+    [
+     10,
+     16
+    ],
+    [
+     4,
+     8
+    ]
+   ],
+   "2": [
+    [
+     5,
+     10
+    ]
+   ]
+  },
+  "excelente_eat_mult": 1.25,
+  "group_cooldown_by_tower": {
+   "1": 600,
+   "2": 480,
+   "3": 390,
+   "4": 300,
+   "5": 240
+  },
+  "rarity_mult_by_tower": {
+   "1": {
+    "rara": 0.5,
+    "excelente": 0.3
+   },
+   "2": {},
+   "3": {
+    "rara": 1.5,
+    "excelente": 1.6
+   },
+   "4": {
+    "rara": 2.0,
+    "excelente": 2.4
+   },
+   "5": {
+    "rara": 2.6,
+    "excelente": 3.4
+   }
+  }
+ },
+ "rarity": {
+  "comum": {
+   "weight": 89,
+   "bonus": 0.15
+  },
+  "rara": {
+   "weight": 9.5,
+   "bonus": 0.3
+  },
+  "excelente": {
+   "weight": 1.5,
+   "bonus": 0.5
+  }
+ },
+ "passives": {
+  "horta": {
+   "job": "comida"
+  },
+  "agua": {
+   "job": "agua"
+  },
+  "lenha": {
+   "job": "madeira"
+  },
+  "cata": {
+   "job": "sucata"
+  },
+  "obra": {
+   "job": "build"
+  },
+  "pernas": {
+   "job": "walk"
+  },
+  "come_pouco": {
+   "job": "eat"
+  },
+  "mecanico": {
+   "job": "pecas"
+  },
+  "vigia": {
+   "job": "guard"
+  }
+ },
+ "story_people": {
+  "ari": {
+   "look": 1,
+   "passives": [
+    {
+     "id": "horta",
+     "rar": "rara"
+    }
+   ],
+   "tower": 2
+  },
+  "lia": {
+   "look": 3,
+   "passives": [
+    {
+     "id": "agua",
+     "rar": "rara"
+    }
+   ],
+   "tower": 2,
+   "min_count": {
+    "horta": 2
+   }
+  },
+  "teo": {
+   "look": 2,
+   "passives": [
+    {
+     "id": "lenha",
+     "rar": "rara"
+    }
+   ],
+   "tower": 3,
+   "min_count": {
+    "serraria": 1
+   }
+  },
+  "caio": {
+   "look": 4,
+   "passives": [
+    {
+     "id": "cata",
+     "rar": "rara"
+    }
+   ],
+   "tower": 3,
+   "min_stock": {
+    "sucata": 50
+   }
+  },
+  "nina": {
+   "look": 5,
+   "passives": [
+    {
+     "id": "pernas",
+     "rar": "excelente"
+    }
+   ],
+   "tower": 3,
+   "min_level": {
+    "poco": 2
+   }
+  },
+  "rosa": {
+   "look": 3,
+   "passives": [
+    {
+     "id": "come_pouco",
+     "rar": "excelente"
+    }
+   ],
+   "tower": 4,
+   "min_count": {
+    "cozinha": 1
+   }
+  },
+  "marta": {
+   "look": 5,
+   "passives": [
+    {
+     "id": "mecanico",
+     "rar": "rara"
+    }
+   ],
+   "tower": 4,
+   "min_count": {
+    "oficina": 1
+   }
+  },
+  "velho": {
+   "look": 2,
+   "passives": [
+    {
+     "id": "obra",
+     "rar": "excelente"
+    }
+   ],
+   "tower": 4,
+   "min_count": {
+    "fogueira": 1
+   },
+   "min_people": 6
+  },
+  "bento": {
+   "look": 4,
+   "passives": [
+    {
+     "id": "obra",
+     "rar": "rara"
+    }
+   ],
+   "tower": 4,
+   "min_built": 25
+  },
+  "dora": {
+   "look": 1,
+   "passives": [
+    {
+     "id": "horta",
+     "rar": "excelente"
+    }
+   ],
+   "tower": 5,
+   "min_count": {
+    "galinheiro": 1
+   }
+  }
+ },
+ "names": [
+  "Ivo",
+  "Clara",
+  "Davi",
+  "Zé",
+  "Luana",
+  "Otto",
+  "Bia",
+  "Raul",
+  "Iara",
+  "Jonas",
+  "Cida",
+  "Neto",
+  "Lúcia",
+  "Beto",
+  "Tânia",
+  "Edu",
+  "Rita",
+  "Caco",
+  "Dalva",
+  "Tião",
+  "Nair",
+  "Gil",
+  "Lena",
+  "Juca",
+  "Sônia",
+  "Dito",
+  "Vera",
+  "Nando",
+  "Zuza",
+  "Ciro",
+  "Mara",
+  "Tonho",
+  "Ilda",
+  "Paulo",
+  "Rosi",
+  "Quim",
+  "Selma",
+  "Lauro",
+  "Dida",
+  "Fábio",
+  "Inês",
+  "Valter",
+  "Gina",
+  "Mauro",
+  "Elza",
+  "Duda",
+  "Alice",
+  "Sérgio"
+ ],
+ "bios": 8,
+ "story_order": [
+  "ari",
+  "lia",
+  "teo",
+  "caio",
+  "nina",
+  "rosa",
+  "marta",
+  "velho",
+  "bento",
+  "dora"
+ ],
+ "merchant": {
+  "tower": 3,
+  "warn_leave_s": 180,
+  "hours": [
+   9.5,
+   14.0,
+   18.5
+  ],
+  "stay_s": 1800,
+  "lot": 10,
+  "price": {
+   "comida": 0.6,
+   "madeira": 0.5,
+   "pecas": 3.0
+  },
+  "price_spread": 0.25,
+  "offers": {
+   "pecas_lote": {
+    "cost": {
+     "sucata": 30
+    },
+    "gives": {
+     "pecas": 10
+    }
+   },
+   "madeira_lote": {
+    "cost": {
+     "sucata": 20
+    },
+    "gives": {
+     "madeira": 30
+    }
+   },
+   "agua_lote": {
+    "cost": {
+     "sucata": 12
+    },
+    "gives": {
+     "agua": 20
+    }
+   },
+   "comida_lote": {
+    "cost": {
+     "sucata": 15
+    },
+    "gives": {
+     "comida": 25
+    }
+   },
+   "sementes": {
+    "cost": {
+     "sucata": 40
+    },
+    "perk": "sementes",
+    "max": 2
+   },
+   "carrinho": {
+    "cost": {
+     "sucata": 60,
+     "pecas": 5
+    },
+    "perk": "carrinho",
+    "max": 1
+   },
+   "rumor": {
+    "cost": {
+     "sucata": 10
+    },
+    "needs_group": true
+   },
+   "minas": {
+    "cost": {
+     "sucata": 20
+    },
+    "mines": 3
+   }
+  },
+  "perks": {
+   "sementes": 0.15,
+   "carrinho": 0.2
+  },
+  "request_chance": 0.6,
+  "request": {
+   "comida": [
+    20,
+    40
+   ],
+   "madeira": [
+    20,
+    50
+   ],
+   "pecas": [
+    5,
+    15
+   ]
+  },
+  "request_pay_mult": 2.0,
+  "auto_sell_above": 0.75
+ },
+ "ending": {
+  "journey_day_scale": 0.5,
+  "arrival_after_h": 3.0,
+  "look": 6
+ },
+ "deco_order": [
+  "deco_banco",
+  "deco_vaso",
+  "deco_varal",
+  "deco_lampiao",
+  "deco_espantalho",
+  "deco_placa"
+ ],
+ "defense_order": [
+  "muro",
+  "torre_arq",
+  "canhao",
+  "choque",
+  "holofote",
+  "mina"
+ ]
+}

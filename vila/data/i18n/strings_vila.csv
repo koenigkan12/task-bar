@@ -1,0 +1,555 @@
+key,pt_BR,en
+RES_comida,comida,food
+RES_agua,água,water
+RES_madeira,madeira,wood
+RES_sucata,sucata,scrap
+B_poco,Poço,Well
+B_horta,Horta,Garden
+B_deposito,Depósito,Storehouse
+B_moradia,Barraca,Tent
+B_moradia_1,Barraca,Tent
+B_moradia_2,Barraco,Shack
+B_moradia_3,Casa,House
+B_moradia_4,Casa de pedra,Stone house
+B_horta_1,Horta de pneu,Tire garden
+B_horta_2,Canteiro,Garden bed
+B_horta_3,Horta,Garden
+B_poco_1,Barril de chuva,Rain barrel
+B_poco_2,Poço,Well
+B_deposito_1,Caixotes,Crates
+B_deposito_2,Galpão,Shed
+B_deposito_3,Depósito,Storehouse
+B_area,Mais chão em volta,More ground around
+B_estrada,O porto (chega gente),The dock (people come)
+B_entulho,Entulho,Rubble
+B_fogueira,Fogueira,Campfire
+B_serraria,Serraria,Sawmill
+B_ferrovelho,Ferro-velho,Scrapyard
+B_torre,Torre do rádio,Radio tower
+B_hatch,Bunker,Bunker
+B_gate,Porto,Dock
+B_praca,Praça,Square
+B_oficina,Oficina,Workshop
+B_gerador,Gerador,Generator
+B_galinheiro,Galinheiro,Coop
+BD_poco,Junta água.,Collects water.
+BD_horta,Planta comida. Usa um pouco de água.,Grows food. Uses some water.
+BD_deposito,Guarda mais de cada coisa.,Stores more of everything.
+BD_moradia,Onde se dorme. Melhore no lugar para ter mais camas.,Where people sleep. Upgrade it in place for more beds.
+BD_entulho,Rende sucata e abre chão para construir.,Gives scrap and opens ground to build on.
+BD_fogueira,"Onde a vila se junta à noite. Acesa, é vista de longe: gente nova chega ao portão na metade do tempo.","Where the village gathers at night. Lit, it is seen from afar: new people reach the gate in half the time."
+BD_serraria,Madeira bem mais rápido que cortar à mão.,Wood much faster than by hand.
+BD_ferrovelho,Sucata bem mais rápido que catar à mão.,Scrap much faster than by hand.
+BD_torre,"Fala com o rádio. Cada nível novo libera prédios e traz gente.","Talks to the radio. Each new level unlocks buildings and brings people."
+BD_gate,Por aqui chegam os grupos de sobreviventes. Clique para ver quem está esperando.,Survivor groups arrive here. Click to see who is waiting.
+BD_hatch,Onde o Joaquim morou sozinho. Guarda um pouco de cada coisa.,Where Joaquim lived alone. Stores a little of everything.
+UI_DAY,Dia {n},Day {n}
+UI_BUILD,Construir,Build
+UI_CANCEL,Cancelar,Cancel
+UI_UPGRADE,Melhorar,Upgrade
+UI_UPGRADE_TO,Melhorar para {b},Upgrade to {b}
+UI_CLEAR,Limpar primeiro,Clear first
+UI_UNCLEAR,Desmarcar,Unmark
+UI_CLEAR_LEFT,Ainda tem {n} de sucata,{n} scrap left
+UI_CLEAR_MARKED,Marcado: alguém livre vem limpar,Marked: someone free will clear it
+UI_CLEAR_TOWER,A torre aumenta a área da vila quando sobe,The tower widens the village area when it rises
+UI_LEVEL,Nível {n},Level {n}
+UI_WORKERS,"Trabalhando aqui: {a} de {b} vagas","Working here: {a} of {b} spots"
+UI_BUILDING,Em obra,Under construction
+UI_UPGRADING,Melhorando,Upgrading
+UI_WAITING_BUILDER,Esperando alguém livre,Waiting for someone free
+UI_BEDS,"Camas aqui: {n}. A vila toda tem {total} camas para {used} pessoas","Beds here: {n}. The whole village has {total} beds for {used} people"
+UI_CAP,"Guarda até {n} de cada recurso: {list}","Holds up to {n} of each resource: {list}"
+UI_RATE,"Cada pessoa aqui faz {n} de {r} por minuto","Each person here makes {n} {r} per minute"
+UI_PLACE,Clique para pôr · botão direito cancela,Click to place · right click cancels
+UI_NO_SPACE,Não cabe aqui,Doesn't fit here
+UI_OUTSIDE,Fora da área da vila: suba a torre para crescer,Outside the village area: raise the tower to grow
+UI_TOWER_BTN,Torre,Tower
+UI_LOCKED_TOWER,Torre {n},Tower {n}
+UI_TOWER_NEXT,Nível {n} libera:,Level {n} unlocks:
+UI_TOWER_UP,Subir a torre,Raise the tower
+UI_TOWER_MAX,A torre está no máximo deste protótipo.,The tower is at this prototype's max.
+UI_TOWER_PROTO,Fim do protótipo: o nível 3 ainda não traz nada.,End of prototype: level 3 brings nothing yet.
+UI_SOON,em breve,soon
+UI_TIME,Leva {t},Takes {t}
+UI_GATE_TITLE,Gente no bote,People on the boat
+UI_GATE_PICK,Escolha quem entra (há {n} cama livre),Pick who comes in ({n} free bed)
+UI_GATE_PICK_N,Escolha quem entra (há {n} camas livres),Pick who comes in ({n} free beds)
+UI_GATE_NOBED,Sem cama livre: melhore ou construa uma moradia,No free bed: upgrade or build a home
+UI_GATE_NONE,Ninguém,No one
+UI_CHOOSE,Escolher,Choose
+UI_BRINGS,Traz {n} {r},Brings {n} {r}
+UI_GATE_BADGE,{n} no portão,{n} at the gate
+UI_HUNGRY,Com fome,Hungry
+UI_THIRSTY,Com sede,Thirsty
+UI_PASSIVES,Jeito,Knack
+UI_NO_PASSIVES,Sabe fazer de tudo um pouco.,Does a bit of everything.
+UI_WELCOME_BACK,Enquanto você não olhava ({t}),While you were away ({t})
+UI_OK,Certo,OK
+UI_NIGHT,A vila dorme,The village sleeps
+UI_SAVE_RESET,Recomeçar,Restart
+UI_SAVE_RESET_Q,Apagar a vila e começar de novo?,Erase the village and start over?
+UI_YES,Sim,Yes
+UI_NO,Não,No
+UI_CLOSE,Fechar,Close
+UI_JOINED,{name} chegou à vila,{name} joined the village
+UI_DONE,{b} pronto,{b} done
+UI_TOWER_DONE,A torre subiu para o nível {n},The tower reached level {n}
+UI_MISSING,Falta {list},Missing {list}
+UI_ENOUGH,Tem tudo,You have it all
+UI_FULL,cheio,full
+GOAL_build,Meta: construir {b},Goal: build {b}
+GOAL_tower,Meta: torre {n},Goal: tower {n}
+GOAL_tower_ready,Meta: torre {n} · pode subir!,Goal: tower {n} · ready!
+GOAL_tower_wait,A torre está subindo para o nível {n},The tower is rising to level {n}
+GOAL_more,{n} sem trabalho: construa mais {b},{n} idle: build another {b}
+GOAL_short,Acabando {r}: construa mais um {b},Running out of {r}: build another {b}
+GOAL_beds,Sem cama livre: melhore a barraca ou faça outra,No free bed: upgrade the tent or build another
+GOAL_storage,A torre pede {n} {r} e só cabem {cap}: melhore o depósito,The tower needs {n} {r} but only {cap} fit: upgrade storage
+GOAL_space,"Pouco chão livre: limpe entulho, corte árvores ou desmonte algo","Little free ground: clear rubble, cut trees or take something down"
+DO_idle,Sem nada pra fazer,Nothing to do
+DO_sleep,Dormindo,Sleeping
+DO_to_bed,Indo dormir,Going to bed
+DO_build,Construindo {b},Building {b}
+DO_work,Trabalhando: {b},Working: {b}
+DO_carry,Levando ao depósito,Carrying to storage
+DO_forage_madeira,Cortando lenha,Chopping wood
+DO_forage_sucata,Catando sucata,Scavenging scrap
+P_ari,Seu Ari,Mr. Ari
+P_joaquim,Joaquim,Joaquim
+PB_joaquim,Passei tempo demais lá embaixo. Alguém tem que começar.,I spent too long down there. Someone has to start.
+PB_ari,Ouvi teu rádio. Tem uma cama aí? Eu sei plantar.,I heard your radio. Got a bed? I know how to farm.
+BIO_0,Estou na estrada há semanas. Só quero um teto.,I've been on the road for weeks. I just want a roof.
+BIO_1,Perdi minha casa no inverno. Sei consertar quase tudo.,I lost my home in the winter. I can fix almost anything.
+BIO_2,Vim seguindo a fumaça da fogueira de vocês.,I followed your campfire smoke.
+BIO_3,Não falo muito. Mas trabalho.,I don't talk much. But I work.
+BIO_4,Perdi o grupo perto do rio. Posso ficar?,Lost my group by the river. Can I stay?
+BIO_5,Ouvi dizer que aqui ninguém passa fome.,Heard nobody goes hungry here.
+BIO_6,Carrego tudo o que tenho nas costas.,I carry everything I own on my back.
+BIO_7,Sabia que um dia alguém ia responder no rádio.,I knew someone would answer the radio one day.
+PAS_horta,Mão boa na horta,Green thumb
+PAS_agua,Acha água fácil,Water finder
+PAS_lenha,Lenhador,Woodcutter
+PAS_cata,Catador,Scavenger
+PAS_obra,Construtor,Builder
+PAS_pernas,Pernas longas,Long legs
+PAS_come_pouco,Come pouco,Light eater
+PASD_horta,+{p}% de comida,+{p}% food
+PASD_agua,+{p}% de água,+{p}% water
+PASD_lenha,+{p}% de madeira,+{p}% wood
+PASD_cata,+{p}% de sucata,+{p}% scrap
+PASD_obra,+{p}% de velocidade nas obras,+{p}% build speed
+PASD_pernas,+{p}% de velocidade andando,+{p}% walk speed
+PASD_come_pouco,Come {p}% menos,Eats {p}% less
+RAR_comum,comum,common
+RAR_rara,rara,rare
+RAR_excelente,excelente,excellent
+TIP_ZOOM,Roda do mouse: zoom · arrastar: mover,Mouse wheel: zoom · drag: move
+UI_RES_HAVE,"Você tem {n}. Cabem no máximo {cap} (depósitos aumentam)","You have {n}. Room for {cap} at most (storehouses add more)"
+UI_RES_IN,"Chega {n} por minuto","{n} comes in per minute"
+UI_RES_OUT,"A vila gasta {n} por minuto","The village uses {n} per minute"
+RD_comida,"Cada pessoa come. Hortas fazem comida, mas bebem um pouco de água.","Everyone eats. Gardens make food but drink some water."
+RD_agua,Cada pessoa bebe. O barril e o poço juntam água.,Everyone drinks. Barrels and wells collect water.
+RD_madeira,Quase toda obra pede madeira. Cortam das árvores em volta.,Almost every build needs wood. They cut it from the trees around.
+RD_sucata,Vem do entulho. A torre e as obras de metal pedem sucata.,Comes from rubble. The tower and metal builds need scrap.
+TUT_radio,Rádio,Radio
+TUT_skip,Pular,Skip
+TUT_ok,Certo,OK
+TUT_skip_q,Pular o tutorial?,Skip the tutorial?
+TUT_skip_text,Dá para jogar sem ele. As dicas ainda aparecem uma vez cada.,You can play without it. Tips still show up once each.
+TUT_joaquim,Faz tempo que ninguém sai daqui. Clique no Joaquim.,It's been a long time since anyone came out. Click Joaquim.
+TUT_res,"Comida, água, madeira e sucata. Clique na comida para ver quanto entra e quanto sai.","Food, water, wood and scrap. Click food to see what comes in and goes out."
+TUT_build,Ele precisa de água. Clique em Construir.,He needs water. Click Build.
+TUT_pick,Comece pelo barril de chuva.,Start with the rain barrel.
+TUT_place,"Escolha um lugar perto do bunker. Perto, ele anda menos.","Pick a spot near the bunker. Closer means less walking."
+TUT_wait,Agora é com ele. O Joaquim constrói sozinho.,Now it's up to him. Joaquim builds on his own.
+TUT_goal,A meta aqui embaixo diz o que vem depois. Clique nela.,The goal down here tells you what comes next. Click it.
+TUT_horta,Uma horta. Ponha onde quiser.,A garden. Put it wherever you like.
+TUT_tower,"Se a torre subir, alguém pode ouvir. Clique em Torre.","If the tower goes up, someone might hear. Click Tower."
+TUT_zoom,Use a roda do mouse para afastar e aproximar.,Use the mouse wheel to zoom out and in.
+TUT_end,Ele trabalha sozinho. Pode ir fazer suas coisas que a vila continua.,He works on his own. Go do your things; the village keeps going.
+HINT_gate,Um bote chegou ao porto! Clique no selo para escolher quem entra.,A boat reached the dock! Click the badge to pick who comes in.
+HINT_tower_ready,A torre já pode subir. Clique em Torre.,The tower can go up now. Click Tower.
+HINT_space,"Falta chão. Clique num entulho ou numa árvore dentro da área para mandar limpar.","Out of ground. Click rubble or a tree inside the area to have it cleared."
+HINT_short,"Está acabando comida ou água. A meta diz o que construir.","Food or water is running out. The goal tells you what to build."
+RES_pecas,peças,parts
+RD_pecas,"Peças saem da oficina (gasta sucata e energia). Para prédios grandes, a torre 4 e a 5. O mercador também vende.","Parts come from the workshop (uses scrap and power). For big buildings and towers 4 and 5. The merchant sells them too."
+B_painel,Painel solar,Solar panel
+B_cozinha,Cozinha,Kitchen
+B_estufa,Estufa,Greenhouse
+B_carroca,Carroça,Cart
+B_oficina_1,Oficina,Workshop
+B_oficina_2,Oficina grande,Big workshop
+B_galinheiro_1,Galinheiro,Coop
+B_galinheiro_2,Galinheiro grande,Big coop
+B_deposito_4,Armazém,Warehouse
+B_ela,Ela,Her
+BD_praca,"O mercador para aqui, três vezes por dia.","The merchant stops here, three times a day."
+BD_oficina,Transforma sucata em peças. Gasta energia.,Turns scrap into parts. Uses power.
+BD_gerador,Dá energia para oficina e estufa.,Powers the workshop and greenhouse.
+BD_painel,"Energia do sol para a oficina e a estufa, sem barulho.","Power from the sun for the workshop and greenhouse, quietly."
+BD_galinheiro,Comida sem gastar água.,Food without using water.
+BD_cozinha,Toda comida rende mais.,All food goes further.
+BD_estufa,"Muita comida, com energia.","Lots of food, with power."
+UI_POWER,Energia,Power
+UI_POWER_LINE,"Energia: gera {out}, gasta {use}","Power: makes {out}, uses {use}"
+UI_POWER_USE,"Consome {n} de energia","Uses {n} power"
+UI_POWER_OUT,"Gera {n} de energia para a vila","Makes {n} power for the village"
+UI_POWER_LOW,"A vila tem menos energia do que gasta: trabalha mais devagar","The village has less power than it uses: works slower"
+UI_INPUT,"Cada vez que produz, gasta {n} de {r}","Each time it makes something, it uses {n} {r}"
+UI_NO_INPUT,"Parado: falta {r} para produzir","Stopped: needs {r} to make anything"
+RD_energia,"Liga as máquinas. Casas usam lampião e não precisam. Faltando, as máquinas andam devagar e apagam.","Runs the machines. Homes use oil lamps and don't need it. When short, machines slow down and go dark."
+GOAL_power,Falta energia: construa um gerador ou painel,Short on power: build a generator or panel
+GOAL_journey,Ela está vindo. Chega em {t},She is on her way. Arrives in {t}
+GOAL_journey_soon,Ela está chegando,She is almost here
+GOAL_done,"Ela chegou. A vila é de vocês.","She's here. The village is yours."
+UI_MERCHANT,Mercador,Merchant
+UI_MERCHANT_BADGE,Mercador na praça,Merchant in the square
+UI_MERCHANT_LEAVES,Vai embora em {t},Leaves in {t}
+UI_MERCHANT_AWAY,"O mercador passa às {h}.","The merchant comes by at {h}."
+UI_MERCHANT_NEED,Construa a praça para o mercador parar.,Build the square so the merchant stops.
+UI_SELL,Vender,Sell
+UI_SELL_LOT,{n} {r} por {p} sucata,{n} {r} for {p} scrap
+UI_BUY,Comprar,Buy
+UI_SOLD,Vendido,Sold
+UI_REQUEST,"Pedido: {n} {r}, paga {p} sucata","Request: {n} {r}, pays {p} scrap"
+UI_DELIVER,Entregar,Deliver
+UI_AUTO_SELL,Vender a sobra quando eu não estiver,Sell surplus while I'm away
+UI_MERCHANT_SOLD,"O mercador vendeu a sobra: +{p} sucata","The merchant sold the surplus: +{p} scrap"
+UI_MERCHANT_HERE,O mercador chegou na praça,The merchant is in the square
+UI_NEEDS_GROUP,Só com gente no portão,Only with people at the gate
+OF_pecas_lote,10 peças,10 parts
+OF_madeira_lote,30 de madeira,30 wood
+OF_agua_lote,20 de água,20 water
+OF_comida_lote,25 de comida,25 food
+OF_sementes,Sementes boas,Good seeds
+OF_carrinho,Carrinho de mão,Wheelbarrow
+OF_rumor,Rumor na estrada,Word on the road
+OFD_pecas_lote,Para quando a oficina não dá conta.,For when the workshop can't keep up.
+OFD_madeira_lote,Tábuas de uma casa caída.,Boards from a fallen house.
+OFD_agua_lote,Galões limpos.,Clean jugs.
+OFD_comida_lote,Feijão e farinha.,Beans and flour.
+OFD_sementes,Toda comida rende 15% mais. Para sempre.,All food goes 15% further. For good.
+OFD_carrinho,Todo mundo anda 20% mais rápido carregando.,Everyone moves 20% faster.
+OFD_rumor,Manda o grupo do portão embora e chama outro.,Sends the gate group away and calls another.
+UI_RADIO,Rádio,Radio
+UI_RADIO_LOG,Caderno do rádio,Radio notebook
+UI_RADIO_EMPTY,Nada ainda. Só chiado.,Nothing yet. Only static.
+UI_RADIO_NEW,Falas novas no rádio: {n},New radio lines: {n}
+P_lia,Lia,Lia
+P_teo,Téo,Téo
+P_caio,Caio,Caio
+P_nina,Nina,Nina
+P_rosa,Dona Rosa,Ms. Rosa
+P_marta,Marta,Marta
+P_velho,O velho das seis,The six o'clock man
+P_bento,Bento,Bento
+P_dora,Dora,Dora
+P_ela,Ela,Her
+PB_lia,"Vi a horta lá de cima do morro. Água eu acho, pode deixar.","Saw your garden from up the hill. Water I can find, leave it to me."
+PB_teo,"Ouvi uma serra. Faz tempo que não ouvia uma serra.","I heard a saw. Been a long time since I heard a saw."
+PB_caio,"Tanto ferro jogado por aí. Eu sei onde tem mais.","So much metal lying around. I know where there's more."
+PB_nina,"Corri a estrada toda. Tem água boa aqui, né?","I ran the whole road. You've got good water here, right?"
+PB_rosa,"Cheiro de panela no fogo. Me dá uma colher que eu resolvo.","Smell of a pot on the fire. Give me a spoon and I'll handle it."
+PB_marta,"Uma oficina! Deixa eu ver esse gerador.","A workshop! Let me look at that generator."
+PB_velho,"Toda tarde, às seis, eu falava no rádio. Vocês escutavam?","Every evening at six I talked on the radio. Were you listening?"
+PB_bento,"Vocês constroem rápido. Eu construo mais rápido.","You build fast. I build faster."
+PB_dora,"As galinhas me chamaram. Brincadeira. Foi o rádio.","The chickens called me. Kidding. It was the radio."
+PB_ela,"Demorou, mas eu cheguei.","It took a while, but I'm here."
+PAS_mecanico,Mecânica,Mechanic
+PASD_mecanico,Oficina rende mais,Workshop works faster
+UI_TOWER_ELA,"A torre está pronta. Agora é esperar ela.","The tower is done. Now we wait for her."
+VEND_knock,(Alguém no portão. Botas gastas e uma mochila.),(Someone at the gate. Worn boots and a backpack.)
+VEND_light,(As luzes da vila acendem uma por uma.),(The village lights come on one by one.)
+TIP_PEOPLE,Pessoas na vila / camas,People in the village / beds
+TIP_CLOCK,"Dia e hora na vila: o dia vira ao amanhecer. De noite todo mundo descansa.","Village day and time: the day turns over at dawn. At night everyone rests."
+TIP_BUILD,"Modo construção: escolha um prédio embaixo, ou clique num prédio do mapa para mudar de lugar","Build mode: pick a building below, or click a building on the map to move it"
+TIP_TOWER,"A torre do rádio: subir de nível libera prédios, chão e gente nova","The radio tower: each level unlocks buildings, ground and new people"
+TIP_RES_CLICK,"Clique para ver de onde vem: quem produz fica contornado no mapa.","Click to see where it comes from: producers get outlined on the map."
+TIP_RESIZE,Puxe a borda da janela para mudar o tamanho,Drag the window edge to resize
+UI_MANAGE_RES,Recursos (por minuto),Resources (per minute)
+UI_MANAGE_SITES,Obras,Building sites
+UI_MANAGE_NONE,Nenhuma obra agora,No building going on
+UI_MANAGE_PEOPLE,Pessoas,People
+UI_CATCHING_UP,Vendo o que aconteceu enquanto você esteve fora... {p}%,Seeing what happened while you were away... {p}%
+B_arvore,Árvore,Tree
+BD_arvore,"Rende madeira. Mandando cortar, o chão fica livre (ela não volta).","Gives wood. If you order it cut, the ground stays clear (it won't grow back)."
+UI_CUT,Mandar cortar,Order to cut
+UI_UNCUT,Não cortar,Don't cut
+UI_CUT_GIVES,Rende {n} de madeira,Gives {n} wood
+UI_CUT_MARKED,Marcada: alguém livre vem cortar,Marked: someone free will cut it
+UI_SITE_WHO,{b}: {name} vai construir,{b}: {name} will build it
+UI_SITE_NEXT,"{b}: quem terminar o que está fazendo vem construir","{b}: whoever finishes their task will build it"
+UI_SITE_NIGHT,"{b}: a obra começa de manhã (de noite todo mundo descansa, a não ser que você vire a noite)","{b}: building starts in the morning (everyone rests at night unless you pull an all-nighter)"
+UI_CAP_ADD,"Soma {n} ao espaço de cada recurso ({list}). Hoje cabe {total} de cada","Adds {n} room for each resource ({list}). Right now {total} of each fits"
+UI_GAIN_BEDS,"fica com {n} camas","goes to {n} beds"
+UI_GAIN_CAP,"soma {n} de espaço em cada recurso","adds {n} room for each resource"
+UI_GAIN_RATE,"cada pessoa faz {n} por minuto","each person makes {n} per minute"
+UI_POWER_TOTAL,"A vila gera {out} e gasta {use} de energia","The village makes {out} and uses {use} power"
+UI_DEMOLISH,Desmontar,Take down
+UI_DEMOLISH_Q,Desmontar este prédio?,Take this building down?
+UI_DEMOLISH_TEXT,"Volta metade do que ele custou e o chão fica livre. Quem trabalhava aqui fica livre também.","You get half its cost back and the ground is freed. Whoever worked here is freed too."
+UI_DEMOLISHED,{b} desmontado,{b} taken down
+UI_PLACE_out,"Fora da área limpa (a borda tracejada). A torre aumenta a área quando sobe.","Outside the cleared area (the dashed edge). The tower widens it when it rises."
+UI_PLACE_busy,Já tem um prédio aqui.,There is already a building here.
+UI_PLACE_tree,"Tem uma árvore aqui. Clique nela para mandar cortar.","There is a tree here. Click it to have it cut."
+UI_PLACE_rubble,"Tem entulho aqui. Clique nele para mandar limpar.","There is rubble here. Click it to have it cleared."
+UI_PLACE_road,Aqui não dá para construir.,You can't build here.
+UI_PLACE_closed,"Ficaria todo cercado: ninguém conseguiria chegar até ele.","It would be boxed in: nobody could reach it."
+UI_NIGHT_OFF,Virar a noite,Pull an all-nighter
+UI_NIGHT_ON,Virando a noite,Pulling an all-nighter
+UI_NIGHT_ON_TOAST,"Todo mundo trabalha esta noite. Amanhã vão estar cansados.","Everyone works tonight. They will be tired tomorrow."
+UI_NIGHT_OFF_TOAST,Todo mundo vai descansar esta noite.,Everyone rests tonight.
+TIP_NIGHT,"De noite a vila descansa. Virar a noite põe todo mundo para trabalhar só nesta noite, mas cada noite virada tira {pen}% da produção até descansarem {rest} noites.","At night the village rests. An all-nighter puts everyone to work for this night only, but each one costs {pen}% output until they rest {rest} nights."
+TIP_TIRED,"Cansado ({t} noites viradas): produz {n}% a menos e anda mais devagar. Faltam {left} noites de descanso.","Tired ({t} all-nighters): makes {n}% less and walks slower. {left} nights of rest to go."
+GOAL_improve,"Falta {r}: melhore um {b}","Short on {r}: upgrade a {b}"
+TIP_LIMIT_TOWER,"Dá para ter até {n} agora. A torre no nível {t} libera mais um.","You can have up to {n} now. Tower level {t} allows one more."
+TIP_LIMIT_MAX,"Dá para ter até {n}. Melhore os que já existem.","You can have up to {n}. Upgrade the ones you have."
+TIP_LIMIT_ONE,"Só dá para ter um.","You can only have one."
+TIP_NO_SPOT_TOWER,"Não cabe em lugar nenhum agora. Desmonte algo, limpe entulho ou suba a torre: o nível {t} abre mais chão.","It doesn't fit anywhere right now. Demolish something, clear rubble or raise the tower: level {t} opens more ground."
+TIP_NO_SPOT,"Não cabe em lugar nenhum agora. Desmonte algo ou limpe entulho.","It doesn't fit anywhere right now. Demolish something or clear rubble."
+TIP_CLOCK_DAY,"Dia: a noite começa às {h}.","Day: night starts at {h}."
+TIP_CLOCK_NIGHT,"Noite: amanhece às {h}.","Night: dawn at {h}."
+UI_SRC_NONE,Ninguém produz agora,Nobody makes this right now
+UI_SRC_HAND,Catando à mão,Gathering by hand
+TIP_SRC_HAND,"{n} pessoa(s) catando à mão agora.","{n} person(s) gathering by hand right now."
+DO_move,Indo até lá,Heading over
+UI_ORDER_HINT,Botão direito: mandar,Right-click: send
+TIP_ORDER_HINT,"Com a pessoa selecionada, clique com o botão direito num prédio, obra, árvore ou entulho para ela trabalhar ali, ou no chão para só ir até lá. Numa obra, até 3 pessoas constroem juntas.","With this person selected, right-click a building, site, tree or rubble to send them to work there, or the ground to just walk there. Up to 3 people can build one site together."
+ORD_night,De noite todo mundo dorme,Everyone sleeps at night
+ORD_power,Sem energia,No power
+ORD_input,Falta {r},Missing {r}
+ORD_store_full,Sem lugar pra {r},No room for {r}
+ORD_full,Sem vaga,No free slot
+ORD_blocked,Não dá pra chegar,Can't get there
+ORD_no_work,Aqui não tem trabalho,No work here
+ORD_gone,,
+TIP_EATS_MORE,"Come {n}% a mais que os outros: quem é muito bom no que faz chega sem nada e com fome.","Eats {n}% more than others: someone this good arrives empty-handed and hungry."
+TIP_FOOD_BONUS,Toda comida da vila rende {n}% mais.,All of the village's food goes {n}% further.
+B_poco_3,Cisterna,Cistern
+B_oficina_3,Fábrica de peças,Parts factory
+B_galinheiro_3,Granja,Poultry farm
+B_serraria_1,Serraria,Sawmill
+B_serraria_2,Serraria grande,Big sawmill
+B_serraria_3,Serraria a motor,Motor sawmill
+B_ferrovelho_1,Ferro-velho,Scrapyard
+B_ferrovelho_2,Ferro-velho com prensa,Scrapyard with press
+B_ferrovelho_3,Ferro-velho com guindaste,Crane scrapyard
+B_cozinha_1,Cozinha,Kitchen
+B_cozinha_2,Cozinha comunitária,Community kitchen
+B_estufa_1,Estufa,Greenhouse
+B_estufa_2,Estufa irrigada,Irrigated greenhouse
+UI_AUTO_PICK,Escolher sozinho no portão,Pick at the gate for me
+TIP_AUTO_PICK,"Quando chegar gente no portão, entra quem mais ajuda no que está faltando. Liga e desliga aqui ou no painel da vila, na lista de pessoas.","When people reach the gate, whoever helps most with what's missing comes in. Turn it on or off here or in the village panel, by the people list."
+UI_DECO,Decoração,Decoration
+B_deco_banco,Banco,Bench
+BD_deco_banco,Só beleza: um lugar pra sentar no fim do dia.,Just for looks: somewhere to sit at the end of the day.
+B_deco_vaso,Vaso de flor,Flower pot
+BD_deco_vaso,Só beleza: flor que nasceu no meio da sucata.,Just for looks: a flower that grew out of the scrap.
+B_deco_varal,Varal,Clothesline
+BD_deco_varal,Só beleza: roupa secando quer dizer que tem gente morando.,Just for looks: laundry drying means people live here.
+B_deco_lampiao,Lampião,Lamp post
+BD_deco_lampiao,Só beleza: acende de noite e ilumina em volta.,Just for looks: lights up at night and brightens the ground around it.
+B_deco_espantalho,Espantalho,Scarecrow
+BD_deco_espantalho,Só beleza: cuida da horta com cara de poucos amigos.,Just for looks: guards the garden with a grumpy face.
+B_deco_placa,Placa de boas-vindas,Welcome sign
+BD_deco_placa,Só beleza: pra quem chegar saber que é esperado.,Just for looks: so whoever arrives knows they were expected.
+UI_POWER_FEEDS,Liga:,Runs:
+TIP_POWER_FEEDS,Liga: {list},Runs: {list}
+TIP_POWER_NOT_YET,Quando tiver {b} construída, ela usa esta energia.,Once you build {b} it will use this power.
+TIP_HOME_WHO,"Dormem aqui: {names}. De noite o número em cima da casa mostra quantos já entraram.","Sleeping here: {names}. At night the number above the house shows how many are already in."
+TIP_HOME_EMPTY,Ninguém dorme aqui ainda.,Nobody sleeps here yet.
+UI_PLACE_cuts,"Fecharia o caminho do porto: quem chega de bote não conseguiria entrar.","It would close the path from the port: people arriving by boat couldn't get in."
+UI_PLACE_tight,"Muito colado em outro prédio: deixe uma casa livre em volta para o pessoal passar.","Too close to another building: leave one free tile around so people can pass."
+TIP_FLOW_NIGHT,"Noite: todo mundo dormindo, nada entra nem sai. Os números são do dia.","Night: everyone is asleep, nothing comes in or goes out. These are the daytime numbers."
+TIP_FLOW_IN,"+{n} por minuto: {w} trabalhando nisso.","+{n} per minute: {w} working on it."
+TIP_FLOW_IN_NONE,"+{n} por minuto: ninguém trabalhando nisso agora.","+{n} per minute: nobody working on it right now."
+TIP_FLOW_OUT_eat,"-{n} por minuto: as {e} pessoas comem e bebem (quem chega já gasta, mesmo antes de trabalhar).","-{n} per minute: all {e} people eat and drink (newcomers use it right away, even before working)."
+TIP_FLOW_OUT_make,"-{n} por minuto: o que as oficinas gastam para fazer outra coisa.","-{n} per minute: what workshops use to make something else."
+WHY_build,"Obra esperando: obra vem antes de tudo.","A building site is waiting: sites come first."
+WHY_marked,"Você marcou para limpar.","You marked it to clear."
+WHY_skill,"É bom nisso.","Good at this."
+WHY_need,"Está faltando {r}.","Short on {r}."
+WHY_free,"Onde mais ajuda agora.","Where it helps most right now."
+WHY_order,"Você mandou.","You sent them."
+UI_FOG,Névoa de pólen,Pollen fog
+TIP_FOG,"Noite de névoa de pólen: ninguém sai de casa. Quem dorme sem cama acorda cansado.","Pollen fog night: nobody goes out. Anyone sleeping without a bed wakes up tired."
+UI_FOG_WARN,"O vento está trazendo pólen: hoje à noite vem névoa. Quem não tiver cama vai passar mal.","The wind is bringing pollen: fog tonight. Anyone without a bed will feel it."
+UI_FOG_START,"Névoa de pólen! Todo mundo para dentro até amanhecer.","Pollen fog! Everyone inside until dawn."
+UI_FOG_END,"A névoa baixou e o pólen adubou a terra: hortas +{pct}% hoje.","The fog settled and the pollen fed the soil: gardens +{pct}% today."
+UI_AWAY_TOWER,"A torre subiu para o nível {n}","The tower rose to level {n}"
+UI_AWAY_BUILT,"{n} obras ficaram prontas","{n} buildings finished"
+UI_AWAY_JOINED,"+{n} pessoas chegaram","+{n} people arrived"
+UI_AWAY_FOG,"{n} noites de névoa de pólen","{n} pollen fog nights"
+TIP_PEOPLE_OVER,"{n} sem cama: dormem perto da fogueira até sobrar uma. Faça mais moradias.","{n} without a bed: they sleep by the fire until one frees up. Build more homes."
+UI_DEMOLISH_NO_BEDS,"Não dá para desmontar: quem mora aqui ficaria sem cama. Faça outra moradia antes.","Can't take this down: the people living here would have no bed. Build another home first."
+DO_rest,"Doente, descansando em casa","Sick, resting at home"
+TIP_HEALTH_weak,"Saúde {h}/100: fraca, trabalha mais devagar. Comida e água em dia fazem voltar.","Health {h}/100: weak, works slower. Food and water bring it back."
+TIP_HEALTH_sick,"Saúde {h}/100: doente, não trabalha e descansa em casa até melhorar.","Health {h}/100: sick, doesn't work and rests at home until better."
+TIP_HEALTH_grave,"Saúde {h}/100: grave! Se zerar, morre. Precisa de comida e água já.","Health {h}/100: critical! At zero they die. Needs food and water now."
+TIP_PEOPLE_SICK,"{n} doente(s): sem trabalhar até melhorar.","{n} sick: not working until better."
+UI_GRAVE,"{name} está grave: falta comida ou água!","{name} is in critical condition: food or water is missing!"
+UI_AWAY_LEFT,"{n} foi(ram) embora","{n} left"
+UI_AWAY_SICK,"{n} doente(s)","{n} sick"
+UI_DIED,"{name} não resistiu. A vila perdeu alguém.","{name} didn't make it. The village lost someone."
+TIP_MOVE,"Mover: escolha outro lugar no mapa. Sai de graça e mantém o nível e quem trabalha aqui.","Move: pick another spot on the map. Free, and it keeps its level and workers."
+UI_MOVE,"Clique no lugar novo (botão direito ou Esc desiste)","Click the new spot (right click or Esc cancels)"
+UI_MOVED,{b} mudou de lugar,{b} moved
+B_muro,Muro,Wall
+B_muro_1,Cerca de arame,Wire fence
+B_muro_2,Muro de madeira,Wooden wall
+B_muro_3,Muro de concreto,Concrete wall
+B_muro_4,Muro de aço,Steel wall
+BD_muro,Bloqueia o caminho: o zumbi tem que quebrar para passar. Feche sem abertura.,Blocks the way: zombies must break it to pass. Close it with no gap.
+B_torre_arq,Torre arqueira,Archer tower
+BD_torre_arq,Atira flechas sozinha nos zumbis.,Shoots arrows at zombies on its own.
+B_canhao,Canhão,Cannon
+BD_canhao,Tiro lento que acerta um grupo.,Slow shot that hits a group.
+B_choque,Torre de choque,Shock tower
+BD_choque,Raio que pula de zumbi em zumbi. Gasta energia.,Bolt that jumps between zombies. Uses power.
+B_holofote,Holofote,Searchlight
+BD_holofote,Ilumina a noite: as torres perto acertam mais forte. Gasta energia.,Lights the night: nearby towers hit harder. Uses power.
+B_mina,Mina,Mine
+BD_mina,Explode quando um zumbi pisa. Some depois.,Blows up when a zombie steps on it. Gone after.
+PAS_vigia,Vigia,Lookout
+PASD_vigia,Sobe na torre em noite de ataque: atira {p}% mais rápido,Climbs a tower on raid nights: fires {p}% faster
+DO_guard,De vigia na torre,Keeping watch on the tower
+OF_minas,3 minas,3 mines
+OFD_minas,"Três minas para enterrar onde quiser, até fora da área limpa.","Three mines to bury anywhere, even outside the cleared area."
+UI_DEFENSE,Defesa,Defense
+UI_NO_MONEY,Falta recurso,Not enough resources
+UI_PLACE_PAINT,Clique ou arraste para pôr · botão direito para,Click or drag to place · right click stops
+UI_RUIN,Virou ruína. Precisa reconstruir para voltar a funcionar.,It's in ruins. Rebuild it to work again.
+UI_BROKEN,Avariado pelos zumbis: parado até consertar.,Damaged by zombies: stopped until repaired.
+UI_REPAIR,Consertar,Repair
+UI_REBUILD,Reconstruir,Rebuild
+TIP_REPAIR,Um construtor vai até lá e conserta; volta com a vida cheia.,A builder goes there and repairs it; back to full health.
+TIP_REPAIR_WALL,Paga o conserto e um construtor vai até o muro. Nada se conserta sozinho.,Pay for the repair and a builder goes to the wall. Nothing fixes itself.
+TIP_REBUILD,"Vira obra no mesmo nível, pela metade do custo. Alguém precisa construir.","Becomes a site at the same level, for half the cost. Someone has to build it."
+TIP_HP,Vida: quanto aguenta de zumbi antes de avariar.,Health: how much zombie it takes before breaking.
+TIP_HP_WALL,"Vida do muro: o zumbi para nele e bate até derrubar. Se tiver abertura perto, ele vai por ela.","Wall health: zombies stop and hit it until it falls. If there is a gap nearby, they use it."
+TIP_DEF_DMG,Dano por tiro: {n},Damage per shot: {n}
+TIP_DEF_RANGE,Alcance: {n} casas,Range: {n} tiles
+TIP_DEF_RATE,Um tiro a cada {n} s,One shot every {n} s
+TIP_DEF_SPLASH,Acerta todo mundo num raio de {n} casas,Hits everyone within {n} tiles
+TIP_DEF_CHAIN,Acerta até {n} zumbis em cadeia,Hits up to {n} zombies in a chain
+TIP_DEF_LIGHT,Torres a até {r} casas acertam {n}% mais forte de noite,Towers within {r} tiles hit {n}% harder at night
+TIP_GUARD,De vigia: a torre atira {n}% mais rápido,On watch: the tower fires {n}% faster
+TIP_FREE_MINES,{n} minas do mascate: saem de graça,{n} mines from the trader: free
+UI_WALLS_ALL,Subir os {n},Upgrade all {n}
+TIP_WALLS_ALL,Sobe os {n} muros deste nível para {b} de uma vez.,Upgrades all {n} walls of this level to {b} at once.
+UI_WALLS_DONE,{n} muros viraram {b},{n} walls became {b}
+TIP_RAID_TONIGHT,Esta noite: {n} zumbis,Tonight: {n} zombies
+TIP_RAID_NEXT,Próxima noite: {n} zumbis,Next night: {n} zombies
+TIP_RAID_HORDE,Noite de horda: vêm de dois lados.,Horde night: they come from two sides.
+TIP_RAID_BOSS,Com {n} chefão: bate forte em muro.,With {n} boss: hits walls hard.
+TIP_RAID_HORDE_TOMORROW,Amanhã é noite de horda.,Tomorrow is a horde night.
+TIP_RAID_HOW,"Ninguém sai para lutar: muros, torres, minas e a espingarda da escotilha. De manhã eles voltam para a água. Com o jogo fechado nada quebra, e horda e chefão esperam você.","Nobody goes out to fight: walls, towers, mines and the hatch shotgun. At dawn they go back to the water. With the game closed nothing breaks, and hordes and bosses wait for you."
+UI_RAID_WARN,Zumbis esta noite: {n},Zombies tonight: {n}
+UI_RAID_HORDE,"Horda esta noite: {n} zumbis, de dois lados","Horde tonight: {n} zombies, from two sides"
+UI_RAID_BOSS,Horda com chefão esta noite: {n} zumbis,Horde with a boss tonight: {n} zombies
+UI_RAID_HORDE_TOMORROW,Amanhã à noite vem horda. Reforce os muros.,A horde comes tomorrow night. Shore up the walls.
+UI_RAID_OVER,"Amanheceu: {k} zumbis caíram, nada perdido","Dawn: {k} zombies down, nothing lost"
+UI_RAID_OVER_LOST,"Amanheceu: {k} zumbis caíram, {n} prédios avariados","Dawn: {k} zombies down, {n} buildings damaged"
+TIP_AWAY_RAIDS,Noites com zumbi enquanto você estava fora: {n},Zombie nights while you were away: {n}
+TIP_AWAY_KILLED,Zumbis derrubados pelas defesas: {n},Zombies taken down by the defenses: {n}
+GOAL_repair,Conserte: {b},Repair: {b}
+GOAL_rebuild,Reconstrua: {b},Rebuild: {b}
+UI_BOX,Caixa do turno,Shift box
+TIP_BOX,O que a vila juntou com o jogo fechado e não coube no depósito. Coletar põe no depósito o que couber.,What the village gathered while the game was closed that didn't fit in storage. Collect moves what fits into storage.
+UI_COLLECT,Coletar,Collect
+UI_BOX_FULL,Depósito cheio: gaste ou aumente o depósito para coletar,Storage full: spend or expand storage to collect
+TIP_AWAY_LOOT,Levado pelos zumbis nas noites em que a defesa não deu conta (no máximo 10% por volta). Nada quebra com o jogo fechado.,Taken by zombies on nights the defense fell short (at most 10% per absence). Nothing breaks while the game is closed.
+UI_TAB_BASE,Prédios,Buildings
+UI_BUILD_MOVE_HINT,Clique num prédio para mover,Click a building to move it
+TIP_BUILD_EXIT,Sair do modo construção (Esc ou botão direito),Leave build mode (Esc or right click)
+TUT_dz_intro,De noite chegam zumbis pela beira do rio. A marca vermelha e a trilha mostram por onde eles vêm.,At night zombies come from the riverbank. The red mark and the trail show where they come from.
+TUT_dz_build,Vamos montar uma defesa. Clique em Construir.,Let's set up a defense. Click Build.
+TUT_dz_tab,Abra a aba Defesa.,Open the Defense tab.
+TUT_dz_pick,Escolha a torre arqueira.,Pick the archer tower.
+TUT_dz_place,"O círculo amarelo é até onde ela atira. Ponha perto da trilha vermelha, entre os zumbis e as casas.","The yellow circle is how far it shoots. Put it near the red trail, between the zombies and the houses."
+TUT_dz_wait,"Quando a obra terminar, ela atira sozinha em quem entrar no círculo. Melhorar a torre aumenta o alcance.","Once it's built, it shoots anyone who enters the circle. Upgrading the tower increases its range."
+UI_MANAGE_BTN,Gestão,Manage
+TIP_MANAGE_BTN,"Modo gestão: recursos, obras e pessoas num painel só","Management mode: resources, sites and people in one panel"
+TIP_OPTIONS_BTN,"Opções (som, idioma, tamanho)","Options (sound, language, size)"
+GOAL_sick,{n} doentes em casa: comida e água curam,{n} sick at home: food and water heal them
+GOAL_SICK_TAIL,{n} doentes,{n} sick
+UI_WAIT_night,Parada: todo mundo dormindo. Volta de manhã,Paused: everyone is asleep. Resumes in the morning
+UI_WAIT_sick,Parada: todo mundo doente em casa,Paused: everyone is sick at home
+UI_WAIT_food,Parada: todo mundo atrás de comida e água,Paused: everyone is getting food and water
+UI_WAIT_busy,Esperando alguém livre,Waiting for someone free
+UI_RAID_ARRIVED,Zumbis saíram da água!,Zombies came out of the water!
+GOAL_raid_come,"O que cair, conserte de dia","Whatever falls, repair it during the day"
+GOAL_raid,"O que cair, conserte de dia","Whatever falls, repair it during the day"
+GOAL_raid_open,Nenhuma torre alcança {b}: ponha uma perto,No tower reaches {b}: place one nearby
+GOAL_raid_soon,"Antes da noite: muro em volta, torre perto das casas","Before night: wall around, tower near the houses"
+DIR_n,norte,north
+DIR_s,sul,south
+DIR_e,leste,east
+DIR_w,oeste,west
+UI_AND_JOIN, e , and 
+UI_SICK,{name} ficou doente: {why}.,{name} got sick: {why}.
+SICKWHY_bite,mordida de zumbi,zombie bite
+SICKWHY_both,fome e sede,hunger and thirst
+SICKWHY_hunger,fome,hunger
+SICKWHY_thirst,sede,thirst
+SICKWHY_recover,melhorando,getting better
+CURE_bite,Melhora descansando em casa com comida e água. Torres perto das casas evitam mordidas.,Gets better resting at home with food and water. Towers near houses prevent bites.
+CURE_both,"Melhora quando houver comida e água: mais hortas e barris, ou melhore os que tem.","Gets better once there's food and water: more gardens and barrels, or upgrade them."
+CURE_hunger,"Melhora quando houver comida: mais hortas, ou melhore as que tem.","Gets better once there's food: more gardens, or upgrade them."
+CURE_thirst,"Melhora quando houver água: mais barris de chuva, ou melhore os que tem.","Gets better once there's water: more rain barrels, or upgrade them."
+CURE_recover,"Já está comendo e bebendo: melhora sozinho, mais rápido deitado em casa.","Already eating and drinking: gets better alone, faster resting at home."
+UI_SICK_LINE,Doente: {why}. {cure},Sick: {why}. {cure}
+UI_LOST_DIED,{name} morreu,{name} died
+UI_LOST_LEFT,{name} foi embora,{name} left
+UI_LOST_WHY,Motivo: {why}.,Cause: {why}.
+LOST_TIP_bite,Os zumbis morderam quem estava acordado de noite. Não vire a noite em noite de zumbi e ponha torres na trilha deles.,Zombies bit whoever was awake at night. Don't pull all-nighters on zombie nights and put towers on their trail.
+LOST_TIP_both,Faltou comida e água por muito tempo. Mantenha os dois acima de zero: mais hortas e barris.,Food and water ran out for too long. Keep both above zero: more gardens and barrels.
+LOST_TIP_hunger,"Faltou comida por muito tempo. Mais hortas, ou melhore as que tem.","Food ran out for too long. More gardens, or upgrade them."
+LOST_TIP_thirst,"Faltou água por muito tempo. Mais barris de chuva, ou melhore os que tem.","Water ran out for too long. More rain barrels, or upgrade them."
+LOST_TIP_recover,A saúde chegou a zero. Comida e água em dia fazem a saúde voltar.,Health reached zero. Steady food and water bring health back.
+UI_NIGHT_REPORT,Noite do dia {n},Night of day {n}
+TIP_NIGHT_CAME,Zumbis que vieram,Zombies that came
+TIP_NIGHT_KILLED,Zumbis derrubados pelas defesas,Zombies taken down by defenses
+UI_NIGHT_SAFE,Nada quebrou.,Nothing broke.
+UI_NIGHT_BROKE,Quebrados: {list}. Parados até consertar.,Broken: {list}. Stopped until repaired.
+UI_NIGHT_BITTEN,Mordidos: {list}.,Bitten: {list}.
+UI_REPAIR_ALL,Consertar tudo,Repair all
+UI_REPAIRING,Consertando,Repairing
+UI_REBUILDING,Reconstruindo,Rebuilding
+UI_NIGHT_RUINED,Em ruína: {list}. Precisa reconstruir.,Ruined: {list}. Needs rebuilding.
+TIP_NIGHT_WALLS_DOWN,Muros no chão: o caminho está aberto até alguém consertar. Conserte no cartão do muro.,Walls down: the way is open until someone repairs them. Repair from the wall card.
+UI_WALLS_FIX_ALL,Consertar os {n},Repair all {n}
+TIP_WALLS_FIX_ALL,Paga o conserto dos {n} muros caídos ou rachados; os construtores vão de um em um.,Pays to repair all {n} fallen or cracked walls; builders go one by one.
+UI_WALLS_FIXED,{n} muros para consertar,{n} walls to repair
+RAID_ZOMBIES,Zumbis,Zombies
+RAID_HORDE,Horda,Horde
+RAID_BAR_SOON,{who}: {n} saem da água em {t} ({d}),{who}: {n} come out of the water in {t} ({d})
+RAID_BAR_LIVE,{who}: {a} de {n} vivos,{who}: {a} of {n} alive
+RAID_BAR_FELL,{n} caídos,{n} fallen
+RAID_FELL,{b} caiu!,{b} fell!
+RAID_RUINED,{b} virou ruína!,{b} is in ruins!
+RAID_WON,Noite sobrevivida! {k} de {n} derrubados,Night survived! {k} of {n} taken down
+RAID_FLED,Amanheceu: {n} zumbis voltaram para a água ({k} derrubados),Dawn: {n} zombies went back to the water ({k} taken down)
+TIP_RAID_BAR_SOON,Contagem até os zumbis saírem da água. A trilha vermelha no mapa mostra por onde vêm.,Countdown until the zombies come out of the water. The red trail on the map shows where they come from.
+TIP_RAID_BAR_LIVE,Eles quebram os muros e depois os prédios até morrer ou amanhecer. Torres e minas derrubam.,"They break walls, then buildings, until they die or dawn comes. Towers and mines take them down."
+RAID_BAR_FELL1,{n} caído,{n} fallen
+RAID_BAR_SOON1,{who}: {n} sai da água em {t} ({d}),{who}: {n} comes out of the water in {t} ({d})
+RAID_DEAD,{k} mortos,{k} down
+RAID_DEAD1,{k} morto,{k} down
+UI_BITTEN,{name} levou uma mordida!,{name} got bitten!
+NIGHT_CAME,{n} vieram,{n} came
+NIGHT_CAME1,{n} veio,{n} came
+NIGHT_KILLED,{n} derrubados,{n} taken down
+NIGHT_KILLED1,{n} derrubado,{n} taken down
+NIGHT_WALLS,{n} muros caíram,{n} walls fell
+NIGHT_WALLS1,{n} muro caiu,{n} wall fell
+TIP_HP_N,"Vida {h}/{m}: quanto aguenta de zumbi antes de avariar. Avariado, aguenta mais {m} antes de virar ruína. Sobe a cada nível.","Health {h}/{m}: how much zombie it takes before breaking. Once broken, it takes {m} more before becoming a ruin. Goes up with each level."
+TIP_HP_WALL_N,"Vida do muro {h}/{m}: o zumbi para nele e bate até derrubar. Se tiver abertura perto, ele vai por ela. Sobe a cada nível.","Wall health {h}/{m}: zombies stop and hit it until it falls. If there is a gap nearby, they use it. Goes up with each level."
+TIP_GAIN_HP,Aguenta mais: vida {a} → {b},Tougher: health {a} → {b}
+UI_WALLS_BATCH_DONE,Os {n} muros estão consertados,All {n} walls are repaired
+TIP_WALLS_BATCH,Consertando a leva de muros: {a} de {n} prontos,Repairing the batch of walls: {a} of {n} done
+UI_RES_ENDS,Acaba em {t},Runs out in {t}
+UI_GRAVE_BAR,{name} está grave: {why},{name} is critical: {why}
+TIP_GRAVE_BAR,"Se a saúde zerar, morre. Clique para ver a pessoa e o que falta.","If health reaches zero, they die. Click to see the person and what is missing."
+TIP_NEW_UNLOCK,Novo: a torre acabou de liberar.,New: the tower just unlocked this.

@@ -1,0 +1,52 @@
+; Engine configuration file.
+config_version=5
+
+[application]
+
+config/name="Quantos Dias? Vila"
+config/description="Protótipo da vila: idle builder de cima numa janela de canto."
+run/main_scene="res://scenes/vila.tscn"
+config/features=PackedStringArray("4.6", "GL Compatibility")
+config/use_custom_user_dir=true
+config/custom_user_dir_name="QuantosDiasVila"
+
+[autoload]
+
+Settings="*res://scripts/platform/settings.gd"
+I18n="*res://scripts/i18n/i18n.gd"
+Game="*res://scripts/game.gd"
+WindowService="*res://scripts/platform/window_service.gd"
+AudioManager="*res://scripts/audio/audio_manager.gd"
+
+[audio]
+
+buses/default_bus_layout="res://assets/audio/bus_layout.tres"
+driver/enable_input=false
+
+[display]
+
+window/size/viewport_width=384
+window/size/viewport_height=216
+window/size/window_width_override=1152
+window/size/window_height_override=648
+window/stretch/mode="canvas_items"
+window/stretch/aspect="keep"
+window/stretch/scale_mode="integer"
+window/size/borderless=true
+window/size/always_on_top=true
+window/size/resizable=false
+window/energy_saving/keep_screen_on=false
+
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+textures/canvas_textures/default_texture_filter=0
+2d/snap/snap_2d_transforms_to_pixel=true
+2d/snap/snap_2d_vertices_to_pixel=true
+environment/defaults/default_clear_color=Color(0.07, 0.055, 0.07, 1)
+
+[gui]
+
+timers/tooltip_delay_sec=99999.0
