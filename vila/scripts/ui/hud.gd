@@ -387,7 +387,7 @@ func _build_top() -> void:
 		else:
 			show_radio())
 	h.add_child(_radio_btn)
-	# Alça da janela: tela cheia, recolher e fechar.
+	# Alça da janela: Opções, tela cheia, recolher e fechar.
 	handle = WindowHandle.new()
 	handle.show_drawer = false
 	handle.drawer_toggled.connect(func(open: bool) -> void: set_manage(open))
@@ -443,18 +443,12 @@ func _build_bottom() -> void:
 		_on_goal())
 	goal_btn = _goal_btn
 	h.add_child(_goal_btn)
-	# Modo gestão (tudo num painel) e Opções: ficam aqui embaixo; em cima só tela cheia, recolher e fechar.
+	# Modo gestão (tudo num painel): fica aqui embaixo; em cima ficam Opções, tela cheia, recolher e fechar.
 	_manage_btn = Button.new()
 	_manage_btn.icon = icon("caderno")
-	_manage_btn.text = I18n.t("UI_MANAGE_BTN")
 	_manage_btn.tooltip_text = I18n.t("TIP_MANAGE_BTN")
 	_manage_btn.pressed.connect(func() -> void: set_manage(not _manage.visible))
 	h.add_child(_manage_btn)
-	var ob := Button.new()
-	ob.icon = UiTheme.icon("gear")
-	ob.tooltip_text = I18n.t("TIP_OPTIONS_BTN")
-	ob.pressed.connect(func() -> void: options_pressed.emit())
-	h.add_child(ob)
 	# De noite: botão para pôr todo mundo trabalhando só nesta noite (cansa; ver balance "night").
 	_night_btn = Button.new()
 	_night_btn.icon = icon("lua")
@@ -511,6 +505,11 @@ func _goal_text() -> String:
 
 func _goal_text_of(g: Dictionary) -> String:
 	match String(g["kind"]):
+		"raid_soon":
+			var dn: Array[String] = []
+			for d in g["dirs"]:
+				dn.append(I18n.t("DIR_" + String(d)))
+			return fmt("GOAL_raid_soon", {"n": g["n"], "d": I18n.t("UI_AND_JOIN").join(dn), "t": fmt_clock(float(g["left_s"]))})
 		"raid":
 			if String(g["type"]) == "":
 				return fmt("GOAL_raid_come", {"n": g["n"]})
@@ -556,6 +555,9 @@ func _goal_text_of(g: Dictionary) -> String:
 func _on_goal() -> void:
 	var g := sim.goal()
 	match String(g["kind"]):
+		"raid_soon":
+			build_tab = "defense"
+			show_build_menu()
 		"raid":
 			if bool(g.get("covered", false)) and int(g["id"]) >= 0:
 				show_building(int(g["id"]))
@@ -730,6 +732,8 @@ func refresh() -> void:
 	if zon > 0 and _z_seen == 0 and not sim.offline:
 		toast(I18n.t("UI_RAID_ARRIVED"))
 	_z_seen = zon
+	if not _notices.is_empty():
+		_next_notice()
 	# Aviso da névoa no fim da tarde (uma vez por dia): dá tempo de fazer cama para todo mundo.
 	var to_night := fposmod(float(sim.bal["time"]["night_from_h"]) - sim.local_hour(), 24.0)
 	if sim.fog_next and not sim.is_night() and to_night < float(sim.bal["fog"].get("warn_h", 3.0)) and _fog_warned != sim.day_number():
@@ -812,6 +816,100 @@ func card_open() -> bool:
 func close_card() -> void:
 	_card.visible = false
 	_card_kind = ""
+	_next_notice()
+
+
+# ================================================================ avisos que ficam
+## Morte e relatório da noite não somem como um toast: abrem um cartão e esperam o Certo.
+## Chegando vários (ou com outro cartão aberto, ou com o jogo calculando o tempo fora), entram na fila.
+var _notices: Array[Dictionary] = []
+var _notice: Dictionary = {}
+
+
+func show_lost(nm: String, died: bool, why: String) -> void:
+	_notices.append({"kind": "lost", "name": nm, "died": died, "why": why})
+	_next_notice()
+
+
+func show_night_report(rep: Dictionary) -> void:
+	_notices.append({"kind": "night", "rep": rep.duplicate(true)})
+	_next_notice()
+
+
+func _next_notice() -> void:
+	if _notices.is_empty() or sim == null or sim.offline or (_card.visible and _card_kind != "build"):
+		return
+	_notice = _notices.pop_front()
+	_open(String(_notice["kind"]))
+
+
+func _card_lost() -> void:
+	_clear_card()
+	var why := String(_notice.get("why", "recover"))
+	_header("saude", fmt("UI_LOST_DIED" if bool(_notice.get("died", true)) else "UI_LOST_LEFT", {"name": String(_notice.get("name", ""))}))
+	_card_box.add_child(_wrap_row("alerta", fmt("UI_LOST_WHY", {"why": I18n.t("SICKWHY_" + why)}), C_WARN))
+	_card_box.add_child(_wrap_row("seta", I18n.t("LOST_TIP_" + why), C_MUTED))
+	var ok := Button.new()
+	ok.text = I18n.t("TUT_ok")
+	ok.size_flags_horizontal = Control.SIZE_SHRINK_END
+	ok.pressed.connect(close_card)
+	_card_box.add_child(ok)
+
+
+## Relatório da noite (estilo fim de ataque do Clash): quantos vieram, quantos caíram, o que quebrou,
+## quem foi mordido, e um botão para consertar tudo de uma vez.
+func _card_night() -> void:
+	_clear_card()
+	var rep: Dictionary = _notice.get("rep", {})
+	_header("lua", fmt("UI_NIGHT_REPORT", {"n": int(rep.get("day", 0))}))
+	_card_box.add_child(_stats([_stat("zumbi", str(int(rep.get("came", 0))), I18n.t("TIP_NIGHT_CAME")),
+			_stat("espada", str(int(rep.get("killed", 0))), I18n.t("TIP_NIGHT_KILLED"), C_GOOD)]))
+	var broke: Array = (rep.get("broke", []) as Array) + (rep.get("ruined", []) as Array)
+	var names: Array[String] = []
+	var to_fix: Array[int] = []
+	for id in broke:
+		var b := sim.by_id(int(id))
+		if b.is_empty():
+			continue
+		names.append(bname(String(b["type"])))
+		if bool(b.get("broken", false)) and not bool(b.get("ruin", false)):
+			to_fix.append(int(id))
+	if names.is_empty():
+		_card_box.add_child(_wrap_row("check", I18n.t("UI_NIGHT_SAFE"), C_GOOD))
+	else:
+		_card_box.add_child(_wrap_row("avariado", fmt("UI_NIGHT_BROKE", {"list": ", ".join(names)}), C_WARN))
+	var bit: Array[String] = []
+	for pid in rep.get("bitten", []):
+		var bp := sim.person(int(pid))
+		if not bp.is_empty():
+			bit.append(pname(bp))
+	if not bit.is_empty():
+		_card_box.add_child(_wrap_row("saude", fmt("UI_NIGHT_BITTEN", {"list": ", ".join(bit)}), C_WARN))
+	if bool(rep.get("retreat", false)):
+		_card_box.add_child(_wrap_row("zumbi", I18n.t("UI_NIGHT_RETREAT"), C_MUTED))
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_END
+	if not to_fix.is_empty():
+		var cost := {}
+		for id in to_fix:
+			var c: Dictionary = sim.defense.repair_cost(sim.by_id(id))
+			for r in c:
+				cost[r] = float(cost.get(r, 0.0)) + float(c[r])
+		var fix := Button.new()
+		fix.icon = icon("martelo")
+		fix.text = I18n.t("UI_REPAIR_ALL")
+		fix.disabled = not sim.can_afford(cost)
+		fix.pressed.connect(func() -> void:
+			for id in to_fix:
+				sim.repair(id)
+			close_card())
+		row.add_child(_cost_row(cost))
+		row.add_child(fix)
+	var ok2 := Button.new()
+	ok2.text = I18n.t("TUT_ok")
+	ok2.pressed.connect(close_card)
+	row.add_child(ok2)
+	_card_box.add_child(row)
 
 
 func mouse_over_ui(pos: Vector2) -> bool:
@@ -1200,6 +1298,10 @@ func _build_card_kind() -> void:
 			_card_merchant()
 		"welcome":
 			_card_welcome()
+		"lost":
+			_card_lost()
+		"night":
+			_card_night()
 		_:
 			if _card_kind.begins_with("res:"):
 				_card_res()
@@ -1519,6 +1621,8 @@ func _card_person() -> void:
 	if hs != "ok":
 		var hv := int(ceil(float(p["health"])))
 		_card_box.add_child(_stats([_stat("saude", "%d" % hv, fmt("TIP_HEALTH_" + hs, {"h": hv}), C_AMBER if hs == "weak" else C_WARN)]))
+		var sw := sim.sick_why(p)
+		_card_box.add_child(_wrap_row("saude", fmt("UI_SICK_LINE", {"why": I18n.t("SICKWHY_" + sw), "cure": I18n.t("CURE_" + sw)}), C_WARN if hs != "weak" else C_AMBER))
 	if p["hungry"]:
 		_card_box.add_child(_row([_icon_rect("comida"), _icon_rect("alerta"), _label(I18n.t("UI_HUNGRY"), C_WARN)]))
 	if p["thirsty"]:
@@ -2102,7 +2206,7 @@ func _auto_sell_box() -> void:
 func set_manage(open: bool) -> void:
 	_manage.visible = open
 	if _manage_btn != null:
-		_manage_btn.add_theme_color_override("font_color", C_AMBER if open else C_TEXT)
+		_manage_btn.modulate = C_AMBER if open else Color.WHITE
 	if handle != null and handle.drawer_open != open:
 		handle.set_drawer_open(open)
 	if open:

@@ -100,7 +100,12 @@ func _make_hud() -> void:
 			hud.toast(hud.fmt("UI_DONE", {"b": hud.bname(String(b["type"]), int(b["level"]))})))
 	sim.fog_started.connect(func() -> void: hud.toast(I18n.t("UI_FOG_START")))
 	sim.person_grave.connect(func(id: int) -> void: hud.toast(hud.fmt("UI_GRAVE", {"name": hud.pname(sim.person(id))})))
-	sim.person_left.connect(func(nm: String, died: bool) -> void: hud.toast(hud.fmt("UI_DIED" if died else "UI_LEFT", {"name": nm})))
+	sim.person_left.connect(func(nm: String, died: bool, why: String) -> void:
+		hud.show_lost(nm, died, why))
+	sim.person_sick.connect(func(id: int) -> void:
+		var sp := sim.person(id)
+		if not sp.is_empty():
+			hud.toast(hud.fmt("UI_SICK", {"name": hud.pname(sp), "why": I18n.t("SICKWHY_" + sim.sick_why(sp))})))
 	sim.fog_ended.connect(func() -> void: hud.toast(hud.fmt("UI_FOG_END", {"pct": int(round(float(sim.bal["fog"]["food_bonus"]) * 100.0))})))
 	sim.group_arrived.connect(func() -> void: hud.toast(hud.fmt("UI_GATE_BADGE", {"n": sim.gate_group.size()})))
 	sim.raid_warning.connect(func(f: Dictionary, nxt: Dictionary) -> void:
@@ -115,8 +120,7 @@ func _make_hud() -> void:
 	sim.raid_over.connect(func(rep: Dictionary) -> void:
 		if sim.offline:
 			return
-		var lost: int = (rep["broke"] as Array).size() + (rep["ruined"] as Array).size()
-		hud.toast(hud.fmt("UI_RAID_OVER_LOST" if lost > 0 else "UI_RAID_OVER", {"k": rep["killed"], "n": lost})))
+		hud.show_night_report(rep))
 	sim.raid_retreat.connect(func(rep: Dictionary) -> void:
 		if not sim.offline:
 			hud.toast(hud.fmt("UI_RAID_RETREAT", {"n": (rep["broke"] as Array).size() + (rep["ruined"] as Array).size()})))
@@ -380,6 +384,22 @@ func _open_test_card() -> void:
 			Settings.set_value("dtut_done", false)
 			Settings.set_value("dtut_step", int(Game.args.get("dstep", 0)))
 			_tut._step = VilaTutorial.STEPS.size()
+		"dusk":   # capturas: fim da tarde do dia 2, zumbis avisados com a trilha
+			sim.start_t -= float(sim.bal["night"]["cycle_s"])
+			sim.set_cycle_hour(19.0)
+		"night_report":   # capturas: relatório da noite com prédio quebrado e gente mordida
+			_test_raid()
+			sim.defense.zombies.clear()
+			var hb := sim._first("moradia")
+			hud.show_night_report({"day": 3, "came": 6, "killed": 4, "broke": [int(hb.get("id", -1))], "ruined": [],
+					"bitten": [int(sim.people[0]["id"])], "retreat": true})
+		"lost":   # capturas: aviso de morte
+			hud.show_lost("Rosa", true, "hunger")
+		"sick":   # capturas: Joaquim doente com fome (cartão e cruz em cima)
+			var jp: Dictionary = sim.people[0]
+			jp["health"] = 30.0
+			jp["hungry"] = true
+			hud.show_person(int(jp["id"]))
 		"colado":   # capturas: barraca colada na primeira e o fantasma de outra encostada
 			sim.stock["madeira"] = 99.0
 			sim.stock["sucata"] = 99.0

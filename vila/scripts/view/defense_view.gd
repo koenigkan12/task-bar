@@ -294,9 +294,19 @@ func _draw_bright() -> void:
 		var fp := sim._fp(tp)
 		var mid := Vector2((Vector2i(b["cell"]).x + fp.x / 2.0) * TILE, Vector2i(b["cell"]).y * TILE - 6)
 		if bool(b.get("ruin", false)) or bool(b.get("broken", false)):
-			if int(_t * 2.0) % 2 == 0 and _icons != null:
-				var fr := 25 if bool(b.get("ruin", false)) else 24   # ruína / avariado (icons.png)
-				_bright.draw_texture_rect_region(_icons, Rect2((mid - Vector2(4, 8)).round(), Vector2(8, 8)), Rect2(fr * 8, 0, 8, 8))
+			var ruin := bool(b.get("ruin", false))
+			var base := Vector2((Vector2i(b["cell"]).x + fp.x / 2.0) * TILE, (Vector2i(b["cell"]).y + fp.y) * TILE - 6)
+			# Fumaça saindo do prédio quebrado (três baforadas subindo e sumindo).
+			for i in 3:
+				var ph := fposmod(_t * 0.5 + i / 3.0 + float(b["id"]) * 0.17, 1.0)
+				var sp := base + Vector2(sin(ph * 5.0 + i) * 3.0 + (i - 1) * 4.0, -ph * 18.0 - (4.0 if ruin else 10.0))
+				_bright.draw_circle(sp, 2.0 + ph * 2.5, Color(0.55, 0.5, 0.55, 0.45 * (1.0 - ph)))
+			# Selo fixo (não pisca): martelo = conserte; tijolo = reconstrua.
+			if _icons != null:
+				var at := (mid - Vector2(6, 10)).round()
+				_bright.draw_rect(Rect2(at - Vector2(1, 1), Vector2(12, 10)), Color(0.15, 0.08, 0.1, 0.9))
+				_bright.draw_rect(Rect2(at - Vector2(1, 1), Vector2(12, 10)), Color(VM, 0.95), false, 1.0)
+				_bright.draw_texture_rect_region(_icons, Rect2(at + Vector2(1, 0), Vector2(8, 8)), Rect2((25 if ruin else 8) * 8, 0, 8, 8))
 			continue
 		var mh := df.max_hp(b)
 		var h := df.hp(b)

@@ -154,8 +154,10 @@ func night_start() -> void:
 		kinds.append("horda" if bool(tonight["horde"]) else "fraco")
 	for i in int(tonight["boss"]):
 		kinds.append("chefe")
+	# Saem em bandos de até 3 (uma leva que dá para ver entrando junta), não um a um.
+	var groups := int(ceil(kinds.size() / 3.0))
 	for i in kinds.size():
-		var at := sim.t + 3.0 + win * float(i) / maxf(1.0, float(kinds.size()))
+		var at := sim.t + 3.0 + win * float(i / 3) / maxf(1.0, float(groups)) + float(i % 3) * 0.8
 		if kinds[i] == "chefe":
 			at = sim.t + win * 0.6
 		var sp: Vector2i = spots[i % spots.size()]
@@ -278,6 +280,40 @@ func covered(at: Vector2) -> bool:
 		if center_of(d).distance_to(at) <= r + 1.0:
 			return true
 	return false
+
+
+## Antes da noite (da hora do aviso até o primeiro sair da água): quantos, de que lado e em quanto tempo.
+func raid_soon() -> Dictionary:
+	var day := sim.day_number()
+	var night := sim.is_night()
+	if not zombies.is_empty():
+		return {}
+	var left := 0.0
+	var n := 0
+	if night:
+		if pending.is_empty():
+			return {}
+		left = 1e9
+		for pd in pending:
+			left = minf(left, float(pd["at"]) - sim.t)
+		n = pending.size()
+	else:
+		if sim.local_hour() < float(D()["warn_h"]):
+			return {}
+		var f := forecast(day)
+		n = int(f["n"]) + int(f["boss"])
+		if n <= 0:
+			return {}
+		var tb: Dictionary = sim.bal["time"]
+		left = fposmod(float(tb["night_from_h"]) - sim.local_hour(), 24.0) / 24.0 * float(sim.bal["night"]["cycle_s"])
+	var dirs: Array[String] = []
+	var hc := Vector2(Vector2i(sim._first("hatch").get("cell", Vector2i.ZERO)))
+	for a in arrivals():
+		var v := Vector2(Vector2i(a["cell"])) - hc
+		var d := ("e" if v.x > 0 else "w") if absf(v.x) > absf(v.y) else ("s" if v.y > 0 else "n")
+		if not dirs.has(d):
+			dirs.append(d)
+	return {"n": n, "left_s": maxf(0.0, left), "dirs": dirs}
 
 
 ## Os zumbis desistem da noite e voltam para a água (os que ainda iam sair também não saem).
@@ -759,7 +795,18 @@ func _hurt_people(dt: float) -> void:
 			continue
 		for z in zombies:
 			if Vector2(z["pos"]).distance_to(p["pos"]) < 0.9:
+				var was := sim.health_state(p)
 				p["health"] = maxf(1.0 if not sim._can_leave(p) else 0.0, float(p["health"]) - dmg * dt)
+				p["bitten_t"] = sim.t
+				p["why"] = "bite"
+				if not report.is_empty():
+					var bit: Array = report.get("bitten", [])
+					if not bit.has(int(p["id"])):
+						bit.append(int(p["id"]))
+						fx.append({"kind": "bite", "a": p["pos"], "b": p["pos"], "t": 0.0, "life": 0.8})
+					report["bitten"] = bit
+				if (was == "ok" or was == "weak") and sim.health_state(p) == "sick":
+					sim.person_sick.emit(int(p["id"]))
 				break
 
 

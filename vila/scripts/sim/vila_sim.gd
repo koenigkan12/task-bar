@@ -10,7 +10,8 @@ signal building_done(id: int)                      # obra ou melhoria terminou
 signal tower_up(level: int)
 signal person_joined(id: int)
 signal person_grave(id: int)                       # alguém ficou grave (fome/sede): aviso
-signal person_left(name: String, died: bool)       # saúde zerou: foi embora no barco ou morreu (balance health.at_zero)
+signal person_left(name: String, died: bool, why: String)   # saúde zerou: foi embora ou morreu; why = sick_why
+signal person_sick(id: int)                        # alguém adoeceu agora (o aviso diz o motivo e a cura)
 signal group_arrived                               # um grupo de 3 chegou ao portão
 signal harvested(id: int, res: String, amount: int) # alguém entregou no depósito (para o "+N")
 signal site_started(id: int)                       # obra nova, melhoria ou torre começou (som de martelo)
@@ -574,10 +575,28 @@ func _health(p: Dictionary, dt: float) -> void:
 	if not _can_leave(p):
 		h = maxf(h, 1.0)
 	p["health"] = h
+	if loss > 0.0 or sick_why(p) == "bite":
+		p["why"] = sick_why(p)   # o último motivo fica (para o aviso de morte e o cartão)
 	if h <= 0.0:
 		_leave(p)
 	elif was != "grave" and health_state(p) == "grave":
 		person_grave.emit(int(p["id"]))
+	elif (was == "ok" or was == "weak") and health_state(p) == "sick" and not offline:
+		person_sick.emit(int(p["id"]))
+
+
+## Por que está mal: bite (mordida de zumbi há pouco), both, hunger, thirst ou recover (já comendo
+## e bebendo, melhorando).
+func sick_why(p: Dictionary) -> String:
+	if t - float(p.get("bitten_t", -1e9)) < 180.0:
+		return "bite"
+	if p["hungry"] and p["thirsty"]:
+		return "both"
+	if p["hungry"]:
+		return "hunger"
+	if p["thirsty"]:
+		return "thirst"
+	return "recover"
 
 
 func _leave(p: Dictionary) -> void:
@@ -589,7 +608,7 @@ func _leave(p: Dictionary) -> void:
 	var died := String(bal["health"].get("at_zero", "leave")) == "die"
 	if died and not offline:
 		died_ids.append(int(p["id"]))
-	person_left.emit(nm, died)
+	person_left.emit(nm, died, String(p.get("why", sick_why(p))))
 	changed.emit()
 
 
@@ -2856,6 +2875,11 @@ func goal() -> Dictionary:
 	# Noite com zumbi no mapa: o que eles estão atacando e se alguma defesa alcança.
 	if defense != null and not defense.zombies.is_empty():
 		return defense.raid_goal()
+	# Fim da tarde: quantos vêm, de que lado e em quanto tempo (antes disso a trilha nem aparece).
+	if defense != null:
+		var rs := defense.raid_soon()
+		if not rs.is_empty():
+			return {"kind": "raid_soon", "n": rs["n"], "dirs": rs["dirs"], "left_s": rs["left_s"]}
 	# Metade ou mais deitada doente: o jogador precisa saber por que está todo mundo em casa.
 	var resting := resting_count()
 	if resting > 0 and resting * 2 >= people.size() and not is_night():

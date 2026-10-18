@@ -1,6 +1,6 @@
 class_name WindowHandle
 extends Control
-## Alça da janela: tela cheia, recolher e fechar.
+## Alça da janela: Opções, tela cheia, recolher e fechar.
 ## Recolhida, a janela vira uma aba de ~48×16 com icon_show e no máximo uma luz verde de atenção;
 ## clique na aba restaura, arrastar a aba move a janela. A simulação segue (WindowService cuida).
 
@@ -104,8 +104,13 @@ func _build() -> void:
 	_row.add_theme_constant_override("separation", 0)
 	add_child(_row)
 
-	# Só três botões (pedido do Vinícius): tela cheia, recolher e fechar. Arrastar é pela barra de
-	# cima, o som fica nas Opções e o modo gestão foi para a barra de baixo.
+	# Quatro botões (pedido do Vinícius): Opções, tela cheia, recolher e fechar. Arrastar é pela
+	# barra de cima, o som fica nas Opções e o modo gestão foi para a barra de baixo.
+	var gear: Button = ScreenUtil.icon_button("gear", "opt.title")
+	gear.name = "Options"
+	gear.pressed.connect(func() -> void: options_requested.emit())
+	_row.add_child(gear)
+
 	_full_btn = ScreenUtil.icon_button("fullscreen")
 	_full_btn.name = "Fullscreen"
 	_full_btn.pressed.connect(_on_full_pressed)

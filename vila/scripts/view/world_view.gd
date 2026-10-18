@@ -475,12 +475,19 @@ func _update_building(b: Dictionary, node: Dictionary) -> void:
 		(node["sprite"] as Sprite2D).frame = int(_anim_t * 8.0) % 4
 	# Avariado pelos zumbis: apagado; ruína: escuro e baixo (o alerta pisca na camada da defesa).
 	var spm: Sprite2D = node["sprite"]
+	# Quebrado: torto, baixo e escuro (como o prédio destruído do Clash); ruína: desabado.
 	if bool(b.get("ruin", false)):
-		spm.modulate = Color(0.42, 0.36, 0.44)
+		spm.modulate = Color(0.36, 0.3, 0.34)
+		spm.scale = Vector2(1.0, 0.45)
+		spm.skew = 0.0
 	elif bool(b.get("broken", false)):
-		spm.modulate = Color(0.78, 0.72, 0.78)
+		spm.modulate = Color(0.62, 0.52, 0.52)
+		spm.scale = Vector2(1.0, 0.86)
+		spm.skew = 0.14
 	else:
 		spm.modulate = Color.WHITE
+		spm.scale = Vector2.ONE
+		spm.skew = 0.0
 	var crops: Array = node["crops"]
 	if not crops.is_empty():
 		var stage := 0
@@ -1220,9 +1227,8 @@ func _draw_defense_hints() -> void:
 			_draw_range(Vector2i(sb["cell"]), fp, df.range_of(tp2, lv + 1), Color(RANGE_COL, 0.8), 0.0, true)
 	# Por onde os zumbis chegam: no dia da noite com zumbi, no modo construção, ao mexer em defesa
 	# e no tutorial. Some quando eles já estão no mapa.
-	var today := df.raid_day() == sim.day_number()
-	var show := show_arrivals or build_grid or placing_def or sel_def \
-			or (today and (not sim.is_night() or not df.pending.is_empty()))
+	# Só perto da noite (da hora do aviso até saírem da água), ao mexer em defesa e no tutorial.
+	var show := show_arrivals or placing_def or sel_def or not df.raid_soon().is_empty()
 	if not show or (sim.is_night() and df.pending.is_empty() and not df.zombies.is_empty()):
 		return
 	var pulse := 0.6 + 0.4 * sin(_anim_t * 4.0)
@@ -1296,7 +1302,7 @@ func _draw_sick_tags() -> void:
 			if hid >= 0 and not sim.by_id(hid).is_empty():
 				by_home[hid] = int(by_home.get(hid, 0)) + 1
 				continue
-		if (resting or hs == "sick" or hs == "grave") and not p["asleep"] and blink:
+		if (resting or hs == "sick" or hs == "grave") and not p["asleep"]:
 			var at := (_person_world(p) + Vector2(-4, -30)).round()
 			_overlay.draw_texture_rect_region(ic, Rect2(at, Vector2(8, 8)), Rect2(21 * 8, 0, 8, 8))
 	for hid in by_home:

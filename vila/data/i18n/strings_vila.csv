@@ -473,14 +473,48 @@ TUT_dz_wait,"Quando a obra terminar, ela atira sozinha em quem entrar no círcul
 UI_MANAGE_BTN,Gestão,Manage
 TIP_MANAGE_BTN,"Modo gestão: recursos, obras e pessoas num painel só","Management mode: resources, sites and people in one panel"
 TIP_OPTIONS_BTN,"Opções (som, idioma, tamanho)","Options (sound, language, size)"
-GOAL_sick,{n} doentes em casa: com comida e água em dia eles melhoram,{n} sick at home: with food and water they get better
+GOAL_sick,{n} doentes em casa: comida e água curam,{n} sick at home: food and water heal them
 GOAL_SICK_TAIL,{n} doentes,{n} sick
 UI_WAIT_night,Parada: todo mundo dormindo. Volta de manhã,Paused: everyone is asleep. Resumes in the morning
 UI_WAIT_sick,Parada: todo mundo doente em casa,Paused: everyone is sick at home
 UI_WAIT_food,Parada: todo mundo atrás de comida e água,Paused: everyone is getting food and water
 UI_WAIT_busy,Esperando alguém livre,Waiting for someone free
-UI_RAID_ARRIVED,Zumbis saíram da água! Eles vão atrás dos prédios; as torres atiram em quem entra no círculo.,Zombies came out of the water! They go after buildings; towers shoot anyone inside their circle.
+UI_RAID_ARRIVED,Zumbis saíram da água!,Zombies came out of the water!
 UI_RAID_RETREAT,Os zumbis avariaram {n} prédios e voltaram para a água. Conserte de dia.,The zombies damaged {n} buildings and went back to the water. Repair them during the day.
-GOAL_raid_come,{n} zumbis chegando,{n} zombies coming
-GOAL_raid,{n} zumbis atacando: {b}. As defesas estão atirando,{n} zombies attacking: {b}. Defenses are shooting
-GOAL_raid_open,{n} zumbis atacando {b} e nenhuma torre alcança: ponha uma defesa perto,{n} zombies attacking {b} and no tower reaches: put a defense nearby
+GOAL_raid_come,Zumbis chegando: {n},Zombies coming: {n}
+GOAL_raid,Zumbis atacando {b}: as defesas atiram,Zombies attacking {b}: defenses firing
+GOAL_raid_open,Zumbis atacando {b}: nenhuma torre alcança,Zombies attacking {b}: no tower reaches
+GOAL_raid_soon,Zumbis: {n} do {d} em {t},Zombies: {n} from the {d} in {t}
+DIR_n,norte,north
+DIR_s,sul,south
+DIR_e,leste,east
+DIR_w,oeste,west
+UI_AND_JOIN, e , and 
+UI_SICK,{name} ficou doente: {why}.,{name} got sick: {why}.
+SICKWHY_bite,mordida de zumbi,zombie bite
+SICKWHY_both,fome e sede,hunger and thirst
+SICKWHY_hunger,fome,hunger
+SICKWHY_thirst,sede,thirst
+SICKWHY_recover,melhorando,getting better
+CURE_bite,Melhora descansando em casa com comida e água. Torres perto das casas evitam mordidas.,Gets better resting at home with food and water. Towers near houses prevent bites.
+CURE_both,"Melhora quando houver comida e água: mais hortas e barris, ou melhore os que tem.","Gets better once there's food and water: more gardens and barrels, or upgrade them."
+CURE_hunger,"Melhora quando houver comida: mais hortas, ou melhore as que tem.","Gets better once there's food: more gardens, or upgrade them."
+CURE_thirst,"Melhora quando houver água: mais barris de chuva, ou melhore os que tem.","Gets better once there's water: more rain barrels, or upgrade them."
+CURE_recover,"Já está comendo e bebendo: melhora sozinho, mais rápido deitado em casa.","Already eating and drinking: gets better alone, faster resting at home."
+UI_SICK_LINE,Doente: {why}. {cure},Sick: {why}. {cure}
+UI_LOST_DIED,{name} morreu,{name} died
+UI_LOST_LEFT,{name} foi embora,{name} left
+UI_LOST_WHY,Motivo: {why}.,Cause: {why}.
+LOST_TIP_bite,Os zumbis morderam quem estava fora de casa. Ponha torres e muros entre a trilha deles e as casas.,Zombies bit whoever was outside. Put towers and walls between their trail and the houses.
+LOST_TIP_both,Faltou comida e água por muito tempo. Mantenha os dois acima de zero: mais hortas e barris.,Food and water ran out for too long. Keep both above zero: more gardens and barrels.
+LOST_TIP_hunger,"Faltou comida por muito tempo. Mais hortas, ou melhore as que tem.","Food ran out for too long. More gardens, or upgrade them."
+LOST_TIP_thirst,"Faltou água por muito tempo. Mais barris de chuva, ou melhore os que tem.","Water ran out for too long. More rain barrels, or upgrade them."
+LOST_TIP_recover,A saúde chegou a zero. Comida e água em dia fazem a saúde voltar.,Health reached zero. Steady food and water bring health back.
+UI_NIGHT_REPORT,Noite do dia {n},Night of day {n}
+TIP_NIGHT_CAME,Zumbis que vieram,Zombies that came
+TIP_NIGHT_KILLED,Zumbis derrubados pelas defesas,Zombies taken down by defenses
+UI_NIGHT_SAFE,Nada quebrou.,Nothing broke.
+UI_NIGHT_BROKE,Quebrados: {list}. Parados até consertar.,Broken: {list}. Stopped until repaired.
+UI_NIGHT_BITTEN,Mordidos: {list}.,Bitten: {list}.
+UI_NIGHT_RETREAT,"Depois de quebrar o que deu, voltaram para a água.","After breaking what they could, they went back to the water."
+UI_REPAIR_ALL,Consertar tudo,Repair all
