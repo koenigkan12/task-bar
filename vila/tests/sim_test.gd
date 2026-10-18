@@ -223,6 +223,17 @@ func _init() -> void:
 	sh._health(hp, 60.0 * 5.0)
 	sh._person_step(hp, 0.1, false, true)
 	_check(sh.health_state(hp) == "sick" and String(hp["job"]["kind"]) == "rest", "saúde: doente para e vai descansar")
+	var food0 := float(sh.stock["comida"])
+	sh.stock["comida"] = 0.0
+	sh._person_step(hp, 0.1, false, true)
+	_check(String(hp["job"].get("kind", "")) != "rest" and sh.health_mult(hp) < 1.0, "saúde: sem comida, doente não deita (vai buscar, devagar)")
+	sh.stock["comida"] = food0
+	sh._person_step(hp, 0.1, false, true)
+	for q in sh.people:
+		if q != hp:
+			q["health"] = 30.0
+			sh._person_step(q, 0.1, false, true)
+	_check(String(sh.goal().get("kind", "")) == "sick" and sh.site_wait_reason() == "sick", "saúde: todo mundo deitado vira a meta e o motivo da obra parada")
 	var jqs: Dictionary = sh.people[0]
 	jqs["hungry"] = true
 	jqs["thirsty"] = true

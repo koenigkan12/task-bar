@@ -149,7 +149,7 @@
   "sick_until": 60,
   "grave_below": 15,
   "weak_mult": 0.7,
-  "offline_floor": 45,
+  "offline_floor": 45, "sick_work_mult": 0.5, "rest_min_stock": 2,
   "at_zero": "die"
  },
  "defense": {

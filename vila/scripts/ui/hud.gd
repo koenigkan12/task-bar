@@ -40,6 +40,7 @@ var _merchant_btn: Button
 ## Falas do rádio que chegaram com a vila aberta e ainda não foram lidas no caderno.
 var radio_unread: int = 0
 var _manage: PanelContainer
+var _manage_btn: Button
 var _manage_box: VBoxContainer
 var _manage_acc: float = 0.0
 var quiet: bool = false          # tutorial rodando: o rádio só anota, sem balão
@@ -61,6 +62,7 @@ var _tip: Label
 var _night_btn: Button
 var _box_for := ""                      # de qual cartão (tipo#id) é o conteúdo montado agora
 var _welcome: Dictionary = {}          # resumo da última volta (o cartão de volta se refaz a partir dele)
+var _z_seen: int = 0                    # zumbis no mapa no último refresh (avisa quando chegam)
 var _raid_btn: Button                   # zumbis da próxima noite (ícone + número; a dica explica)
 var _fog_warned := -1
 var _refresh_acc: float = 0.0
@@ -385,9 +387,9 @@ func _build_top() -> void:
 		else:
 			show_radio())
 	h.add_child(_radio_btn)
-	# Alça do jogo do bunker: gaveta (modo gestão), som, Opções, recolher e fechar.
+	# Alça da janela: tela cheia, recolher e fechar.
 	handle = WindowHandle.new()
-	handle.show_drawer = true
+	handle.show_drawer = false
 	handle.drawer_toggled.connect(func(open: bool) -> void: set_manage(open))
 	handle.quit_requested.connect(func() -> void: quit_pressed.emit())
 	handle.options_requested.connect(func() -> void: options_pressed.emit())
@@ -441,6 +443,18 @@ func _build_bottom() -> void:
 		_on_goal())
 	goal_btn = _goal_btn
 	h.add_child(_goal_btn)
+	# Modo gestão (tudo num painel) e Opções: ficam aqui embaixo; em cima só tela cheia, recolher e fechar.
+	_manage_btn = Button.new()
+	_manage_btn.icon = icon("caderno")
+	_manage_btn.text = I18n.t("UI_MANAGE_BTN")
+	_manage_btn.tooltip_text = I18n.t("TIP_MANAGE_BTN")
+	_manage_btn.pressed.connect(func() -> void: set_manage(not _manage.visible))
+	h.add_child(_manage_btn)
+	var ob := Button.new()
+	ob.icon = UiTheme.icon("gear")
+	ob.tooltip_text = I18n.t("TIP_OPTIONS_BTN")
+	ob.pressed.connect(func() -> void: options_pressed.emit())
+	h.add_child(ob)
 	# De noite: botão para pôr todo mundo trabalhando só nesta noite (cansa; ver balance "night").
 	_night_btn = Button.new()
 	_night_btn.icon = icon("lua")
@@ -487,7 +501,22 @@ func _build_bottom() -> void:
 
 func _goal_text() -> String:
 	var g := sim.goal()
+	var txt := _goal_text_of(g)
+	# Gente doente trabalhando devagar: diz na meta, para ninguém achar que a vila parou à toa.
+	var sick := sim.sick_count()
+	if sick > 0 and String(g["kind"]) != "sick":
+		txt += " · " + fmt("GOAL_SICK_TAIL", {"n": sick})
+	return txt
+
+
+func _goal_text_of(g: Dictionary) -> String:
 	match String(g["kind"]):
+		"raid":
+			if String(g["type"]) == "":
+				return fmt("GOAL_raid_come", {"n": g["n"]})
+			return fmt("GOAL_raid" if bool(g["covered"]) else "GOAL_raid_open", {"n": g["n"], "b": bname(g["type"])})
+		"sick":
+			return fmt("GOAL_sick", {"n": g["n"]})
 		"build":
 			return fmt("GOAL_build", {"b": bname(g["type"])})
 		"more":
@@ -527,6 +556,17 @@ func _goal_text() -> String:
 func _on_goal() -> void:
 	var g := sim.goal()
 	match String(g["kind"]):
+		"raid":
+			if bool(g.get("covered", false)) and int(g["id"]) >= 0:
+				show_building(int(g["id"]))
+			else:
+				build_tab = "defense"
+				show_build_menu()
+		"sick":
+			for p in sim.people:
+				if String(p["job"].get("kind", "")) == "rest":
+					show_person(int(p["id"]))
+					break
 		"build", "more", "short":
 			build_chosen.emit(String(g["type"]))
 		"improve", "repair", "rebuild":
@@ -685,6 +725,11 @@ func refresh() -> void:
 		_raid_btn.text = str(zn) if not sim.is_night() else "%d/%d" % [sim.defense.zombies.size() + sim.defense.pending.size(), zn]
 		_raid_btn.add_theme_color_override("font_color", C_WARN if bool(nn["horde"]) or int(nn["boss"]) > 0 else C_TEXT)
 		_set_tip(_raid_btn, _night_forecast_tip(nn))
+	# Zumbis saíram da água: avisa uma vez por noite (antes eles apareciam sem nenhum aviso).
+	var zon := sim.defense.zombies.size()
+	if zon > 0 and _z_seen == 0 and not sim.offline:
+		toast(I18n.t("UI_RAID_ARRIVED"))
+	_z_seen = zon
 	# Aviso da névoa no fim da tarde (uma vez por dia): dá tempo de fazer cama para todo mundo.
 	var to_night := fposmod(float(sim.bal["time"]["night_from_h"]) - sim.local_hour(), 24.0)
 	if sim.fog_next and not sim.is_night() and to_night < float(sim.bal["fog"].get("warn_h", 3.0)) and _fog_warned != sim.day_number():
@@ -1088,6 +1133,7 @@ func _rebuild_card() -> void:
 		return
 	var old_box := _card_box
 	var old_btns := build_btns.duplicate()
+	var old_tabs := build_tab_btns.duplicate()
 	_card_box = VBoxContainer.new()
 	_card_box.add_theme_constant_override("separation", 2)
 	_offscreen = true
@@ -1100,6 +1146,7 @@ func _rebuild_card() -> void:
 		_card_box.free()
 		_card_box = old_box
 		build_btns = old_btns
+		build_tab_btns = old_tabs
 		return
 	_box_for = key
 	_card_scroll.remove_child(old_box)
@@ -1344,7 +1391,8 @@ func _progress_lines(b: Dictionary) -> void:
 	var lbl := I18n.t("UI_UPGRADING") if String(b["state"]) == "upgrade" else I18n.t("UI_BUILDING")
 	_card_box.add_child(_row([_icon_rect("relogio"), _label("%s · %s" % [lbl, fmt_clock(left)])]))
 	if int(b["builder"]) < 0:
-		_card_box.add_child(_row([_icon_rect("alerta"), _label(I18n.t("UI_WAITING_BUILDER"), C_WARN)]))
+		var why := sim.site_wait_reason()
+		_card_box.add_child(_wrap_row("saude" if why == "sick" else ("lua" if why == "night" else "alerta"), I18n.t("UI_WAIT_" + why), C_WARN))
 	else:
 		var who: Array[String] = [pname(sim.person(int(b["builder"])))]
 		for hid in b.get("helpers", []):
@@ -2053,6 +2101,8 @@ func _auto_sell_box() -> void:
 ## as obras na fila e o que cada pessoa está fazendo. Com a janela maior, sobra mundo do lado.
 func set_manage(open: bool) -> void:
 	_manage.visible = open
+	if _manage_btn != null:
+		_manage_btn.add_theme_color_override("font_color", C_AMBER if open else C_TEXT)
 	if handle != null and handle.drawer_open != open:
 		handle.set_drawer_open(open)
 	if open:
@@ -2095,7 +2145,7 @@ func _rebuild_manage() -> void:
 		if st == "built":
 			continue
 		any = true
-		var who := I18n.t("UI_WAITING_BUILDER") if int(bd["builder"]) < 0 else pname(sim.person(int(bd["builder"])))
+		var who := I18n.t("UI_WAIT_" + sim.site_wait_reason()) if int(bd["builder"]) < 0 else pname(sim.person(int(bd["builder"])))
 		var btn := Button.new()
 		btn.theme_type_variation = "FlatButton"
 		btn.alignment = HORIZONTAL_ALIGNMENT_LEFT

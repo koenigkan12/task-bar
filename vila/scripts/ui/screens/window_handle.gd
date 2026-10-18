@@ -1,6 +1,6 @@
 class_name WindowHandle
 extends Control
-## Alça da janela: arrastar (start_drag), gaveta, som e recolher.
+## Alça da janela: tela cheia, recolher e fechar.
 ## Recolhida, a janela vira uma aba de ~48×16 com icon_show e no máximo uma luz verde de atenção;
 ## clique na aba restaura, arrastar a aba move a janela. A simulação segue (WindowService cuida).
 
@@ -25,6 +25,7 @@ var _row: HBoxContainer
 var _grab: Button
 var _drawer_btn: Button
 var _sound_btn: Button
+var _full_btn: Button
 var _collapse_btn: Button
 var _close_btn: Button
 var _quit_ask_left: float = 0.0
@@ -103,27 +104,12 @@ func _build() -> void:
 	_row.add_theme_constant_override("separation", 0)
 	add_child(_row)
 
-	_grab = ScreenUtil.icon_button("grab", "ui.handle")
-	_grab.name = "Grab"
-	_grab.mouse_default_cursor_shape = Control.CURSOR_MOVE
-	_grab.button_down.connect(_on_grab_down)
-	_row.add_child(_grab)
-
-	_drawer_btn = ScreenUtil.icon_button("arrow_up")
-	_drawer_btn.name = "Drawer"
-	_drawer_btn.pressed.connect(_on_drawer_pressed)
-	_drawer_btn.visible = show_drawer
-	_row.add_child(_drawer_btn)
-
-	var gear: Button = ScreenUtil.icon_button("gear", "opt.title")
-	gear.name = "Options"
-	gear.pressed.connect(func() -> void: options_requested.emit())
-	_row.add_child(gear)
-
-	_sound_btn = ScreenUtil.icon_button("speaker_off")
-	_sound_btn.name = "Sound"
-	_sound_btn.pressed.connect(_on_sound_pressed)
-	_row.add_child(_sound_btn)
+	# Só três botões (pedido do Vinícius): tela cheia, recolher e fechar. Arrastar é pela barra de
+	# cima, o som fica nas Opções e o modo gestão foi para a barra de baixo.
+	_full_btn = ScreenUtil.icon_button("fullscreen")
+	_full_btn.name = "Fullscreen"
+	_full_btn.pressed.connect(_on_full_pressed)
+	_row.add_child(_full_btn)
 
 	_collapse_btn = ScreenUtil.icon_button("hide", "tray.collapse")
 	_collapse_btn.name = "Collapse"
@@ -243,7 +229,11 @@ func _refresh_close() -> void:
 
 
 func _update_icons() -> void:
-	if _drawer_btn == null:
+	if _full_btn != null:
+		var full: bool = bool(ScreenUtil.call_on("WindowService", "is_fullscreen", [], false))
+		_full_btn.icon = UiTheme.icon("windowed" if full else "fullscreen")
+		_full_btn.tooltip_text = ScreenUtil.tr_key("screens.handle.windowed" if full else "screens.handle.fullscreen")
+	if _drawer_btn == null or not is_instance_valid(_drawer_btn) or _sound_btn == null or not is_instance_valid(_sound_btn):
 		return
 	_drawer_btn.icon = UiTheme.icon("arrow_down" if drawer_open else "arrow_up")
 	_drawer_btn.tooltip_text = ScreenUtil.tr_key("screens.handle.drawer.close" if drawer_open else "screens.handle.drawer.open")
@@ -330,6 +320,12 @@ func _on_tab_input(event: InputEvent) -> void:
 		_pressing = false
 		set_collapsed(false)
 	_tab.accept_event()
+
+
+func _on_full_pressed() -> void:
+	var full: bool = bool(ScreenUtil.call_on("WindowService", "is_fullscreen", [], false))
+	ScreenUtil.call_on("WindowService", "set_fullscreen", [not full])
+	_update_icons()
 
 
 func _on_grab_down() -> void:

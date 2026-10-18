@@ -15,6 +15,10 @@ func _check(ok: bool, msg: String) -> void:
 
 
 func _initialize() -> void:
+	await process_frame
+	# Sem tutorial no caminho (o capítulo da defesa travava o menu na torre arqueira).
+	root.get_node("Settings").set_value("tut_done", true)
+	root.get_node("Settings").set_value("dtut_done", true)
 	var main: Node = load("res://scenes/vila.tscn").instantiate()
 	root.add_child(main)
 	await process_frame

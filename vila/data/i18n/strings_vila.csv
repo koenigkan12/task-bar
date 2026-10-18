@@ -470,3 +470,17 @@ TUT_dz_tab,Abra a aba Defesa.,Open the Defense tab.
 TUT_dz_pick,Escolha a torre arqueira.,Pick the archer tower.
 TUT_dz_place,"O círculo amarelo é até onde ela atira. Ponha perto da trilha vermelha, entre os zumbis e as casas.","The yellow circle is how far it shoots. Put it near the red trail, between the zombies and the houses."
 TUT_dz_wait,"Quando a obra terminar, ela atira sozinha em quem entrar no círculo. Melhorar a torre aumenta o alcance.","Once it's built, it shoots anyone who enters the circle. Upgrading the tower increases its range."
+UI_MANAGE_BTN,Gestão,Manage
+TIP_MANAGE_BTN,"Modo gestão: recursos, obras e pessoas num painel só","Management mode: resources, sites and people in one panel"
+TIP_OPTIONS_BTN,"Opções (som, idioma, tamanho)","Options (sound, language, size)"
+GOAL_sick,{n} doentes em casa: com comida e água em dia eles melhoram,{n} sick at home: with food and water they get better
+GOAL_SICK_TAIL,{n} doentes,{n} sick
+UI_WAIT_night,Parada: todo mundo dormindo. Volta de manhã,Paused: everyone is asleep. Resumes in the morning
+UI_WAIT_sick,Parada: todo mundo doente em casa,Paused: everyone is sick at home
+UI_WAIT_food,Parada: todo mundo atrás de comida e água,Paused: everyone is getting food and water
+UI_WAIT_busy,Esperando alguém livre,Waiting for someone free
+UI_RAID_ARRIVED,Zumbis saíram da água! Eles vão atrás dos prédios; as torres atiram em quem entra no círculo.,Zombies came out of the water! They go after buildings; towers shoot anyone inside their circle.
+UI_RAID_RETREAT,Os zumbis avariaram {n} prédios e voltaram para a água. Conserte de dia.,The zombies damaged {n} buildings and went back to the water. Repair them during the day.
+GOAL_raid_come,{n} zumbis chegando,{n} zombies coming
+GOAL_raid,{n} zumbis atacando: {b}. As defesas estão atirando,{n} zombies attacking: {b}. Defenses are shooting
+GOAL_raid_open,{n} zumbis atacando {b} e nenhuma torre alcança: ponha uma defesa perto,{n} zombies attacking {b} and no tower reaches: put a defense nearby

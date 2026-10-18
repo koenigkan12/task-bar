@@ -232,6 +232,11 @@ func step(dt: float, night: bool) -> void:
 		_zombie_step(z, dt)
 	_mines()
 	_hurt_people(dt)
+	# Já levaram o máximo da noite: voltam para a água (antes ficavam batendo num prédio que não caía,
+	# parados no mapa sem nada acontecer).
+	if _lost_tonight() >= int(D()["max_lost_night"]) and not report.is_empty():
+		retreat()
+		return
 	var dead: Array[Dictionary] = []
 	for z in zombies:
 		if float(z["hp"]) <= 0.0:
@@ -240,6 +245,49 @@ func step(dt: float, night: bool) -> void:
 		zombies.erase(z)
 		report["killed"] = int(report.get("killed", 0)) + 1
 		fx.append({"kind": "zdie", "a": z["pos"], "b": z["pos"], "t": 0.0, "life": 1.0, "boss": String(z["kind"]) == "chefe", "facing": z["facing"]})
+
+
+## Meta durante o ataque: quantos, o prédio que mais apanha e se alguma defesa alcança ele.
+func raid_goal() -> Dictionary:
+	var hits := {}
+	for z in zombies:
+		var id := int(z.get("atk", -1))
+		if id < 0:
+			id = int(z.get("tgt", -1))
+		if id >= 0:
+			hits[id] = int(hits.get(id, 0)) + 1
+	var best := -1
+	for id in hits:
+		if best < 0 or int(hits[id]) > int(hits[best]):
+			best = int(id)
+	var b := sim.by_id(best)
+	if b.is_empty() or String(b["type"]) == "muro":
+		return {"kind": "raid", "n": zombies.size(), "id": -1, "type": "", "covered": false}
+	return {"kind": "raid", "n": zombies.size(), "id": best, "type": String(b["type"]), "covered": covered(center_of(b))}
+
+
+## Alguma defesa funcionando alcança este ponto (casas)?
+func covered(at: Vector2) -> bool:
+	for d in sim.buildings:
+		var tp := String(d["type"])
+		var r := range_of(tp, int(d["level"]))
+		if r <= 0.0 or String(sim.def(tp).get("defense", "")) == "light":
+			continue
+		if tp != "hatch" and not sim._working(d):
+			continue
+		if center_of(d).distance_to(at) <= r + 1.0:
+			return true
+	return false
+
+
+## Os zumbis desistem da noite e voltam para a água (os que ainda iam sair também não saem).
+func retreat() -> void:
+	for z in zombies:
+		fx.append({"kind": "flee", "a": z["pos"], "b": z["pos"], "t": 0.0, "life": 1.2, "boss": String(z["kind"]) == "chefe"})
+	zombies.clear()
+	pending.clear()
+	report["retreat"] = true
+	sim.raid_retreat.emit(report)
 
 
 func _spawn(kind: String, cell: Vector2i) -> void:
@@ -436,11 +484,21 @@ func _zombie_step(z: Dictionary, dt: float) -> void:
 			z["facing"] = signf(dir)
 		if float(z["hit_t"]) <= 0.0:
 			z["hit_t"] = float(s["hit_s"])
-			hit_building(tb, float(s["dmg"]))
+			hit_building(tb, float(s["dmg"]), z["pos"])
 		return
 	z["atk"] = -1
 	var path: PackedVector2Array = z["path"]
 	if path.is_empty():
+		# Sem caminho (cercado de prédio): anda reto até o alvo em vez de ficar parado no mapa.
+		if tb.is_empty():
+			return
+		var tgt := center_of(tb)
+		var p0: Vector2 = z["pos"]
+		if p0.distance_to(tgt) > 0.6:
+			var st := float(s["speed"]) * dt
+			z["pos"] = p0 + (tgt - p0).normalized() * minf(st, p0.distance_to(tgt))
+			if absf(tgt.x - p0.x) > 0.05:
+				z["facing"] = signf(tgt.x - p0.x)
 		return
 	var nxt: Vector2 = path[0]
 	var nc := Vector2i(nxt)
@@ -450,7 +508,7 @@ func _zombie_step(z: Dictionary, dt: float) -> void:
 		z["atk"] = int(wb["id"])
 		if float(z["hit_t"]) <= 0.0:
 			z["hit_t"] = float(s["hit_s"])
-			hit_building(wb, float(s["dmg"]) * float(s["wall_mult"]))
+			hit_building(wb, float(s["dmg"]) * float(s["wall_mult"]), z["pos"])
 		return
 	var pos: Vector2 = z["pos"]
 	var step := float(s["speed"]) * dt
@@ -483,8 +541,10 @@ func _lost_tonight() -> int:
 	return (report.get("broke", []) as Array).size() + (report.get("ruined", []) as Array).size()
 
 
-func hit_building(b: Dictionary, dmg: float) -> void:
+func hit_building(b: Dictionary, dmg: float, from: Vector2 = Vector2(-99, -99)) -> void:
 	var h := hp(b) - dmg
+	if from.x > -90.0:   # pancada: faísca no ponto onde o zumbi bate (o jogador vê que está apanhando)
+		fx.append({"kind": "hit", "a": from, "b": from.lerp(center_of(b), 0.45), "t": 0.0, "life": 0.35, "id": int(b["id"])})
 	var tp := String(b["type"])
 	# Teto por noite (defense.max_lost_night): passado dele, o prédio aguenta no fio.
 	var capped := _lost_tonight() >= int(D()["max_lost_night"])

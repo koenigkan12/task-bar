@@ -22,6 +22,7 @@ signal radio(line: Dictionary)                     # uma fala do rádio chegou: 
 signal ela_arrived                                 # ela entrou pelo portão (o final)
 signal raid_warning(tonight: Dictionary, next: Dictionary)   # fim da tarde: quantos zumbis vêm (e se amanhã é horda)
 signal raid_over(report: Dictionary)               # amanheceu depois de uma noite com zumbis
+signal raid_retreat(report: Dictionary)   # levaram o máximo da noite e voltaram para a água
 
 const RES: Array[String] = ["comida", "agua", "madeira", "sucata", "pecas"]
 const T_GROUND := 0
@@ -511,7 +512,42 @@ func sick_count() -> int:
 
 
 func health_mult(p: Dictionary) -> float:
-	return float(bal["health"]["weak_mult"]) if health_state(p) == "weak" else 1.0
+	var hs := health_state(p)
+	if hs == "sick" or hs == "grave":
+		return float(bal["health"].get("sick_work_mult", 0.5))   # doente sem comida em casa: trabalha devagar
+	return float(bal["health"]["weak_mult"]) if hs == "weak" else 1.0
+
+
+## Falta comida ou água para quem está doente se recuperar em casa? Aí ninguém deita: deitar sem
+## comer não cura, e com todo mundo deitado ninguém produzia (a vila travava com todos em casa).
+## Devolve o recurso que falta ("" = dá para descansar).
+func rest_short() -> String:
+	var need := float(bal["health"].get("rest_min_stock", 2.0))
+	for r in ["comida", "agua"]:
+		if float(stock[r]) < need:
+			return r
+	return ""
+
+
+## Quantos estão deitados doentes agora.
+func resting_count() -> int:
+	var n := 0
+	for p in people:
+		if String(p["job"].get("kind", "")) == "rest":
+			n += 1
+	return n
+
+
+## Por que uma obra está sem ninguém: night (todos dormindo), sick (todos doentes em casa),
+## food (todos atrás de comida e água) ou busy (todos ocupados em outra coisa).
+func site_wait_reason() -> String:
+	if is_night() and not work_tonight:
+		return "night"
+	if not people.is_empty() and resting_count() >= people.size():
+		return "sick"
+	if rest_short() != "" or urgency("comida") > 0.6 or urgency("agua") > 0.6:
+		return "food"
+	return "busy"
 
 
 ## Gente da história (e o Joaquim) adoece mas não vai embora: a história depende deles.
@@ -2374,7 +2410,11 @@ func _person_step(p: Dictionary, dt: float, night: bool, rethink: bool) -> void:
 		kind = "idle"
 	elif not night:
 		var hs := health_state(p)
-		if (hs == "sick" or hs == "grave") and kind != "rest":
+		var can_rest := rest_short() == ""
+		if kind == "rest" and not can_rest:
+			_set_job(p, {"kind": "idle"})   # acabou a comida: levanta e vai buscar, mesmo doente
+			kind = "idle"
+		elif (hs == "sick" or hs == "grave") and kind != "rest" and can_rest:
 			_set_job(p, {"kind": "rest"})
 			kind = "rest"
 		elif kind == "rest" and hs != "sick" and hs != "grave":
@@ -2813,6 +2853,13 @@ func doing(p: Dictionary) -> String:
 
 ## Uma meta curta para a barra de baixo: o que a torre pede, ou a primeira coisa básica que falta.
 func goal() -> Dictionary:
+	# Noite com zumbi no mapa: o que eles estão atacando e se alguma defesa alcança.
+	if defense != null and not defense.zombies.is_empty():
+		return defense.raid_goal()
+	# Metade ou mais deitada doente: o jogador precisa saber por que está todo mundo em casa.
+	var resting := resting_count()
+	if resting > 0 and resting * 2 >= people.size() and not is_night():
+		return {"kind": "sick", "n": resting}
 	for type in ["poco", "horta", "deposito"]:
 		if _count_any(type) == 0:
 			return {"kind": "build", "type": type}

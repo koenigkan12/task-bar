@@ -815,6 +815,7 @@ func _draw_overlay() -> void:
 			if bic != null:
 				_overlay.draw_texture_rect_region(bic, Rect2(at, Vector2(8, 8)), Rect2(5 * 8, 0, 8, 8))
 			_tiny_text(at + Vector2(9, 2), txt, CREME if inside < rs.size() or rs.is_empty() else Color8(201, 171, 93))
+	_draw_sick_tags()
 	# Barras de obra
 	for b in sim.buildings:
 		if String(b["state"]) == "built":
@@ -870,12 +871,13 @@ func _draw_overlay() -> void:
 		var ph2 := fposmod(_anim_t * 0.6 + float(p["id"]) * 0.31, 1.0)
 		var zp := _person_world(p) + Vector2(-9, -16 - ph2 * 5.0)
 		_overlay.draw_string(_timer_font, zp.round(), "z", HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(0.75, 0.8, 1.0, 1.0 - ph2))
-	# Obra esperando alguém livre: ampulheta (relógio) piscando em cima.
+	# Obra esperando alguém livre: ampulheta (relógio) piscando em cima; todo mundo doente: a cruz.
+	var wait_ic := 21 if sim.site_wait_reason() == "sick" else 6
 	for b in sim.buildings:
 		if String(b["state"]) != "built" and int(b["builder"]) < 0 and icons != null and int(_anim_t * 2.0) % 2 == 0:
 			var fpw := sim._fp(String(b["type"]))
 			var pos := Vector2(Vector2i(b["cell"])) * TILE + Vector2(fpw.x * TILE / 2.0 - 4.0, -24)
-			_overlay.draw_texture_rect_region(icons, Rect2(pos, Vector2(8, 8)), Rect2(6 * 8, 0, 8, 8))
+			_overlay.draw_texture_rect_region(icons, Rect2(pos, Vector2(8, 8)), Rect2(wait_ic * 8, 0, 8, 8))
 	# Fantasma de posicionamento
 	if ghost_type != "" and ghost_cell.x >= 0:
 		var fp2 := sim._fp(ghost_type)
@@ -1272,3 +1274,44 @@ func _draw_defense_hints() -> void:
 				_overlay.draw_set_transform(at - dir * 6.0 * sc, 0.0, Vector2(sc, sc))
 				_overlay.draw_texture_rect_region(ic, Rect2(Vector2(-4, -4), Vector2(8, 8)), Rect2(23 * 8, 0, 8, 8))
 				_overlay.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+
+# ================================================================ doentes
+## De dia, em cima da casa: a cruz de saúde e quantos estão deitados doentes lá dentro (sem isso o
+## jogador via a vila vazia e não sabia por quê). Quem está doente andando ou trabalhando devagar
+## leva a cruz piscando em cima da cabeça.
+func _draw_sick_tags() -> void:
+	if sim.is_night():
+		return
+	var ic := tex("icons")
+	if ic == null:
+		return
+	var by_home := {}
+	var blink := int(_anim_t * 2.0) % 2 == 0
+	for p in sim.people:
+		var hs := sim.health_state(p)
+		var resting := String(p["job"].get("kind", "")) == "rest"
+		if resting and p["asleep"]:
+			var hid := sim.home_of(p)
+			if hid >= 0 and not sim.by_id(hid).is_empty():
+				by_home[hid] = int(by_home.get(hid, 0)) + 1
+				continue
+		if (resting or hs == "sick" or hs == "grave") and not p["asleep"] and blink:
+			var at := (_person_world(p) + Vector2(-4, -30)).round()
+			_overlay.draw_texture_rect_region(ic, Rect2(at, Vector2(8, 8)), Rect2(21 * 8, 0, 8, 8))
+	for hid in by_home:
+		var b := sim.by_id(int(hid))
+		var tp := String(b["type"])
+		var fpm := sim._fp(tp)
+		var txt := str(int(by_home[hid]))
+		var wdt := 9.0 + _tiny_width(txt)
+		var n: Dictionary = _bnodes.get(int(b["id"]), {})
+		var top_y := -float(fpm.y * TILE)
+		if not n.is_empty() and (n["sprite"] as Sprite2D).texture != null:
+			top_y = -float((n["sprite"] as Sprite2D).texture.get_height())
+		var at2 := (Vector2(Vector2i(b["cell"]).x * TILE + fpm.x * TILE / 2.0 - wdt / 2.0, (Vector2i(b["cell"]).y + fpm.y) * TILE + top_y - 9)).round()
+		_overlay.draw_rect(Rect2(at2 + Vector2(-1, -1), Vector2(wdt + 2, 10)), Color(0.26, 0.2, 0.33, 0.9))
+		if blink:
+			_overlay.draw_rect(Rect2(at2 + Vector2(-1, -1), Vector2(wdt + 2, 10)), Color(0.88, 0.5, 0.41, 0.9), false, 1.0)
+		_overlay.draw_texture_rect_region(ic, Rect2(at2, Vector2(8, 8)), Rect2(21 * 8, 0, 8, 8))
+		_tiny_text(at2 + Vector2(9, 2), txt, Color8(224, 127, 104))

@@ -483,5 +483,27 @@
    4,
    4
   ]
+ },
+ "icon_fullscreen": {
+  "file": "ui/icon_fullscreen.png",
+  "frame_w": 8,
+  "frame_h": 8,
+  "frames": 1,
+  "fps": 0,
+  "anchor": [
+   4,
+   4
+  ]
+ },
+ "icon_windowed": {
+  "file": "ui/icon_windowed.png",
+  "frame_w": 8,
+  "frame_h": 8,
+  "frames": 1,
+  "fps": 0,
+  "anchor": [
+   4,
+   4
+  ]
  }
 }

@@ -253,6 +253,14 @@ func _draw_bright() -> void:
 				var r := float(e.get("r", 1.0)) * TILE * (0.4 + 0.6 * k)
 				_bright.draw_circle(b + Vector2(0, 4), r, Color(1.0, 0.75, 0.35, 0.45 * (1.0 - k)))
 				_bright.draw_arc(b + Vector2(0, 4), r, 0.0, TAU, 20, Color(1.0, 0.9, 0.6, 0.8 * (1.0 - k)), 1.0)
+			"hit":
+				# pancada do zumbi: estrela laranja que abre e some
+				var rr := 2.0 + 3.0 * k
+				var hc := Color(1.0, 0.6, 0.3, 1.0 - k)
+				for i in 4:
+					var ang := PI / 4.0 + i * PI / 2.0
+					_bright.draw_line(b + Vector2(cos(ang), sin(ang)) * rr * 0.4, b + Vector2(cos(ang), sin(ang)) * rr, hc, 1.0)
+				_bright.draw_rect(Rect2(b.round() - Vector2(0.5, 0.5), Vector2(1, 1)), Color(1, 0.95, 0.8, 1.0 - k))
 			"zap":
 				var pts := PackedVector2Array()
 				for i in 6:
@@ -293,7 +301,25 @@ func _draw_bright() -> void:
 		var mh := df.max_hp(b)
 		var h := df.hp(b)
 		if h < mh:
+			# Vida do prédio: escudo + barra (verde, amarela, vermelha). Treme quando apanha.
 			var w2 := float(fp.x * TILE) * 0.6
-			var at2 := mid - Vector2(w2 / 2.0, 0)
-			_bright.draw_rect(Rect2(at2.round(), Vector2(w2, 2)), Color(D, 0.85))
-			_bright.draw_rect(Rect2(at2.round(), Vector2(w2 * h / mh, 2)), VM if h / mh < 0.4 else Y)
+			var hit := _hit_now(int(b["id"]))
+			var shake := Vector2(roundf(sin(_t * 60.0)), 0) if hit else Vector2.ZERO
+			var at2 := (mid - Vector2(w2 / 2.0 - 4.0, 0) + shake).round()
+			var fr2 := h / mh
+			_bright.draw_rect(Rect2(at2 - Vector2(1, 1), Vector2(w2 + 2, 5)), Color(0.08, 0.05, 0.1, 0.9))
+			_bright.draw_rect(Rect2(at2, Vector2(w2, 3)), Color(D, 0.95))
+			_bright.draw_rect(Rect2(at2, Vector2(w2 * fr2, 3)), VM if fr2 < 0.35 else (Y if fr2 < 0.7 else Color8(169, 196, 124)))
+			if hit:
+				_bright.draw_rect(Rect2(at2 - Vector2(1, 1), Vector2(w2 + 2, 5)), Color(1.0, 0.5, 0.35, 0.9), false, 1.0)
+			if _icons != null:
+				_bright.draw_texture_rect_region(_icons, Rect2(at2 + Vector2(-10, -3), Vector2(8, 8)), Rect2(26 * 8, 0, 8, 8))
+
+
+
+## O prédio levou pancada agora há pouco?
+func _hit_now(id: int) -> bool:
+	for e in sim.defense.fx:
+		if String(e["kind"]) == "hit" and int(e.get("id", -1)) == id:
+			return true
+	return false

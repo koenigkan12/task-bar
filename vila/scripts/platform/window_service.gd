@@ -257,6 +257,7 @@ var _drawer_open: bool = false
 var _drawer_h: int = 120
 var _drawer_min_w: int = 344
 var _collapsed: bool = false
+var _full: bool = false                    ## tela cheia: ocupa o monitor inteiro (volta para a faixa)
 var _anchor: Vector2i = Vector2i.ZERO      ## canto inferior esquerdo, em coordenadas globais
 var _rect: Rect2i = Rect2i()               ## retângulo realmente aplicado
 var _screen_idx: int = 0
@@ -420,7 +421,7 @@ func is_drawer_open() -> bool:
 
 ## Chamado no clique da alça. Arrasta até o botão esquerdo ser solto.
 func start_drag() -> void:
-	if _dragging:
+	if _dragging or (_full and not _collapsed):
 		return
 	if use_native_drag and _native and ClassDB.class_has_method("DisplayServer", "window_start_drag"):
 		_native_drag = true
@@ -460,6 +461,22 @@ func set_collapsed(on: bool) -> void:
 
 func is_collapsed() -> bool:
 	return _collapsed
+
+
+## Tela cheia: a janela cobre o monitor onde está (mostra mais mundo). Desligar volta para a faixa
+## no mesmo lugar de antes.
+func set_fullscreen(on: bool) -> void:
+	if on == _full:
+		return
+	_full = on
+	if _dragging:
+		_end_drag()
+	_apply_layout(true)
+	_update_fps(true)
+
+
+func is_fullscreen() -> bool:
+	return _full
 
 
 ## Rodapé da área útil do monitor principal, canto esquerdo.
@@ -643,6 +660,11 @@ func _apply_layout(force: bool = false) -> void:
 	logical = Vector2i(mini(logical.x, maxi(usable_l.x, _min_logical().x)), mini(logical.y, maxi(usable_l.y, _min_logical().y)))
 	var size: Vector2i = logical * scale
 	var rect: Rect2i = shift_into(rect_from_anchor(_anchor, size), areas[idx])
+	if _full and not _collapsed:
+		var fr: Rect2i = sc["full"][idx]
+		logical = fr.size / scale
+		size = fr.size
+		rect = fr
 	var layout_changed_now: bool = logical != _applied_logical or scale != _applied_scale
 	if force or layout_changed_now or rect != _rect:
 		_push_native(logical, size, rect.position)
@@ -753,7 +775,7 @@ func _edge_cursor(e: int) -> int:
 
 
 func _resize_input(event: InputEvent) -> void:
-	if not _native or _dragging:
+	if not _native or _dragging or (_full and not _collapsed):
 		return
 	var local: Vector2i = _mouse_global() - _rect.position
 	var e := _edges_at(local)
@@ -855,6 +877,8 @@ func _save_position() -> void:
 ## Roda a cada ~1 s: o SO mexeu na janela (Win+setas, mudou de monitor)? Monitores mudaram?
 func _sync_with_system() -> void:
 	if _dragging:
+		return
+	if _full and not _collapsed:   # tela cheia: o lugar da faixa fica guardado para a volta
 		return
 	var sc: Dictionary = _fetch_screens()
 	var sig: String = _screens_signature(sc)

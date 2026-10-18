@@ -117,6 +117,9 @@ func _make_hud() -> void:
 			return
 		var lost: int = (rep["broke"] as Array).size() + (rep["ruined"] as Array).size()
 		hud.toast(hud.fmt("UI_RAID_OVER_LOST" if lost > 0 else "UI_RAID_OVER", {"k": rep["killed"], "n": lost})))
+	sim.raid_retreat.connect(func(rep: Dictionary) -> void:
+		if not sim.offline:
+			hud.toast(hud.fmt("UI_RAID_RETREAT", {"n": (rep["broke"] as Array).size() + (rep["ruined"] as Array).size()})))
 	sim.radio.connect(func(l: Dictionary) -> void:
 		if hud != null and not sim.offline:
 			hud.quiet = _tut != null and _tut.active()

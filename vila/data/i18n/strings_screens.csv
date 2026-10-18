@@ -6,3 +6,5 @@ screens.handle.sound.off,Desligar o som,Sound off
 screens.ending.next,Seguir,Go on
 screens.handle.quit,Fechar o jogo (salva sozinho),Close the game (saves itself)
 screens.handle.quit.ask,Sair?,Quit?
+screens.handle.fullscreen,Tela cheia,Full screen
+screens.handle.windowed,Voltar para a barra,Back to the bar
