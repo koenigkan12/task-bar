@@ -140,6 +140,7 @@
   "max_builders": 3
  },
  "health": {
+  "warn_min": 2.0,
   "hungry_loss_min": 2.0,
   "thirsty_loss_min": 3.0,
   "regen_min": 1.0,
@@ -1468,6 +1469,7 @@
  ],
  "merchant": {
   "tower": 3,
+  "warn_leave_s": 180,
   "hours": [
    9.5,
    14.0,

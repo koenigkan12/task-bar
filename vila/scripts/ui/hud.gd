@@ -26,6 +26,7 @@ const C_MUTED := Color("a592a5")   # lilás
 const C_WARN := Color("e07f68")    # vermelho da paleta, clareado
 const C_GOOD := Color("a9c47c")    # verde da grama, clareado
 const C_AMBER := Color("e6c46a")   # dourado
+const C_ORANGE := Color("e89a4c")  # laranja: está acabando
 const RAR_COLOR := {"comum": Color(0.78, 0.74, 0.78), "rara": Color(0.45, 0.85, 1.0), "excelente": Color(1.0, 0.62, 0.95)}
 
 var sim: VilaSim
@@ -79,6 +80,7 @@ var tower_btn: Button
 var goal_btn: Button
 ## Botões do menu Construir por tipo (o tutorial aponta para eles).
 var build_btns: Dictionary = {}
+var fresh_unlocks: Dictionary = {}   # tipo -> true: liberado agora pela torre (pisca no menu até escolher)
 var _offscreen := false   # o cartão está sendo montado fora da tela (_rebuild_card)
 ## Tutorial: só este tipo fica liberado no menu Construir ("" = todos).
 var tut_only: String = ""
@@ -326,6 +328,9 @@ func _build_raid_bar() -> void:
 	_raid_bar = PanelContainer.new()
 	_raid_bar.mouse_filter = Control.MOUSE_FILTER_PASS
 	_raid_bar.visible = false
+	_raid_bar.gui_input.connect(func(ev: InputEvent) -> void:
+		if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT and _raid_grave >= 0:
+			show_person(_raid_grave))
 	var h := HBoxContainer.new()
 	h.add_theme_constant_override("separation", 3)
 	_raid_bar.add_child(h)
@@ -373,6 +378,17 @@ func _update_raid_bar(delta: float) -> void:
 			txt = fmt("RAID_BAR_SOON1" if int(rs["n"]) == 1 else "RAID_BAR_SOON", {"who": who, "n": rs["n"], "t": fmt_clock(float(rs["left_s"])), "d": I18n.t("UI_AND_JOIN").join(dn)})
 			col = C_AMBER
 			_raid_bar.tooltip_text = I18n.t("TIP_RAID_BAR_SOON")
+	# Alguém grave: o aviso fica no alto até resolver (clicar abre a pessoa), como o alerta do RimWorld.
+	_raid_grave = -1
+	if txt == "":
+		for gp in sim.people:
+			if sim.health_state(gp) == "grave":
+				_raid_grave = int(gp["id"])
+				txt = fmt("UI_GRAVE_BAR", {"name": pname(gp), "why": I18n.t("SICKWHY_" + sim.sick_why(gp))})
+				col = C_WARN if int(Time.get_ticks_msec() / 500) % 2 == 0 else C_ORANGE
+				ic = "saude"
+				_raid_bar.tooltip_text = I18n.t("TIP_GRAVE_BAR")
+				break
 	_raid_bar.visible = txt != ""
 	if not _raid_bar.visible:
 		return
@@ -385,6 +401,7 @@ func _update_raid_bar(delta: float) -> void:
 
 
 var _raid_result_good := true
+var _raid_grave := -1   # pessoa grave mostrada no alto (clicar abre o cartão dela)
 
 
 ## Um prédio caiu agora: aparece no placar por uns segundos (e no aviso).
@@ -691,10 +708,12 @@ func _process(delta: float) -> void:
 	if sim == null:
 		return
 	_update_raid_bar(delta)
+	_pulse_build_btn()
 	_refresh_acc += delta
 	if _refresh_acc >= 0.2:
 		_refresh_acc = 0.0
 		refresh()
+		_wall_batch_step()
 	if _toast.visible:
 		_toast_t -= delta
 		_toast.modulate.a = clampf(_toast_t * 2.0, 0.0, 1.0)
@@ -748,9 +767,21 @@ func _res_tip_rows(r: String) -> Array:
 	var out: Array = [row]
 	if v >= cap:
 		out.append(_label(I18n.t("UI_FULL"), C_AMBER))
+	var lm := _left_min(r)
+	if lm < 60.0 * 24.0:
+		out.append(_label(fmt("UI_RES_ENDS", {"t": fmt_clock(lm * 60.0)}), C_ORANGE if lm <= float(sim.bal["health"].get("warn_min", 2.0)) else C_TEXT))
 	out.append(_wrap(_flow_tip(r, fl), C_TEXT, 160.0))
 	out.append(_wrap(I18n.t("TIP_RES_CLICK"), C_MUTED, 160.0))
 	return out
+
+
+## Minutos até o recurso acabar no ritmo de agora (INF se não está caindo).
+func _left_min(r: String) -> float:
+	var fl := sim.rate_now(r)
+	var net := float(fl["prod"]) - float(fl["use"])
+	if net >= -0.001:
+		return INF
+	return maxf(0.0, float(sim.stock[r])) / -net
 
 
 ## Só troca a dica se o texto mudou (trocar fecha e reabre a dica com o mouse parado em cima).
@@ -765,10 +796,15 @@ func refresh() -> void:
 		var cap := int(sim.cap(r))
 		var l: Label = _res_labels[r]
 		l.text = str(v)
-		var low := v <= 2 and (r == "comida" or r == "agua")
+		# Comida e água avisam antes de acabar: laranja quando faltam ~2 min, vermelho piscando no zero.
+		var eat := r == "comida" or r == "agua"
+		var left := _left_min(r) if eat else INF
+		var out := eat and v <= 0
+		var soon := eat and not out and left <= float(sim.bal["health"].get("warn_min", 2.0))
 		var full := v >= cap
-		l.add_theme_color_override("font_color", C_WARN if low else (C_AMBER if full else C_TEXT))
-		(_res_warn[r] as Control).visible = low
+		var blink := int(Time.get_ticks_msec() / 400) % 2 == 0
+		l.add_theme_color_override("font_color", (C_WARN if blink else C_TEXT) if out else (C_ORANGE if soon else (C_AMBER if full else C_TEXT)))
+		(_res_warn[r] as Control).visible = out or soon
 	(_res_chips["pecas"] as Control).visible = sim.tower >= 3 or float(sim.stock["pecas"]) > 0.0
 	var pw := sim.power()
 	_power_chip.visible = float(pw["out"]) > 0.0 or float(pw["use"]) > 0.0
@@ -926,9 +962,10 @@ func _place_toast() -> void:
 		_toast.custom_minimum_size = Vector2(maxw, 0)
 		_toast.size = Vector2.ZERO
 	var x0 := 154.0 if _manage.visible else 0.0
-	var x1 := _card.position.x if _card.visible else W
 	var ts := _toast.get_minimum_size()
 	var top := (_raid_bar.position.y + _raid_bar.size.y + 2.0) if _raid_bar.visible else 18.0
+	# Cartão que não chega no alto (o menu de obras fica embaixo) não tira espaço do aviso.
+	var x1 := _card.position.x if _card.visible and _card.position.y < top + ts.y + 2.0 else W
 	if ts.x <= x1 - x0 - 4.0:
 		_toast.position = Vector2(roundf(x0 + (x1 - x0) / 2.0 - ts.x / 2.0), top)
 	else:
@@ -1481,6 +1518,8 @@ func _card_building() -> void:
 	if d.has("levels") and (d["levels"] as Array).size() > 1:
 		title += " · " + fmt("UI_LEVEL", {"n": b["level"]})
 	_header("martelo", title, I18n.t("BD_" + tp))
+	if tp == "muro":
+		_wall_batch_line()
 	var st := String(b["state"])
 	if st != "built":
 		_progress_lines(b)
@@ -2075,11 +2114,43 @@ func _build_tile(type: String) -> Button:
 	box.add_child(foot)
 	if btn.disabled:
 		pic.modulate = Color(1, 1, 1, 0.45)
+	if fresh_unlocks.has(type) and sim.unlocked(type):
+		# Recém-liberado pela torre: estrela no canto e fundo piscando até o jogador escolher.
+		var star := _icon_rect("estrela")
+		star.position = Vector2(48, 1)
+		star.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		btn.add_child(star)
+		var k := 0.5 + 0.5 * sin(Time.get_ticks_msec() / 1000.0 * 6.0)
+		btn.self_modulate = Color(1, 1, 1).lerp(Color(1.0, 0.86, 0.5), k)
+		tip = I18n.t("TIP_NEW_UNLOCK") + "\n" + tip
 	btn.tooltip_text = tip
 	build_btns[type] = btn
 	btn.pressed.connect(func() -> void:
+		fresh_unlocks.erase(type)
 		build_chosen.emit(type))
 	return btn
+
+
+## A torre subiu: o que ela liberou fica marcado no menu Construir (e o botão pisca).
+func on_tower_up(n: int) -> void:
+	for key in ["build_order", "defense_order", "deco_order"]:
+		for t in sim.bal.get(key, []):
+			var d := sim.def(String(t))
+			var lv: Array = d.get("levels", [])
+			if lv.is_empty():
+				continue
+			if int((lv[0] as Dictionary).get("tower", d.get("tower", 1))) == n:
+				fresh_unlocks[String(t)] = true
+
+
+func _pulse_build_btn() -> void:
+	if build_btn == null:
+		return
+	if fresh_unlocks.is_empty() or _card_kind == "build":
+		build_btn.self_modulate = Color.WHITE
+		return
+	var k := 0.5 + 0.5 * sin(Time.get_ticks_msec() / 1000.0 * 5.0)
+	build_btn.self_modulate = Color(1, 1, 1).lerp(Color(1.0, 0.82, 0.4), k)
 
 
 # ================================================================ defesa
@@ -2235,6 +2306,34 @@ func _wall_upgrade_all(b: Dictionary) -> void:
 	_card_box.add_child(_row([ub, _cost_row(all)]))
 
 
+## Leva de muros mandada consertar de uma vez: o cartão conta "3 de 7 consertados" e o fim avisa.
+var _wall_batch: Array = []
+
+
+func _wall_batch_done() -> int:
+	var n := 0
+	for id in _wall_batch:
+		var w := sim.by_id(int(id))
+		if w.is_empty() or (not bool(w.get("repair", false)) and sim.defense.hp(w) >= sim.defense.max_hp(w)):
+			n += 1
+	return n
+
+
+func _wall_batch_step() -> void:
+	if _wall_batch.is_empty():
+		return
+	if _wall_batch_done() >= _wall_batch.size():
+		toast(fmt("UI_WALLS_BATCH_DONE", {"n": _wall_batch.size()}))
+		_wall_batch.clear()
+
+
+func _wall_batch_line() -> void:
+	if _wall_batch.is_empty():
+		return
+	var d := _wall_batch_done()
+	_card_box.add_child(_stats([_stat("martelo", "%d/%d" % [d, _wall_batch.size()], fmt("TIP_WALLS_BATCH", {"a": d, "n": _wall_batch.size()}), C_AMBER)]))
+
+
 ## Muro: conserta todos os que têm estrago de uma vez, pagando por todos (como o "subir todos").
 func _wall_repair_all() -> void:
 	var wf := sim.walls_to_fix()
@@ -2247,8 +2346,10 @@ func _wall_repair_all() -> void:
 	rb.disabled = not sim.can_afford(wf["cost"])
 	rb.tooltip_text = fmt("TIP_WALLS_FIX_ALL", {"n": n})
 	rb.pressed.connect(func() -> void:
+		var ids: Array = (wf["ids"] as Array).duplicate()
 		var r := sim.repair_all_walls()
 		if bool(r["ok"]):
+			_wall_batch = ids
 			toast(fmt("UI_WALLS_FIXED", {"n": r["n"]}))
 		else:
 			toast(I18n.t("UI_NO_MONEY"))

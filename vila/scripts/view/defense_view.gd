@@ -72,6 +72,7 @@ func update_defense(delta: float, night_k: float, anim_t: float) -> void:
 			if when > float(_last_hit.get(hid, -99.0)) + 0.05:
 				AudioManager.play_sfx("knock", -10.0)   # golpe seco a cada pancada
 			_last_hit[hid] = maxf(float(_last_hit.get(hid, -99.0)), when)
+	_fx_sounds()
 	_falls = _falls.filter(func(f: Dictionary) -> bool: return _t - float(f["t0"]) < 1.6)
 	_dust = _dust.filter(func(f: Dictionary) -> bool: return _t - float(f["t0"]) < 0.8)
 	_sync_zombies(delta)
@@ -80,6 +81,28 @@ func update_defense(delta: float, night_k: float, anim_t: float) -> void:
 		_wall_key = key
 		_walls.queue_redraw()
 	_bright.queue_redraw()
+
+
+## Som de cada tiro, queda e mordida, uma vez por efeito (marca "snd" no próprio fx). O volume
+## fica baixo e o AudioManager espaça repetições (vários tiros por segundo no ataque).
+const FX_SFX := {"arrow": "shot_arrow", "ball": "shot_cannon", "zap": "shot_zap", "zdie": "zdie",
+	"bite": "bite", "breach": "wall_fall"}
+
+
+func _fx_sounds() -> void:
+	var gun_at: Array = []
+	for e in sim.defense.fx:
+		if bool(e.get("snd", false)) or float(e["t"]) < 0.0:
+			continue
+		e["snd"] = true
+		var k := String(e["kind"])
+		if k == "muzzle" and bool(e.get("gun", false)):
+			gun_at.append(e["a"])
+			AudioManager.play_sfx("shot_gun")
+		elif k == "arrow" and gun_at.has(e["a"]):
+			continue   # a "flecha" da escotilha é o chumbo da espingarda: já tocou o tiro dela
+		elif FX_SFX.has(k):
+			AudioManager.play_sfx(String(FX_SFX[k]))
 
 
 # ================================================================ zumbis
@@ -153,6 +176,8 @@ func _died_at(px: Vector2) -> bool:
 
 func _make_zombie(z: Dictionary) -> Dictionary:
 	var boss := String(z["kind"]) == "chefe"
+	if boss:
+		AudioManager.play_sfx("boss")   # chefe saiu da água
 	var root := Node2D.new()
 	_objects.add_child(root)
 	var spr := Sprite2D.new()

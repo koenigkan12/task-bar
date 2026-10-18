@@ -59,6 +59,7 @@ var gate_group: Array[Dictionary] = []   # candidatos esperando no portão
 var stats: Dictionary = {"commons_in_row": 0, "joined": 0, "built": 0, "fogs": 0, "left": 0}
 var defense: VilaDefense         # zumbis, torres, muros e minas (scripts/sim/defense.gd)
 var mine_credits: int = 0         # minas compradas do mascate: as próximas saem de graça
+var graves: Array = []           # covas no mapa: [{x, y, name}] (quem morreu fica marcado onde caiu)
 var died_ids: Array[int] = []    # quem morreu e a tela ainda não mostrou caindo (a vista consome)
 var offline: bool = false        # durante o alcance offline: produção e consumo pela fração
 var offline_el := 0.0            # segundos já simulados nesta volta fechada (rende só até time.offline_prod_h)
@@ -609,6 +610,9 @@ func _leave(p: Dictionary) -> void:
 	var died := String(bal["health"].get("at_zero", "leave")) == "die"
 	if died and not offline:
 		died_ids.append(int(p["id"]))
+	if died:
+		var gc := Vector2i(Vector2(p["pos"]).round())
+		graves.append({"x": gc.x, "y": gc.y, "name": nm})
 	person_left.emit(nm, died, String(p.get("why", sick_why(p))))
 	changed.emit()
 
@@ -3084,7 +3088,7 @@ func to_dict() -> Dictionary:
 			"rng": _rng.state, "tower_t": tower_t, "perks": perks, "merchant": merchant, "auto_sell": auto_sell, "auto_pick": auto_pick,
 			"radio": radio_heard, "ela_t": ela_t, "merchant_key": _merchant_key,
 			"cycle_t0": cycle_t0, "work_tonight": work_tonight, "fog_next": fog_next, "fog_now": fog_now,
-			"fog_bonus_until": fog_bonus_until, "defense": defense.to_dict(), "mine_credits": mine_credits, "box": box}
+			"fog_bonus_until": fog_bonus_until, "defense": defense.to_dict(), "mine_credits": mine_credits, "box": box, "graves": graves}
 
 
 func from_dict(d: Dictionary, balance: Dictionary, tz_bias: int = 0) -> void:
@@ -3148,6 +3152,7 @@ func from_dict(d: Dictionary, balance: Dictionary, tz_bias: int = 0) -> void:
 	for g in d["gate"]:
 		gate_group.append(g)
 	stats = d["stats"]
+	graves = d.get("graves", [])
 	_next_id = int(d["next_id"])
 	_group_ready_t = float(d["group_t"])
 	_story_done.clear()

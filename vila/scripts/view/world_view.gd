@@ -29,7 +29,10 @@ var ICON_FRAMES := 28                   # icons.png: ícones de 8 px (setup lê 
 var _defense: VilaDefenseView
 var _objects: Node2D
 var _floor: Node2D
+var _graves_node: Node2D   # covas de quem morreu (no chão, por baixo das pessoas)
+var _graves_n := -1
 var _fx: VilaFx
+var _feedback: VilaFeedback             # obra pronta, "+N", prédio parado, torre subindo, névoa vindo
 var _merchant_nodes: Array = []          # banca, mascate e barco enquanto o mercador está por aqui
 var _overlay: Node2D
 var _zone: Node2D
@@ -92,9 +95,16 @@ func setup(s: VilaSim) -> void:
 	_defense = VilaDefenseView.new()
 	add_child(_defense)
 	_defense.setup(sim, _objects, _floor, itex, tex("zumbi"), tex("zumbi_chefe"), tex("light"))
+	_graves_node = Node2D.new()
+	_graves_node.draw.connect(_draw_graves)
+	_floor.add_child(_graves_node)
+	_graves_n = -1
 	_fx = VilaFx.new()
 	add_child(_fx)
 	_fx.setup(world_size())
+	_feedback = VilaFeedback.new()
+	add_child(_feedback)
+	_feedback.setup(sim, self, itex)
 	_overlay = Node2D.new()
 	_overlay.z_index = 50
 	_overlay.draw.connect(_draw_overlay)
@@ -305,7 +315,17 @@ func _sync_terrain(all: bool) -> void:
 			continue
 		var c := Vector2i(i % sim.w, i / sim.w)
 		if _terrain_nodes.has(c):
-			(_terrain_nodes[c] as Node).queue_free()
+			var old_spr: Sprite2D = _terrain_nodes[c]
+			if not first and _terrain_cache[i] == VilaSim.T_TREE and sim.terrain[i] == VilaSim.T_STUMP:
+				# Árvore cortada: tomba para um lado e some; o toco fica.
+				old_spr.position.x += TILE / 2.0   # gira pelo pé do tronco, não pelo canto
+				old_spr.offset.x -= TILE / 2.0
+				var tw := old_spr.create_tween()
+				tw.tween_property(old_spr, "rotation", (PI / 2.0) * (1.0 if _hash(c) % 2 == 0 else -1.0), 0.45).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+				tw.tween_property(old_spr, "modulate:a", 0.0, 0.35)
+				tw.tween_callback(old_spr.queue_free)
+			else:
+				old_spr.queue_free()
 			_terrain_nodes.erase(c)
 		var k: int = sim.terrain[i]
 		var spr: Sprite2D = null
@@ -544,7 +564,7 @@ func _update_building(b: Dictionary, node: Dictionary) -> void:
 		for r in inp:
 			if float(sim.stock[r]) < float(inp[r]):
 				bad = true
-		warn.visible = bad and int(_anim_t * 2.0) % 2 == 0
+		warn.visible = false   # o que falta aparece riscado em cima do prédio (VilaFeedback)
 	if tp == "fogueira":
 		(node["sprite"] as Sprite2D).frame = int(_anim_t * 8.0) % 4
 	# Avariado pelos zumbis: apagado; ruína: escuro e baixo (o alerta pisca na camada da defesa).
@@ -638,8 +658,20 @@ func _sync_people(delta: float) -> void:
 		carry.visible = cr != "" and String(p["phase"]) == "to_store"
 		if carry.visible:
 			carry.frame = 16 if cr == "pecas" else VilaSim.RES.find(cr)
+		# Em cima da cabeça: "!" vermelho piscando se está grave; senão prato (fome) ou gota (sede),
+		# alternando se for os dois. Assim dá para ver no mapa quem está mal antes do aviso de morte.
 		var alert: Sprite2D = node["alert"]
-		alert.visible = p["hungry"] or p["thirsty"]
+		var grave := sim.health_state(p) == "grave"
+		var hu := bool(p["hungry"])
+		var th := bool(p["thirsty"])
+		alert.visible = grave or hu or th
+		if grave:
+			alert.frame = 15
+			alert.modulate = Color(1.0, 0.35, 0.3) if int(_anim_t * 4.0) % 2 == 0 else Color.WHITE
+		elif hu or th:
+			var show_food := hu and (not th or int(_anim_t) % 2 == 0)
+			alert.frame = 0 if show_food else 1
+			alert.modulate = Color.WHITE
 	for id in _pnodes.keys():
 		if not seen.has(id):
 			var gone: Node2D = _pnodes[id]["root"]
@@ -838,9 +870,19 @@ func _update_light() -> void:
 	_lights = _lights.filter(func(e: Dictionary) -> bool: return is_instance_valid(e["light"]))
 	# Janelas acendem ao anoitecer e apagam de manhã.
 	var lit_on := _night_k > 0.45
+	# Casa só acende quando alguém entrou para dormir (a janela conta que a pessoa chegou).
+	var home_in := {}
+	for hp in sim.people:
+		if hp["asleep"]:
+			home_in[int(hp.get("home", -1))] = true
 	for id in _bnodes:
 		var n: Dictionary = _bnodes[id]
-		var want: Texture2D = n["tex_lit"] if lit_on and (not bool(n.get("electric", false)) or pf > 0.0) else n["tex_dia"]
+		var empty_home := String(sim.by_id(int(id)).get("type", "")) == "moradia" and not home_in.has(int(id))
+		if empty_home:
+			for hl in n["lights"]:
+				if is_instance_valid(hl):
+					(hl as PointLight2D).visible = false
+		var want: Texture2D = n["tex_lit"] if lit_on and not empty_home and (not bool(n.get("electric", false)) or pf > 0.0) else n["tex_dia"]
 		var sp: Sprite2D = n["sprite"]
 		if want != null and sp.texture != want:
 			sp.texture = want
@@ -899,6 +941,47 @@ func _draw_orders() -> void:
 			_overlay.draw_string(_timer_font, at + Vector2(2, 1), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(col, a))
 
 
+## Cova de quem morreu: montinho de terra com uma cruz de madeira, onde a pessoa caiu.
+func _draw_graves() -> void:
+	for g in sim.graves:
+		var c := Vector2(float(g["x"]) * TILE + 8, float(g["y"]) * TILE + 12)
+		_graves_node.draw_set_transform(c, 0.0, Vector2(1.0, 0.45))
+		_graves_node.draw_circle(Vector2.ZERO, 5.0, Color8(92, 66, 60))
+		_graves_node.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+		_graves_node.draw_rect(Rect2(c + Vector2(-4, -1), Vector2(8, 2)), Color8(120, 88, 76))
+		_graves_node.draw_rect(Rect2(c + Vector2(-1, -10), Vector2(2, 9)), Color8(141, 98, 105))
+		_graves_node.draw_rect(Rect2(c + Vector2(-3, -8), Vector2(6, 2)), Color8(141, 98, 105))
+		_graves_node.draw_rect(Rect2(c + Vector2(-1, -10), Vector2(1, 9)), Color8(193, 141, 117))
+
+
+## Quem foi mandado consertar ou reconstruir: linha pontilhada âmbar dele até a obra enquanto
+## anda (o jogador vê que alguém está indo, como no RimWorld). Some quando chega.
+func _draw_repair_walks() -> void:
+	var col := Color(1.0, 0.75, 0.3, 1.0)
+	for p in sim.people:
+		var j: Dictionary = p["job"]
+		if String(j.get("kind", "")) != "build":
+			continue
+		var b := sim.by_id(int(j.get("b", -1)))
+		if b.is_empty() or not (bool(b.get("repair", false)) or bool(b.get("rebuild", false))):
+			continue
+		var fp := sim._fp(String(b["type"]))
+		var to := (Vector2(Vector2i(b["cell"])) + Vector2(fp) / 2.0) * TILE
+		var from := _person_world(p) + Vector2(0, -2)
+		var d := from.distance_to(to)
+		if d < float(maxi(fp.x, fp.y)) * TILE * 0.5 + 10.0:
+			continue
+		var dir := (to - from) / d
+		var off := fposmod(_anim_t * 12.0, 6.0)   # tracinhos andando na direção da obra
+		var k := off
+		while k < d - 4.0:
+			var q := (from + dir * k).round()
+			_overlay.draw_rect(Rect2(q + Vector2(0, 1), Vector2(3, 1)), Color(0.1, 0.06, 0.08, 0.6))
+			_overlay.draw_rect(Rect2(q, Vector2(3, 1)), col)
+			k += 6.0
+		_overlay.draw_circle(to.round(), 2.0, col)
+
+
 ## Tempo restante (contagem regressiva, 2:35) logo à direita da barra. `left_mid` é o ponto do meio da
 ## borda esquerda do texto. No zoom de longe o texto cresce para continuar legível.
 func _timer_text(left_mid: Vector2, sec: float, col: Color) -> void:
@@ -952,6 +1035,14 @@ func _tiny_text(at: Vector2, txt: String, col: Color) -> void:
 
 func _draw_overlay() -> void:
 	_draw_orders()
+	_draw_repair_walks()
+	if _graves_n != sim.graves.size():
+		_graves_n = sim.graves.size()
+		_graves_node.queue_redraw()
+	# Gente grave fora da tela: seta vermelha na borda (precisa de você lá).
+	for gp in sim.people:
+		if sim.health_state(gp) == "grave":
+			_edge_arrow(_person_world(gp) + Vector2(0, -8), ZOMBIE_COL, 15, 0.75 + 0.25 * sin(_anim_t * 5.0))
 	var sp := sim.person(selected) if selected >= 0 else {}
 	if not sp.is_empty():
 		var feet := _person_world(sp) + Vector2(0, 2)

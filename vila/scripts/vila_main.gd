@@ -96,7 +96,9 @@ func _make_hud() -> void:
 	hud.zoom_step.connect(func(d: int) -> void: _set_zoom(_zoom_i + d, get_viewport().get_visible_rect().size / 2.0))
 	hud.quit_pressed.connect(func() -> void: WindowService.quit_game())
 	hud.options_pressed.connect(_show_options)
-	sim.tower_up.connect(func(n: int) -> void: hud.toast(hud.fmt("UI_TOWER_DONE", {"n": n})))
+	sim.tower_up.connect(func(n: int) -> void:
+		hud.on_tower_up(n)
+		hud.toast(hud.fmt("UI_TOWER_DONE", {"n": n})))
 	sim.person_joined.connect(func(id: int) -> void: hud.toast(hud.fmt("UI_JOINED", {"name": hud.pname(sim.person(id))})))
 	sim.building_done.connect(func(id: int) -> void:
 		var b := sim.by_id(id)
@@ -489,6 +491,31 @@ func _open_test_card() -> void:
 					sim.defense.hit_building(wq, 9999.0)
 					hud.show_building(int(wq["id"]))
 					break
+		"walls_fix":   # capturas: leva de muros mandada consertar (construtor indo, "1/3" no cartão)
+			_test_raid()
+			sim.defense.zombies.clear()
+			sim.set_cycle_hour(10.0)
+			var wn := 0
+			for wq in sim.buildings:
+				if String(wq["type"]) == "muro" and wn < 3:
+					sim.defense.hit_building(wq, 9999.0)
+					wn += 1
+			hud._wall_batch = (sim.walls_to_fix()["ids"] as Array).duplicate()
+			sim.repair_all_walls()
+			for wq in sim.buildings:
+				if String(wq["type"]) == "muro" and bool(wq.get("repair", false)):
+					hud.show_building(int(wq["id"]))
+					break
+		"health":   # capturas: comida acabando (laranja), gente com fome/sede, alguém grave, uma cova
+			sim.stock["comida"] = 3.0
+			sim.stock["agua"] = 0.0
+			for hp2 in sim.people:
+				hp2["hungry"] = true
+				hp2["thirsty"] = true
+			var gp: Dictionary = sim.people[0]
+			gp["health"] = 12.0
+			var gc := Vector2i(Vector2(gp["pos"]).round()) + Vector2i(3, 2)
+			sim.graves.append({"x": gc.x, "y": gc.y, "name": "Rosa"})
 		"tower_fight":   # capturas: torre atirando em zumbi perto dela (clarão, flecha, zumbi piscando branco)
 			_test_raid()
 			sim.defense.report = {"day": sim.day_number(), "came": 9, "killed": 0, "broke": [], "ruined": [], "walls": 0, "horde": false}
@@ -498,6 +525,79 @@ func _open_test_card() -> void:
 				for i in 3:
 					sim.defense._spawn("fraco", tc + Vector2i(i * 2 - 1, 4))
 				cam.position = Vector2(tc) * 16.0 + Vector2(16, 40)
+				_clamp_cam()
+		"p3_done":   # capturas: obra terminando (brilho verde, ✓ e o pulinho)
+			sim.stock["madeira"] = 999.0
+			var rd := sim.build("moradia", AutoPlayer.spot(sim, "moradia"))
+			if bool(rd.get("ok", false)):
+				var db: Dictionary = sim.buildings[sim.buildings.size() - 1]
+				cam.position = Vector2(Vector2i(db["cell"])) * 16.0 + Vector2(16, 0)
+				_clamp_cam()
+				get_tree().create_timer(1.0).timeout.connect(func() -> void: sim._finish(db))
+		"p3_stall":   # capturas: oficina sem sucata e sem energia, horta com a comida cheia
+			sim.tower = maxi(sim.tower, 3)
+			for r in VilaSim.RES:
+				sim.stock[r] = 999.0
+			var focus := Vector2i(-1, -1)
+			for tq in ["oficina", "horta"]:
+				var rs := sim.build(tq, AutoPlayer.spot(sim, tq))
+				if bool(rs.get("ok", false)):
+					var sb: Dictionary = sim.buildings[sim.buildings.size() - 1]
+					sim._finish(sb)
+					if focus.x < 0:
+						focus = Vector2i(sb["cell"])
+			sim.stock["sucata"] = 0.0
+			sim.stock["comida"] = sim.cap("comida")
+			if focus.x >= 0:
+				cam.position = Vector2(focus) * 16.0 + Vector2(16, 0)
+				_clamp_cam()
+		"p3_tower":   # capturas: a torre sobe (anel abrindo a área) e o menu marca o que liberou
+			get_tree().create_timer(1.0).timeout.connect(func() -> void:
+				sim.tower += 1
+				sim._open_area(sim.tower)
+				sim.tower_up.emit(sim.tower)
+				if Game.args.has("menu"):
+					hud.show_build_menu())
+		"p3_pop":   # capturas: "+3" subindo de quem entregou no depósito, árvore caindo, entulho menor
+			var pp: Dictionary = sim.people[0]
+			var tree := Vector2i(-1, -1)
+			var best := 1e9
+			for i in sim.terrain.size():
+				if sim.terrain[i] == VilaSim.T_TREE:
+					var tc := Vector2i(i % sim.w, i / sim.w)
+					var dd := Vector2(tc).distance_to(Vector2(pp["pos"]))
+					if dd < best:
+						best = dd
+						tree = tc
+			var n_rb := 0
+			for c in sim.rubble.keys():
+				if Vector2(c).distance_to(Vector2(pp["pos"])) < 9.0 and n_rb < 6:
+					sim.rubble[c] = 2 + n_rb % 3
+					n_rb += 1
+			if Game.args.has("look_tree") and tree.x >= 0:
+				cam.position = Vector2(tree) * 16.0
+				_clamp_cam()
+			get_tree().create_timer(1.0).timeout.connect(func() -> void:
+				sim.harvested.emit(int(pp["id"]), "madeira", 3)
+				if tree.x >= 0:
+					sim.terrain[sim._i(tree)] = VilaSim.T_STUMP
+					sim.changed.emit())
+		"p3_fog":   # capturas: fim da tarde antes de uma noite de névoa (faixa de pólen vindo)
+			sim.fog_next = true
+			sim.set_cycle_hour(float(Game.args.get("fog_h", "16.8")))
+		"p3_merchant":   # capturas: mascate na praça com o "!" e a contagem para ir embora
+			sim.tower = maxi(sim.tower, 3)
+			for r in VilaSim.RES:
+				sim.stock[r] = 999.0
+			if sim._first("praca").is_empty():
+				var rp2 := sim.build("praca", AutoPlayer.spot(sim, "praca"))
+				if bool(rp2.get("ok", false)):
+					sim._finish(sim.buildings[sim.buildings.size() - 1])
+			sim._merchant_arrive(sim.t + 80.0)
+			world._m_seen = false
+			var pc := sim._first("praca")
+			if not pc.is_empty():
+				cam.position = Vector2(Vector2i(pc["cell"])) * 16.0 + Vector2(16, 16)
 				_clamp_cam()
 		"hp_card":   # capturas: cartão de um prédio inteiro com a vida (🛡 120/120) e o +N do próximo nível
 			for r in VilaSim.RES:

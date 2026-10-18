@@ -547,3 +547,9 @@ NIGHT_WALLS1,{n} muro caiu,{n} wall fell
 TIP_HP_N,"Vida {h}/{m}: quanto aguenta de zumbi antes de avariar. Avariado, aguenta mais {m} antes de virar ruína. Sobe a cada nível.","Health {h}/{m}: how much zombie it takes before breaking. Once broken, it takes {m} more before becoming a ruin. Goes up with each level."
 TIP_HP_WALL_N,"Vida do muro {h}/{m}: o zumbi para nele e bate até derrubar. Se tiver abertura perto, ele vai por ela. Sobe a cada nível.","Wall health {h}/{m}: zombies stop and hit it until it falls. If there is a gap nearby, they use it. Goes up with each level."
 TIP_GAIN_HP,Aguenta mais: vida {a} → {b},Tougher: health {a} → {b}
+UI_WALLS_BATCH_DONE,Os {n} muros estão consertados,All {n} walls are repaired
+TIP_WALLS_BATCH,Consertando a leva de muros: {a} de {n} prontos,Repairing the batch of walls: {a} of {n} done
+UI_RES_ENDS,Acaba em {t},Runs out in {t}
+UI_GRAVE_BAR,{name} está grave: {why},{name} is critical: {why}
+TIP_GRAVE_BAR,"Se a saúde zerar, morre. Clique para ver a pessoa e o que falta.","If health reaches zero, they die. Click to see the person and what is missing."
+TIP_NEW_UNLOCK,Novo: a torre acabou de liberar.,New: the tower just unlocked this.

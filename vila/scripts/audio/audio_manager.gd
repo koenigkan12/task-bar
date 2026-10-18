@@ -23,7 +23,9 @@ const MODES: PackedStringArray = ["silent", "ambient", "full"]
 
 const SFX_NAMES: PackedStringArray = [
 	"click", "hover", "buy", "hammer_1", "hammer_2", "hammer_3", "dig", "knock", "scrap", "harvest",
-	"pour", "radio_on", "tune", "blip", "error", "step_1", "step_2", "hatch_open", "page", "place", "switch"]
+	"pour", "radio_on", "tune", "blip", "error", "step_1", "step_2", "hatch_open", "page", "place", "switch",
+	# Ataque (tools/sons_combate.py): tiros, zumbi caindo, mordida, muro caindo, chefe, obra pronta.
+	"shot_arrow", "shot_cannon", "shot_zap", "shot_gun", "zdie", "bite", "wall_fall", "boss", "done"]
 ## amb_night é um acréscimo ao contrato (loop de noite, seção 8).
 const LOOP_NAMES: PackedStringArray = [
 	"amb_room", "bike", "windmill", "battery", "pump", "conveyor", "greenhouse", "solar", "drip",
@@ -70,9 +72,14 @@ const SFX_GAIN_DB := {
 	"dig": -6.0, "knock": -4.0, "scrap": -6.0, "harvest": -8.0, "pour": -8.0, "radio_on": -4.0, "tune": -6.0,
 	"blip": -6.0, "error": -8.0, "step_1": -12.0, "step_2": -12.0, "hatch_open": -4.0, "page": -8.0,
 	"place": -6.0, "switch": -10.0,
+	"shot_arrow": -14.0, "shot_cannon": -8.0, "shot_zap": -14.0, "shot_gun": -10.0, "zdie": -10.0,
+	"bite": -6.0, "wall_fall": -4.0, "boss": -4.0, "done": -8.0,
 }
 const AMBIENT_MODE_SFX_DB := -4.0   # SFX do mundo ficam mais baixos no modo ambiente
-const SFX_COOLDOWN := {"click": 0.03, "hover": 0.08, "harvest": 0.3, "step_1": 0.2, "step_2": 0.2, "scrap": 0.12}
+const SFX_COOLDOWN := {"click": 0.03, "hover": 0.08, "harvest": 0.3, "step_1": 0.2, "step_2": 0.2, "scrap": 0.12,
+	# Vários tiros por segundo no ataque: espaçar para não virar metralhadora.
+	"shot_arrow": 0.18, "shot_cannon": 0.35, "shot_zap": 0.25, "shot_gun": 0.3, "zdie": 0.2, "bite": 0.4,
+	"wall_fall": 0.3, "boss": 2.0, "done": 0.3, "knock": 0.12}
 const DEFAULT_COOLDOWN := 0.05
 const SFX_MAX_VOICES := 2
 const POOL_SIZE := 12
