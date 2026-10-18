@@ -61,6 +61,15 @@ func setup(s: VilaSim) -> void:
 	_pnodes.clear()
 	_lights.clear()
 	# Chão, beira e água da ilha: uma imagem só (a forma da ilha não muda).
+	# Mar sem fim: em tela grande e de longe a tela passa da imagem da ilha; fora dela continua água
+	# (a mesma cor; os brilhos de onda também aparecem lá), nunca faixa preta.
+	var sea := ColorRect.new()
+	sea.color = Color8(124, 165, 197)
+	sea.position = Vector2(-6000, -6000)
+	sea.size = Vector2(12000, 12000) + world_size()
+	sea.z_index = -11
+	sea.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(sea)
 	_ground = Sprite2D.new()
 	_ground.texture = tex("ilha")
 	_ground.centered = false
@@ -674,23 +683,60 @@ func _sync_boat(delta: float) -> void:
 		_boat.visible = false
 		return
 	var dock := boat_dock()
-	var away := dock + Vector2(-24, 150)
+	# O bote anda na direção do comprido dele (de lado pela margem), nunca de lado: vem da esquerda
+	# rente à costa, encosta subindo um pouco, e volta pelo mesmo caminho com o barqueiro remando.
+	var lane := dock + Vector2(0, 16)
+	var away := lane + Vector2(-220, 0)
 	var bob := Vector2(0, roundf(sin(_anim_t * 1.6)))
 	var k := clampf(_boat_t / BOAT_SAIL_S, 0.0, 1.0)
 	k = k * k * (3.0 - 2.0 * k)
 	_boat.visible = true
+	var path := func(f: float) -> Vector2:   # 0 = longe, 1 = no píer
+		return away.lerp(lane, f / 0.8) if f < 0.8 else lane.lerp(dock, (f - 0.8) / 0.2)
 	match _boat_state:
 		"in":
-			_boat.position = away.lerp(dock, k).round() + bob
+			_boat.position = (path.call(k) as Vector2).round() + bob
+			_boat_dir = 1.0
 			if _boat_t >= BOAT_SAIL_S:
 				_boat_state = "here"
 		"here":
 			_boat.position = dock.round() + bob
 		"out":
-			_boat.position = dock.lerp(away, k).round() + bob
+			_boat.position = (path.call(1.0 - k) as Vector2).round() + bob
+			_boat_dir = -1.0
 			if _boat_t >= BOAT_SAIL_S:
 				_boat_state = ""
 				_boat.visible = false
+
+
+var _boat_dir := 1.0   # para onde a proa aponta (1 = direita)
+
+
+## Quem está no bote: o barqueiro na popa remando e, enquanto espera no píer, as cabeças de quem veio.
+func _draw_boat_crew() -> void:
+	if _boat_state == "" or not _boat.visible or _boat.texture == null:
+		return
+	var w := float(_boat.texture.get_width())
+	var o := _boat.position
+	var moving := _boat_state != "here"
+	var stern := o + Vector2(5.0 if _boat_dir > 0.0 else w - 5.0, 5.0)
+	# barqueiro: chapéu, rosto e corpo
+	_overlay.draw_rect(Rect2(stern + Vector2(-2, -3), Vector2(4, 4)), Color8(92, 74, 96))
+	_overlay.draw_rect(Rect2(stern + Vector2(-1, -6), Vector2(3, 3)), Color8(226, 186, 150))
+	_overlay.draw_rect(Rect2(stern + Vector2(-2, -7), Vector2(5, 1)), Color8(150, 112, 70))
+	# remos: vão e voltam quando anda, parados quando encostado
+	var ph := sin(_anim_t * 6.0) if moving else 0.0
+	for sg in [-1.0, 1.0]:
+		var a := stern + Vector2(0, -1)
+		var z := a + Vector2(-_boat_dir * (3.0 + ph * 2.0), sg * 6.0)
+		_overlay.draw_line(a, z, Color8(150, 112, 70), 1.0)
+	if _boat_state == "here" or _boat_state == "in":
+		var n := mini(3, sim.gate_group.size())
+		for i in n:
+			var hx := (o.x + w / 2.0 - 5.0 + i * 5.0) if _boat_dir > 0.0 else (o.x + w / 2.0 + 5.0 - i * 5.0)
+			var hp := Vector2(hx, o.y + 3.0)
+			_overlay.draw_rect(Rect2(hp + Vector2(-1, -1), Vector2(3, 3)), Color8(226, 186, 150))
+			_overlay.draw_rect(Rect2(hp + Vector2(-1, 2), Vector2(3, 2)), Color8(120, 140, 170))
 
 
 var _boat_seen := false
@@ -1019,6 +1065,7 @@ func _draw_overlay() -> void:
 			var gx := roundi((fp2.x * TILE - src.size.x) / 2.0)
 			_overlay.draw_texture_rect_region(bt, Rect2(bottom + Vector2(gx, -src.size.y), src.size), src, Color(1, 1, 1, 0.6))
 	_draw_defense_hints()
+	_draw_boat_crew()
 	_draw_boat_sign()
 	# Entulho marcado para limpar: colchetes âmbar e um martelo
 	var mk := tex("icons")

@@ -33,7 +33,7 @@ func _ready() -> void:
 	add_child(world)
 	cam = Camera2D.new()
 	add_child(cam)
-	# Tela cheia ou janela redimensionada: refaz o zoom mínimo para o mapa cobrir a tela toda.
+	# Tela cheia ou janela redimensionada: recentra a câmera no mapa.
 	get_viewport().size_changed.connect(func() -> void:
 		if sim != null:
 			_apply_zoom())
@@ -309,8 +309,12 @@ func _open_test_card() -> void:
 			if sim.gate_group.is_empty():
 				sim._make_group()
 			if Game.args.has("look_boat"):
-				cam.position = world.boat_dock() + Vector2(0, -30)
+				cam.position = world.boat_dock() + Vector2(-60, -10)
 				_clamp_cam()
+			if Game.args.has("boat_leave"):   # já escolheu: o barqueiro volta remando
+				world._boat_state = "here"
+				world._boat_seen = true
+				sim.choose(0)
 		"person": hud.show_person(int(sim.people[sim.people.size() - 1]["id"]))
 		"place":
 			_start_placing("horta")
@@ -533,19 +537,9 @@ func _process(delta: float) -> void:
 
 # ================================================================ câmera
 func _apply_zoom() -> void:
-	# Nunca mais longe que o mapa: com a tela grande (tela cheia) o zoom de longe parava antes e sobrava
-	# faixa preta em volta da ilha. O mapa sempre cobre a tela inteira.
-	var z := maxf(ZOOMS[_zoom_i], _fill_zoom())
+	var z := ZOOMS[_zoom_i]
 	cam.zoom = Vector2(z, z)
 	_clamp_cam()
-
-
-func _fill_zoom() -> float:
-	var vs := get_viewport().get_visible_rect().size
-	var ws := world.world_size() if world != null else Vector2.ZERO
-	if ws.x <= 0.0 or ws.y <= 0.0:
-		return 0.0
-	return maxf(vs.x / ws.x, vs.y / ws.y)
 
 
 func _set_zoom(i: int, screen_at: Vector2) -> void:
