@@ -33,6 +33,10 @@ func _ready() -> void:
 	add_child(world)
 	cam = Camera2D.new()
 	add_child(cam)
+	# Tela cheia ou janela redimensionada: refaz o zoom mínimo para o mapa cobrir a tela toda.
+	get_viewport().size_changed.connect(func() -> void:
+		if sim != null:
+			_apply_zoom())
 	cam.make_current()
 	_layer = CanvasLayer.new()
 	_layer.layer = 2   # a camada 1 é dos vaga-lumes (por cima do mundo, fora do escuro da noite)
@@ -107,7 +111,6 @@ func _make_hud() -> void:
 		if not sp.is_empty():
 			hud.toast(hud.fmt("UI_SICK", {"name": hud.pname(sp), "why": I18n.t("SICKWHY_" + sim.sick_why(sp))})))
 	sim.fog_ended.connect(func() -> void: hud.toast(hud.fmt("UI_FOG_END", {"pct": int(round(float(sim.bal["fog"]["food_bonus"]) * 100.0))})))
-	sim.group_arrived.connect(func() -> void: hud.toast(hud.fmt("UI_GATE_BADGE", {"n": sim.gate_group.size()})))
 	sim.raid_warning.connect(func(f: Dictionary, nxt: Dictionary) -> void:
 		if int(f["boss"]) > 0:
 			hud.toast(hud.fmt("UI_RAID_BOSS", {"n": f["n"]}))
@@ -302,6 +305,12 @@ func _open_test_card() -> void:
 			if sim.gate_group.is_empty():
 				sim._make_group()
 			hud.show_gate()
+		"boat":   # capturas: gente nova chegando de bote (--look_boat põe a câmera no píer)
+			if sim.gate_group.is_empty():
+				sim._make_group()
+			if Game.args.has("look_boat"):
+				cam.position = world.boat_dock() + Vector2(0, -30)
+				_clamp_cam()
 		"person": hud.show_person(int(sim.people[sim.people.size() - 1]["id"]))
 		"place":
 			_start_placing("horta")
@@ -492,6 +501,8 @@ func _open_test_card() -> void:
 		var wp := String(Game.args["winpx"]).split("x")
 		WindowService._user_px = Vector2i(int(wp[0]), int(wp[1]))
 		WindowService._apply_layout(true)
+	if Game.args.has("full"):   # capturas: tela cheia
+		WindowService.set_fullscreen(true)
 
 
 ## Clique em botão da interface: som de clique (o AudioManager só toca depois do primeiro clique).
@@ -522,9 +533,19 @@ func _process(delta: float) -> void:
 
 # ================================================================ câmera
 func _apply_zoom() -> void:
-	var z := ZOOMS[_zoom_i]
+	# Nunca mais longe que o mapa: com a tela grande (tela cheia) o zoom de longe parava antes e sobrava
+	# faixa preta em volta da ilha. O mapa sempre cobre a tela inteira.
+	var z := maxf(ZOOMS[_zoom_i], _fill_zoom())
 	cam.zoom = Vector2(z, z)
 	_clamp_cam()
+
+
+func _fill_zoom() -> float:
+	var vs := get_viewport().get_visible_rect().size
+	var ws := world.world_size() if world != null else Vector2.ZERO
+	if ws.x <= 0.0 or ws.y <= 0.0:
+		return 0.0
+	return maxf(vs.x / ws.x, vs.y / ws.y)
 
 
 func _set_zoom(i: int, screen_at: Vector2) -> void:
@@ -876,6 +897,9 @@ func _click(screen: Vector2) -> void:
 		hud.show_building(int(b["id"]))
 		return
 	var gate := sim._first("gate")
+	if world.boat_rect().has_point(wp) and not sim.gate_group.is_empty():
+		hud.show_gate()
+		return
 	if not gate.is_empty() and Rect2i(Vector2i(gate["cell"]) - Vector2i(0, 1), Vector2i(3, 3)).has_point(c):
 		if not sim.gate_group.is_empty():
 			hud.show_gate()

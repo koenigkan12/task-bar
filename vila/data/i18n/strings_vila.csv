@@ -522,3 +522,6 @@ UI_REPAIRING,Consertando,Repairing
 UI_REBUILDING,Reconstruindo,Rebuilding
 UI_NIGHT_RUINED,Em ruína: {list}. Precisa reconstruir.,Ruined: {list}. Needs rebuilding.
 TIP_NIGHT_WALLS_DOWN,Muros no chão: faltou recurso para consertar de manhã. Conserte no cartão do muro.,Walls down: not enough resources to fix them at dawn. Repair from the wall card.
+UI_WALLS_FIX_ALL,Consertar os {n},Repair all {n}
+TIP_WALLS_FIX_ALL,"Conserta de uma vez os {n} muros caídos ou rachados, pagando por todos.","Repairs all {n} fallen or cracked walls at once, paying for all."
+UI_WALLS_FIXED,{n} muros consertados,{n} walls repaired

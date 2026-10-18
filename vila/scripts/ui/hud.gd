@@ -739,7 +739,7 @@ func refresh() -> void:
 	if sim.fog_next and not sim.is_night() and to_night < float(sim.bal["fog"].get("warn_h", 3.0)) and _fog_warned != sim.day_number():
 		_fog_warned = sim.day_number()
 		toast(I18n.t("UI_FOG_WARN"))
-	_gate_btn.visible = not sim.gate_group.is_empty()
+	_gate_btn.visible = false   # a gente nova espera no bote do píer (sinal e seta no mapa), não aqui em cima
 	_gate_btn.text = fmt("UI_GATE_BADGE", {"n": sim.gate_group.size()})
 	_gate_btn.size = Vector2(10, 14)
 	# Refazer o cartão troca os botões por novos: com o botão do mouse apertado, o clique
@@ -1994,6 +1994,8 @@ func _damage_lines(b: Dictionary) -> bool:
 			toast(I18n.t("UI_NO_MONEY"))
 		_rebuild_card())
 	_card_box.add_child(_row([fx, _cost_row(rc)]))
+	if String(b["type"]) == "muro":
+		_wall_repair_all()
 	return broken   # avariado não produz nem sobe de nível até consertar
 
 
@@ -2050,6 +2052,27 @@ func _wall_upgrade_all(b: Dictionary) -> void:
 			toast(I18n.t("UI_NO_MONEY"))
 		_rebuild_card())
 	_card_box.add_child(_row([ub, _cost_row(all)]))
+
+
+## Muro: conserta todos os que têm estrago de uma vez, pagando por todos (como o "subir todos").
+func _wall_repair_all() -> void:
+	var wf := sim.walls_to_fix()
+	var n: int = (wf["ids"] as Array).size()
+	if n < 2:
+		return
+	var rb := Button.new()
+	rb.text = fmt("UI_WALLS_FIX_ALL", {"n": n})
+	rb.icon = icon("martelo")
+	rb.disabled = not sim.can_afford(wf["cost"])
+	rb.tooltip_text = fmt("TIP_WALLS_FIX_ALL", {"n": n})
+	rb.pressed.connect(func() -> void:
+		var r := sim.repair_all_walls()
+		if bool(r["ok"]):
+			toast(fmt("UI_WALLS_FIXED", {"n": r["n"]}))
+		else:
+			toast(I18n.t("UI_NO_MONEY"))
+		_rebuild_card())
+	_card_box.add_child(_row([rb, _cost_row(wf["cost"])]))
 
 
 ## Dica do menu de obras para uma defesa: os números em frase.

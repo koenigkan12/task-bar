@@ -23,6 +23,10 @@ var _ground: Sprite2D
 var _flora: VilaFlora                  # flores da mata que brilham de noite
 var _water: VilaWater                  # ondas, vento, peixe e o farol do porto
 var _boat: Sprite2D                     # bote no porto enquanto tem gente esperando para entrar
+var _boat_state := ""                   # "", in (chegando), here (no píer), out (indo embora)
+var _boat_t := 0.0
+const BOAT_SAIL_S := 5.0
+const BOAT_COL := Color(1.0, 0.8, 0.35)
 var ICON_FRAMES := 28                   # icons.png: ícones de 8 px (setup lê da largura)
 var _defense: VilaDefenseView
 var _objects: Node2D
@@ -638,7 +642,7 @@ func _process(delta: float) -> void:
 			if not node.is_empty():
 				_update_building(b, node)
 	_sync_people(delta)
-	_sync_boat()
+	_sync_boat(delta)
 	_update_light()
 	_water.update_water(delta, _night_k)
 	_flora.update_flora(delta, _night_k)
@@ -651,15 +655,87 @@ func _process(delta: float) -> void:
 	_overlay.queue_redraw()
 
 
-## O bote só aparece encostado no píer quando tem gente esperando para entrar (ambientação: barcos no
-## mapa são naufrágios; o único que navega é esse).
-func _sync_boat() -> void:
+## Gente nova chega de bote: ele vem do rio até o píer de baixo e fica lá (com um "!" em cima) até o
+## jogador clicar e escolher quem entra; depois vai embora. Barcos no mapa são naufrágios; o único que
+## navega é esse (e o do mascate).
+func _sync_boat(delta: float) -> void:
 	var gate := sim._first("gate")
-	_boat.visible = not gate.is_empty() and not sim.gate_group.is_empty()
-	if _boat.visible:
-		var fp := sim._fp("gate")
-		var base := Vector2(Vector2i(gate["cell"]).x + fp.x, Vector2i(gate["cell"]).y + fp.y) * TILE
-		_boat.position = (base + Vector2(1, 2 + sin(_anim_t * 1.6))).round()
+	var has := not gate.is_empty() and not sim.gate_group.is_empty()
+	_boat_t += delta
+	if has and _boat_state in ["", "out"]:
+		# Abrindo o jogo com gente já esperando: o bote já está lá, sem refazer a viagem.
+		_boat_state = "in" if _boat_seen else "here"
+		_boat_t = 0.0
+	elif not has and _boat_state in ["in", "here"]:
+		_boat_state = "out"
+		_boat_t = 0.0
+	_boat_seen = true
+	if gate.is_empty() or _boat_state == "":
+		_boat.visible = false
+		return
+	var dock := boat_dock()
+	var away := dock + Vector2(-24, 150)
+	var bob := Vector2(0, roundf(sin(_anim_t * 1.6)))
+	var k := clampf(_boat_t / BOAT_SAIL_S, 0.0, 1.0)
+	k = k * k * (3.0 - 2.0 * k)
+	_boat.visible = true
+	match _boat_state:
+		"in":
+			_boat.position = away.lerp(dock, k).round() + bob
+			if _boat_t >= BOAT_SAIL_S:
+				_boat_state = "here"
+		"here":
+			_boat.position = dock.round() + bob
+		"out":
+			_boat.position = dock.lerp(away, k).round() + bob
+			if _boat_t >= BOAT_SAIL_S:
+				_boat_state = ""
+				_boat.visible = false
+
+
+var _boat_seen := false
+
+
+func boat_dock() -> Vector2:
+	var gate := sim._first("gate")
+	if gate.is_empty():
+		return Vector2.ZERO
+	var fp := sim._fp("gate")
+	return Vector2(Vector2i(gate["cell"]).x + fp.x, Vector2i(gate["cell"]).y + fp.y) * TILE + Vector2(1, 2)
+
+
+## O bote parado no píer com gente esperando (clique abre a escolha).
+func boat_waiting() -> bool:
+	return _boat_state == "here"
+
+
+func boat_rect() -> Rect2:
+	if _boat_state == "" or _boat.texture == null:
+		return Rect2()
+	return Rect2(_boat.position + Vector2(-4, -22), _boat.texture.get_size() + Vector2(8, 26))
+
+
+func boat_screen_rect() -> Rect2:
+	var r := boat_rect()
+	if r.size == Vector2.ZERO:
+		return Rect2()
+	var xf := _overlay.get_global_transform_with_canvas()
+	var sr := Rect2(xf * r.position, xf.basis_xform(r.size))
+	return sr if get_viewport_rect().intersects(sr) else Rect2()
+
+
+## Em cima do bote: balão com "!" pulando; fora da tela, a seta na beira aponta para o píer.
+func _draw_boat_sign() -> void:
+	if _boat_state != "here":
+		return
+	var top := _boat.position + Vector2(_boat.texture.get_width() / 2.0, -4.0 - absf(sin(_anim_t * 3.0)) * 3.0)
+	var r := Rect2((top - Vector2(5, 13)).round(), Vector2(10, 12))
+	_overlay.draw_rect(r.grow(1), Color(0.12, 0.08, 0.12, 0.95))
+	_overlay.draw_rect(r, BOAT_COL)
+	_overlay.draw_colored_polygon(PackedVector2Array([r.position + Vector2(3, 12), r.position + Vector2(7, 12), r.position + Vector2(5, 15)]), BOAT_COL)
+	_overlay.draw_rect(Rect2(r.position + Vector2(4, 2), Vector2(2, 5)), Color(0.15, 0.08, 0.1))
+	_overlay.draw_rect(Rect2(r.position + Vector2(4, 8), Vector2(2, 2)), Color(0.15, 0.08, 0.1))
+	_edge_arrow(top, BOAT_COL, 4, 0.75 + 0.25 * sin(_anim_t * 4.0))
 
 
 ## Cor do dia pela hora do relógio: dia claro e quente, fim de tarde dourado, noite bem escura e azul
@@ -943,6 +1019,7 @@ func _draw_overlay() -> void:
 			var gx := roundi((fp2.x * TILE - src.size.x) / 2.0)
 			_overlay.draw_texture_rect_region(bt, Rect2(bottom + Vector2(gx, -src.size.y), src.size), src, Color(1, 1, 1, 0.6))
 	_draw_defense_hints()
+	_draw_boat_sign()
 	# Entulho marcado para limpar: colchetes âmbar e um martelo
 	var mk := tex("icons")
 	for c in sim.marked:
@@ -1297,28 +1374,37 @@ func _draw_defense_hints() -> void:
 		if ic != null:
 			_overlay.draw_texture_rect_region(ic, Rect2(from - Vector2(4, 16), Vector2(8, 8)), Rect2(23 * 8, 0, 8, 8))
 		# Fora da tela: uma seta na beira apontando para lá.
-		var xf := _overlay.get_global_transform_with_canvas()
-		var inv := xf.affine_inverse()
-		var vs := _overlay.get_viewport_rect().size
-		var view := Rect2(inv * Vector2(0, 20), inv.basis_xform(vs - Vector2(0, 40)))
-		if not view.has_point(from):
-			var mid := view.get_center()
-			var inner := view.grow(-10.0 / maxf(0.01, xf.get_scale().x))
-			var dir := (from - mid).normalized()
-			var k := 1e9
-			if absf(dir.x) > 1e-4:
-				k = minf(k, (inner.size.x / 2.0) / absf(dir.x))
-			if absf(dir.y) > 1e-4:
-				k = minf(k, (inner.size.y / 2.0) / absf(dir.y))
-			var at := mid + dir * k
-			var sc := 1.0 / maxf(0.01, xf.get_scale().x)
-			var tip := at + dir * 8.0 * sc
-			var side := Vector2(-dir.y, dir.x) * 5.0 * sc
-			_overlay.draw_colored_polygon(PackedVector2Array([tip, at + side, at - side]), Color(ZOMBIE_COL, pulse))
-			if ic != null:
-				_overlay.draw_set_transform(at - dir * 6.0 * sc, 0.0, Vector2(sc, sc))
-				_overlay.draw_texture_rect_region(ic, Rect2(Vector2(-4, -4), Vector2(8, 8)), Rect2(23 * 8, 0, 8, 8))
-				_overlay.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+		_edge_arrow(from, ZOMBIE_COL, 23, pulse)
+
+
+## Alvo fora da tela: seta na beira da tela apontando para ele, com o ícone do que é.
+func _edge_arrow(target: Vector2, col: Color, icon_i: int, alpha: float) -> void:
+	var ic := tex("icons")
+	var xf := _overlay.get_global_transform_with_canvas()
+	var inv := xf.affine_inverse()
+	var vs := _overlay.get_viewport_rect().size
+	var view := Rect2(inv * Vector2(0, 20), inv.basis_xform(vs - Vector2(0, 40)))
+	if view.has_point(target):
+		return
+	var mid := view.get_center()
+	var inner := view.grow(-10.0 / maxf(0.01, xf.get_scale().x))
+	var dir := (target - mid).normalized()
+	var k := 1e9
+	if absf(dir.x) > 1e-4:
+		k = minf(k, (inner.size.x / 2.0) / absf(dir.x))
+	if absf(dir.y) > 1e-4:
+		k = minf(k, (inner.size.y / 2.0) / absf(dir.y))
+	var at := mid + dir * k
+	var sc := 1.0 / maxf(0.01, xf.get_scale().x)
+	var tip := at + dir * 8.0 * sc
+	var side := Vector2(-dir.y, dir.x) * 5.0 * sc
+	_overlay.draw_colored_polygon(PackedVector2Array([tip, at + side, at - side]), Color(col, alpha))
+	if ic != null:
+		_overlay.draw_set_transform(at - dir * 7.0 * sc, 0.0, Vector2(sc, sc))
+		_overlay.draw_circle(Vector2.ZERO, 6.0, Color(0.12, 0.08, 0.12, 0.9))
+		_overlay.draw_arc(Vector2.ZERO, 6.0, 0.0, TAU, 16, Color(col, alpha), 1.0)
+		_overlay.draw_texture_rect_region(ic, Rect2(Vector2(-4, -4), Vector2(8, 8)), Rect2(icon_i * 8, 0, 8, 8))
+		_overlay.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 
 # ================================================================ doentes

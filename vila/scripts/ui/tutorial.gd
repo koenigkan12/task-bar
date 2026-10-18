@@ -402,7 +402,7 @@ func _hint_done(key: String) -> bool:
 func _hint_target(key: String) -> Rect2:
 	match key:
 		"gate":
-			return hud._gate_btn.get_global_rect() if hud._gate_btn.visible else Rect2()
+			return main.world.boat_screen_rect()
 		"tower_ready":
 			return hud.tower_btn.get_global_rect()
 		"short":

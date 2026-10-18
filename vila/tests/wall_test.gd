@@ -134,6 +134,18 @@ func _init() -> void:
 		tt += 0.1
 	print("  cerca de arame segura 3 zumbis fracos por %.0f s" % tt)
 	_check(tt >= 15.0, "cerca de arame segura 3 zumbis por pelo menos 15 s (%.0f s)" % tt)
+	# 4) Consertar todos os muros de uma vez (como o "subir todos").
+	var sim4 := _new_sim()
+	_ring(sim4, _box(sim4))
+	var hurt := 0
+	for b in sim4.buildings:
+		if String(b["type"]) == "muro" and hurt < 5:
+			sim4.defense.hit_building(b, 999.0 if hurt % 2 == 0 else 10.0)
+			hurt += 1
+	var wf := sim4.walls_to_fix()
+	_check((wf["ids"] as Array).size() == 5 and not (wf["cost"] as Dictionary).is_empty(), "lista os 5 muros com estrago e o custo total")
+	var rr := sim4.repair_all_walls()
+	_check(bool(rr["ok"]) and (sim4.walls_to_fix()["ids"] as Array).is_empty(), "consertar todos deixa os muros inteiros")
 	if fails > 0:
 		printerr("FALHAS: ", fails)
 	else:

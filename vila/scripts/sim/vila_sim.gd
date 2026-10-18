@@ -1147,6 +1147,33 @@ func upgrade_walls(level: int) -> Dictionary:
 	return {"ok": true, "n": ws.size()}
 
 
+## Muros com estrago (caídos ou rachados) e quanto custa consertar todos de uma vez.
+func walls_to_fix() -> Dictionary:
+	var ids: Array[int] = []
+	var all := {}
+	for b in buildings:
+		if String(b["type"]) != "muro" or String(b["state"]) != "built" or defense.hp(b) >= defense.max_hp(b):
+			continue
+		ids.append(int(b["id"]))
+		var c: Dictionary = defense.repair_cost(b)
+		for r in c:
+			all[r] = float(all.get(r, 0.0)) + float(c[r])
+	return {"ids": ids, "cost": all}
+
+
+## Conserta todos os muros com estrago (botão do cartão do muro), se der para pagar todos.
+func repair_all_walls() -> Dictionary:
+	var wf := walls_to_fix()
+	var ids: Array = wf["ids"]
+	if ids.is_empty():
+		return {"ok": false, "reason": "ok", "n": 0}
+	if not can_afford(wf["cost"]):
+		return {"ok": false, "reason": "cost", "n": ids.size()}
+	for id in ids:
+		repair(int(id))
+	return {"ok": true, "n": ids.size()}
+
+
 func _remove_building(b: Dictionary) -> void:
 	_release_workers(b)
 	_mark(b, false)
