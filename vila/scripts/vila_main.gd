@@ -103,13 +103,17 @@ func _make_hud() -> void:
 		if not b.is_empty() and String(b["type"]) not in ["torre", "muro"]:
 			hud.toast(hud.fmt("UI_DONE", {"b": hud.bname(String(b["type"]), int(b["level"]))})))
 	sim.fog_started.connect(func() -> void: hud.toast(I18n.t("UI_FOG_START")))
-	sim.person_grave.connect(func(id: int) -> void: hud.toast(hud.fmt("UI_GRAVE", {"name": hud.pname(sim.person(id))})))
+	sim.person_grave.connect(func(id: int) -> void: hud.toast(hud.fmt("UI_GRAVE", {"name": hud.pname(sim.person(id))}), VilaHud.TOAST_DANGER))
 	sim.person_left.connect(func(nm: String, died: bool, why: String) -> void:
 		hud.show_lost(nm, died, why))
 	sim.person_sick.connect(func(id: int) -> void:
 		var sp := sim.person(id)
 		if not sp.is_empty():
-			hud.toast(hud.fmt("UI_SICK", {"name": hud.pname(sp), "why": I18n.t("SICKWHY_" + sim.sick_why(sp))})))
+			hud.toast(hud.fmt("UI_SICK", {"name": hud.pname(sp), "why": I18n.t("SICKWHY_" + sim.sick_why(sp))}), VilaHud.TOAST_DANGER))
+	sim.person_bitten.connect(func(id: int) -> void:
+		var bp := sim.person(id)
+		if not bp.is_empty():
+			hud.toast(hud.fmt("UI_BITTEN", {"name": hud.pname(bp)}), VilaHud.TOAST_DANGER))
 	sim.fog_ended.connect(func() -> void: hud.toast(hud.fmt("UI_FOG_END", {"pct": int(round(float(sim.bal["fog"]["food_bonus"]) * 100.0))})))
 	sim.raid_warning.connect(func(f: Dictionary, nxt: Dictionary) -> void:
 		if int(f["boss"]) > 0:
@@ -126,9 +130,6 @@ func _make_hud() -> void:
 		hud.on_raid_closed(rep)
 		hud.show_night_report(rep))
 	sim.building_fell.connect(func(id: int, ruin: bool) -> void: hud.on_building_fell(id, ruin))
-	sim.raid_retreat.connect(func(rep: Dictionary) -> void:
-		if not sim.offline:
-			hud.toast(hud.fmt("UI_RAID_RETREAT", {"n": (rep["broke"] as Array).size() + (rep["ruined"] as Array).size()})))
 	sim.radio.connect(func(l: Dictionary) -> void:
 		if hud != null and not sim.offline:
 			hud.quiet = _tut != null and _tut.active()
@@ -310,6 +311,7 @@ func _open_test_card() -> void:
 		"boat":   # capturas: gente nova chegando de bote (--look_boat põe a câmera no píer)
 			if sim.gate_group.is_empty():
 				sim._make_group()
+			world._boat_seen = true   # o bote vem navegando (não aparece já atracado)
 			if Game.args.has("look_boat"):
 				cam.position = world.boat_dock() + Vector2(-60, -10)
 				_clamp_cam()
@@ -344,12 +346,29 @@ func _open_test_card() -> void:
 				sim._finish(sim.buildings[sim.buildings.size() - 1])
 			cam.position = Vector2(Vector2i(gp["cell"])) * 16.0 + Vector2(40, 10)
 			_clamp_cam()
-		"merchant_boat":   # capturas: o barco do mascate chegando (a animação começa agora)
-			world._m_seen = true
-			sim._merchant_arrive(sim.t + 1800.0)
-			var g := sim._first("gate")
-			cam.position = Vector2(Vector2i(g["cell"])) * 16.0 + Vector2(16, 0)
-			_clamp_cam()
+		"merchant_boat", "merchant_leave":   # capturas: o barco do mascate chegando ou indo embora
+			if sim._first("praca").is_empty():   # o mascate só vem com praça
+				for r in VilaSim.RES:
+					sim.stock[r] = maxf(float(sim.stock[r]), 99.0)
+				var tw := sim.tower
+				sim.tower = maxi(tw, 3)
+				var rp := sim.build("praca", AutoPlayer.spot(sim, "praca"))
+				sim.tower = tw
+				if bool(rp.get("ok", false)):
+					sim._finish(sim.buildings[sim.buildings.size() - 1])
+			if op == "merchant_leave":   # já estava aqui e vai embora (anda até o píer e desencosta)
+				world._m_seen = false
+				sim._merchant_arrive(sim.t + 1800.0)
+				get_tree().create_timer(0.5).timeout.connect(sim._merchant_leave)
+				var g2 := sim._first("gate")
+				cam.position = Vector2(Vector2i(g2["cell"])) * 16.0 + Vector2(16, 20)
+				_clamp_cam()
+			else:
+				world._m_seen = true
+				sim._merchant_arrive(sim.t + 1800.0)
+				var g := sim._first("gate")
+				cam.position = Vector2(Vector2i(g["cell"])) * 16.0 + Vector2(16, 20)
+				_clamp_cam()
 		"merchant":
 			if not sim.merchant_here():
 				sim._merchant_arrive(sim.t + 1800.0)
@@ -406,7 +425,7 @@ func _open_test_card() -> void:
 			_test_raid()
 			sim.defense.zombies.clear()
 			var hb := sim._first("moradia")
-			hud.show_night_report({"day": 3, "came": 6, "killed": 4, "broke": [int(hb.get("id", -1))], "ruined": [],
+			hud.show_night_report({"day": sim.day_number(), "came": 6, "killed": 4, "broke": [int(hb.get("id", -1))], "ruined": [],
 					"bitten": [int(sim.people[0]["id"])], "retreat": true})
 		"broken":   # capturas: de dia, uma casa quebrada (selo vermelho) e outra em obra de conserto
 			_test_raid()
@@ -461,12 +480,74 @@ func _open_test_card() -> void:
 			var hl := sim._first("moradia")
 			if not hl.is_empty():
 				sim.defense._break(hl)
+		"wall_down":   # capturas: de dia, um muro derrubado com o selo e o cartão de conserto aberto
+			_test_raid()
+			sim.defense.zombies.clear()
+			sim.set_cycle_hour(10.0)
+			for wq in sim.buildings:
+				if String(wq["type"]) == "muro":
+					sim.defense.hit_building(wq, 9999.0)
+					hud.show_building(int(wq["id"]))
+					break
+		"tower_fight":   # capturas: torre atirando em zumbi perto dela (clarão, flecha, zumbi piscando branco)
+			_test_raid()
+			sim.defense.report = {"day": sim.day_number(), "came": 9, "killed": 0, "broke": [], "ruined": [], "walls": 0, "horde": false}
+			var tq2 := sim._first("torre_arq")
+			if not tq2.is_empty():
+				var tc: Vector2i = tq2["cell"]
+				for i in 3:
+					sim.defense._spawn("fraco", tc + Vector2i(i * 2 - 1, 4))
+				cam.position = Vector2(tc) * 16.0 + Vector2(16, 40)
+				_clamp_cam()
+		"hp_card":   # capturas: cartão de um prédio inteiro com a vida (🛡 120/120) e o +N do próximo nível
+			for r in VilaSim.RES:
+				sim.stock[r] = 999.0
+			var rq2 := sim.build("moradia", AutoPlayer.spot(sim, "moradia"))
+			if bool(rq2.get("ok", false)):
+				sim._finish(sim.buildings[sim.buildings.size() - 1])
+				hud.show_building(int(sim.buildings[sim.buildings.size() - 1]["id"]))
+		"bite":   # capturas: zumbi mordendo alguém acordado (aviso com o nome e a pessoa piscando)
+			_test_raid()
+			var bp: Dictionary = sim.people[sim.people.size() - 1]
+			bp["asleep"] = false
+			sim.defense.report = {"day": sim.day_number(), "came": 7, "killed": 0, "broke": [], "ruined": [], "walls": 0, "horde": false}
+			sim.defense._spawn("fraco", Vector2i(Vector2(bp["pos"]).round()))
+			var bz: Dictionary = sim.defense.zombies[sim.defense.zombies.size() - 1]
+			bz["hp"] = 999.0
+			get_tree().create_timer(1.0).timeout.connect(func() -> void: bz["pos"] = bp["pos"])
+		"collapse":   # capturas: casa rachada (menos da metade da vida) e outra desabando com poeira
+			_test_raid()
+			var hs2: Array = []
+			for bq in sim.buildings:
+				if sim.defense.attackable(bq) and not bool(bq.get("broken", false)):
+					hs2.append(bq)
+			if hs2.size() >= 2:
+				hs2[0]["hp"] = sim.defense.max_hp(hs2[0]) * 0.35
+				var fall_b: Dictionary = hs2[1]
+				get_tree().create_timer(float(Game.args.get("fall_at", "1.5"))).timeout.connect(func() -> void: sim.defense._break(fall_b))
+				cam.position = Vector2(Vector2i(fall_b["cell"])) * 16.0
+				_clamp_cam()
+		"dawn":   # capturas: amanhece com zumbi vivo: eles andam de volta e afundam na água
+			_test_raid()
+			sim.defense.report = {"day": sim.day_number(), "came": 6, "killed": 0, "broke": [], "ruined": [], "walls": 0, "horde": false}
+			var shore := sim.defense._spawn_spots(2, sim.day_number())
+			for zi in sim.defense.zombies.size():
+				if not shore.is_empty():
+					sim.defense.zombies[zi]["home"] = shore[zi % shore.size()]
+			get_tree().create_timer(1.0).timeout.connect(func() -> void: sim.defense.night_end())
+		"radio_raid":   # capturas: no meio do ataque o rádio não vira aviso; um aviso só por vez
+			_test_raid()
+			sim.defense.report = {"day": sim.day_number(), "came": 6, "killed": 0, "broke": [], "ruined": [], "walls": 0, "horde": false}
+			hud.on_radio({"speaker": "ruido", "text_key": "radio.l1_arrival"})
+			hud.on_radio({"speaker": "velho", "text_key": "radio.l1_arrival"})
+			hud.toast(hud.fmt("UI_BITTEN", {"name": hud.pname(sim.people[0])}), VilaHud.TOAST_DANGER)
+			hud.toast(I18n.t("UI_NO_MONEY"))
 		"raid_won", "raid_fled":   # capturas: fim da noite (resultado no alto e o cartão)
 			_test_raid()
 			sim.defense.zombies.clear()
 			var hw := sim._first("moradia")
 			var won := op == "raid_won"
-			var rp := {"day": 3, "came": 6, "killed": 6 if won else 4, "fled": 0 if won else 2, "result": "survived" if won else "fled",
+			var rp := {"day": sim.day_number(), "came": 6, "killed": 6 if won else 4, "fled": 0 if won else 2, "result": "survived" if won else "fled",
 					"broke": [] if won else [int(hw.get("id", -1))], "ruined": [], "walls": 2, "walls_fixed": 0, "bitten": []}
 			hud.on_raid_closed(rp)
 			hud.show_night_report(rp)

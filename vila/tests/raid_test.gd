@@ -76,6 +76,18 @@ func _init() -> void:
 	if not closed.is_empty():
 		var r2: Dictionary = closed[0]["rep"]
 		_check(String(r2.get("result", "")) == "fled" and int(r2["fled"]) > 0, "amanheceu com zumbi vivo: 'voltaram para a água' (%d)" % int(r2.get("fled", 0)))
+		_check(not b.defense.leaving.is_empty(), "os que sobraram andam de volta para a água (não somem no lugar)")
+		for i in 80:
+			b.advance(0.25)
+		_check(b.defense.leaving.is_empty(), "em até 20 s eles chegaram na beira e afundaram")
+	# 3) Vida do prédio cresce com o nível (nível 5 não cai com os golpes do nível 1).
+	var hb := {"type": "moradia", "level": 1, "cell": Vector2i(0, 0)}
+	var h1 := b.defense.max_hp(hb)
+	hb["level"] = 5
+	var h5 := b.defense.max_hp(hb)
+	print("  vida da moradia: nível 1 = %d, nível 5 = %d" % [int(h1), int(h5)])
+	_check(h5 >= h1 * 2.5, "nível 5 aguenta bem mais que o nível 1")
+	_check(int(h1) % 10 == 0 and int(h5) % 10 == 0, "vida é número redondo no cartão")
 	if fails > 0:
 		printerr("FALHAS: ", fails)
 	else:

@@ -7,6 +7,7 @@ extends RefCounted
 
 var sim: VilaSim
 var zombies: Array[Dictionary] = []   # {id, kind, pos, hp, max, path, tgt, hit_t, repath_t, atk, facing}
+var leaving: Array[Dictionary] = []   # amanheceu: {id, kind, pos, path, speed, facing, sea, sink} andando de volta
 var pending: Array[Dictionary] = []   # {kind, cell, at}: quem ainda vai sair da água esta noite
 var fx: Array[Dictionary] = []        # só desenho: tiros, explosões, zumbi caindo {kind, a, b, t, life}
 var tonight: Dictionary = {}          # {n, horde, boss, day}
@@ -171,8 +172,9 @@ func _night_len() -> float:
 ## Amanheceu: quem ainda está vivo volta para a água (o sol espanta) e a noite fecha com "fugiram".
 func night_end() -> void:
 	var alive := zombies.size() + pending.size()
-	for z in zombies:
-		fx.append({"kind": "flee", "a": z["pos"], "b": z["pos"], "t": 0.0, "life": 1.2, "boss": String(z["kind"]) == "chefe"})
+	if not sim.offline:
+		for z in zombies:
+			_go_back(z)
 	zombies.clear()
 	pending.clear()
 	if report.is_empty():
@@ -232,6 +234,8 @@ func step(dt: float, night: bool) -> void:
 		for pd in due:
 			pending.erase(pd)
 			_spawn(String(pd["kind"]), pd["cell"])
+	if not leaving.is_empty():
+		_leave_step(dt)
 	if zombies.is_empty():
 		return
 	if _zdirty:
@@ -326,22 +330,64 @@ func raid_soon() -> Dictionary:
 	return {"n": n, "left_s": maxf(0.0, left), "dirs": dirs}
 
 
-## Os zumbis desistem da noite e voltam para a água (os que ainda iam sair também não saem).
-func retreat() -> void:
-	for z in zombies:
-		fx.append({"kind": "flee", "a": z["pos"], "b": z["pos"], "t": 0.0, "life": 1.2, "boss": String(z["kind"]) == "chefe"})
-	zombies.clear()
-	pending.clear()
-	report["retreat"] = true
-	sim.raid_retreat.emit(report)
-
-
 func _spawn(kind: String, cell: Vector2i) -> void:
 	var s := zstats(kind)
 	var jitter := Vector2(randf_range(-0.4, 0.4), randf_range(-0.4, 0.4))
 	zombies.append({"id": _next, "kind": kind, "pos": Vector2(cell) + jitter, "hp": s["hp"], "max": s["hp"],
-			"path": PackedVector2Array(), "tgt": -1, "hit_t": 0.0, "repath_t": 0.0, "atk": -1, "facing": 1.0})
+			"path": PackedVector2Array(), "tgt": -1, "hit_t": 0.0, "repath_t": 0.0, "atk": -1, "facing": 1.0, "home": cell})
 	_next += 1
+
+
+## Amanheceu: o zumbi que sobrou anda de volta até a beira por onde saiu e afunda na água (o texto
+## diz que eles voltam para a água, então tem que dar para ver). Só desenho: não bate em nada.
+func _go_back(z: Dictionary) -> void:
+	if _zdirty:
+		_rebuild_grid()
+	var home: Vector2i = z.get("home", Vector2i(Vector2(z["pos"]).round()))
+	var sea := Vector2(home)
+	for o in [Vector2i(0, 1), Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1)]:
+		if sim.terrain_at(home + o) == VilaSim.T_WATER:
+			sea = Vector2(home) + Vector2(o) * 0.7
+	var from := Vector2i(Vector2(z["pos"]).round())
+	var path := PackedVector2Array()
+	if sim._inside(from) and sim._inside(home):
+		var was := _zgrid.is_point_solid(from)
+		_zgrid.set_point_solid(from, false)
+		path = _to_path(_zgrid.get_id_path(from, home))
+		_zgrid.set_point_solid(from, was)
+	path.append(sea)
+	var dist := 0.0
+	var prev: Vector2 = z["pos"]
+	for q in path:
+		dist += prev.distance_to(q)
+		prev = q
+	# Anda no passo dele, mas chega em no máximo 12 s (de dia ninguém quer ver zumbi passeando).
+	var sp := maxf(float(zstats(String(z["kind"]))["speed"]), dist / 12.0)
+	leaving.append({"id": z["id"], "kind": z["kind"], "pos": z["pos"], "path": path, "speed": sp,
+			"facing": z["facing"], "sink": 0.0})
+
+
+func _leave_step(dt: float) -> void:
+	for z in leaving.duplicate():
+		var path: PackedVector2Array = z["path"]
+		if path.is_empty():
+			z["sink"] = float(z["sink"]) + dt
+			if float(z["sink"]) >= 1.2:
+				leaving.erase(z)
+				fx.append({"kind": "splash", "a": z["pos"], "b": z["pos"], "t": 0.0, "life": 0.8})
+			continue
+		var pos: Vector2 = z["pos"]
+		var nxt: Vector2 = path[0]
+		var st := float(z["speed"]) * dt
+		var d := pos.distance_to(nxt)
+		if absf(nxt.x - pos.x) > 0.05:
+			z["facing"] = signf(nxt.x - pos.x)
+		if d <= st:
+			z["pos"] = nxt
+			path.remove_at(0)
+			z["path"] = path
+		else:
+			z["pos"] = pos + (nxt - pos) / d * st
 
 
 ## Pontos de chegada: chão na beira da água, longe do porto e fora da área da vila.
@@ -607,7 +653,9 @@ func max_hp(b: Dictionary) -> float:
 		return float(lv["hp"])
 	var bh: Dictionary = D()["building_hp"]
 	var fp := sim._fp(String(b["type"]))
-	return float(bh["base"]) + float(bh["per_level"]) * int(b["level"]) + float(bh["per_tile"]) * fp.x * fp.y
+	var v := float(bh["base"]) + float(bh["per_level"]) * int(b["level"]) + float(bh["per_tile"]) * fp.x * fp.y
+	var rd := float(bh.get("round", 1))
+	return roundf(v / rd) * rd   # número redondo no cartão (120/120, não 117/117)
 
 
 func hp(b: Dictionary) -> float:
@@ -747,6 +795,8 @@ func _towers(dt: float, night: bool) -> void:
 		_cool[id] = float(lv["rate_s"])
 		var dmg := float(lv["dmg"]) * _dmg_mult(b, night)
 		var from := c + Vector2(0, -1.2)
+		# Clarão na boca da arma (a espingarda da escotilha também: antes ninguém via que ela atirava).
+		fx.append({"kind": "muzzle", "a": from, "b": tgt["pos"], "t": 0.0, "life": 0.12, "gun": tp == "hatch"})
 		match kind:
 			"arrow":
 				tgt["hp"] = float(tgt["hp"]) - dmg
@@ -850,7 +900,9 @@ func _hurt_people(dt: float) -> void:
 					var bit: Array = report.get("bitten", [])
 					if not bit.has(int(p["id"])):
 						bit.append(int(p["id"]))
-						fx.append({"kind": "bite", "a": p["pos"], "b": p["pos"], "t": 0.0, "life": 0.8})
+						fx.append({"kind": "bite", "a": p["pos"], "b": p["pos"], "t": 0.0, "life": 0.8, "pid": int(p["id"])})
+						if not sim.offline:
+							sim.person_bitten.emit(int(p["id"]))
 					report["bitten"] = bit
 				if (was == "ok" or was == "weak") and sim.health_state(p) == "sick":
 					sim.person_sick.emit(int(p["id"]))

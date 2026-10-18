@@ -196,9 +196,10 @@
   },
   "scale_per_day": 0.04,
   "building_hp": {
-   "base": 60,
-   "per_level": 30,
-   "per_tile": 6
+   "base": 40,
+   "per_level": 60,
+   "per_tile": 5,
+   "round": 10
   },
   "wall_weight": 0.25,
   "forest_weight": 6,
@@ -217,7 +218,6 @@
    "loot_frac": 0.03,
    "loot_max": 0.1
   },
-  "max_lost_night": 2,
   "hatch_gun": {
    "dmg": 2,
    "range": 6.5,

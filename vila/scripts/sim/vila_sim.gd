@@ -23,8 +23,8 @@ signal radio(line: Dictionary)                     # uma fala do rádio chegou: 
 signal ela_arrived                                 # ela entrou pelo portão (o final)
 signal raid_warning(tonight: Dictionary, next: Dictionary)   # fim da tarde: quantos zumbis vêm (e se amanhã é horda)
 signal raid_over(report: Dictionary)               # amanheceu depois de uma noite com zumbis
-signal raid_retreat(report: Dictionary)
-signal building_fell(id: int, ruin: bool)           # zumbi quebrou (ou arruinou) um prédio agora   # levaram o máximo da noite e voltaram para a água
+signal person_bitten(id: int)                      # zumbi mordeu (a primeira vez na noite)
+signal building_fell(id: int, ruin: bool)           # zumbi quebrou (ou arruinou) um prédio agora
 
 const RES: Array[String] = ["comida", "agua", "madeira", "sucata", "pecas"]
 const T_GROUND := 0

@@ -386,10 +386,9 @@ UI_DEMOLISH_NO_BEDS,"Não dá para desmontar: quem mora aqui ficaria sem cama. F
 DO_rest,"Doente, descansando em casa","Sick, resting at home"
 TIP_HEALTH_weak,"Saúde {h}/100: fraca, trabalha mais devagar. Comida e água em dia fazem voltar.","Health {h}/100: weak, works slower. Food and water bring it back."
 TIP_HEALTH_sick,"Saúde {h}/100: doente, não trabalha e descansa em casa até melhorar.","Health {h}/100: sick, doesn't work and rests at home until better."
-TIP_HEALTH_grave,"Saúde {h}/100: grave! Se zerar, vai embora no barco. Precisa de comida e água já.","Health {h}/100: critical! At zero they leave on the boat. Needs food and water now."
+TIP_HEALTH_grave,"Saúde {h}/100: grave! Se zerar, morre. Precisa de comida e água já.","Health {h}/100: critical! At zero they die. Needs food and water now."
 TIP_PEOPLE_SICK,"{n} doente(s): sem trabalhar até melhorar.","{n} sick: not working until better."
 UI_GRAVE,"{name} está grave: falta comida ou água!","{name} is in critical condition: food or water is missing!"
-UI_LEFT,"{name} não aguentou e foi embora no barco.","{name} couldn't take it and left on the boat."
 UI_AWAY_LEFT,"{n} foi(ram) embora","{n} left"
 UI_AWAY_SICK,"{n} doente(s)","{n} sick"
 UI_DIED,"{name} não resistiu. A vila perdeu alguém.","{name} didn't make it. The village lost someone."
@@ -480,11 +479,10 @@ UI_WAIT_sick,Parada: todo mundo doente em casa,Paused: everyone is sick at home
 UI_WAIT_food,Parada: todo mundo atrás de comida e água,Paused: everyone is getting food and water
 UI_WAIT_busy,Esperando alguém livre,Waiting for someone free
 UI_RAID_ARRIVED,Zumbis saíram da água!,Zombies came out of the water!
-UI_RAID_RETREAT,Os zumbis avariaram {n} prédios e voltaram para a água. Conserte de dia.,The zombies damaged {n} buildings and went back to the water. Repair them during the day.
-GOAL_raid_come,Zumbis chegando: {n},Zombies coming: {n}
-GOAL_raid,Zumbis atacando {b}: as defesas atiram,Zombies attacking {b}: defenses firing
-GOAL_raid_open,Zumbis atacando {b}: nenhuma torre alcança,Zombies attacking {b}: no tower reaches
-GOAL_raid_soon,Zumbis: {n} do {d} em {t},Zombies: {n} from the {d} in {t}
+GOAL_raid_come,"O que cair, conserte de dia","Whatever falls, repair it during the day"
+GOAL_raid,"O que cair, conserte de dia","Whatever falls, repair it during the day"
+GOAL_raid_open,Nenhuma torre alcança {b}: ponha uma perto,No tower reaches {b}: place one nearby
+GOAL_raid_soon,"Antes da noite: muro em volta, torre perto das casas","Before night: wall around, tower near the houses"
 DIR_n,norte,north
 DIR_s,sul,south
 DIR_e,leste,east
@@ -516,7 +514,6 @@ TIP_NIGHT_KILLED,Zumbis derrubados pelas defesas,Zombies taken down by defenses
 UI_NIGHT_SAFE,Nada quebrou.,Nothing broke.
 UI_NIGHT_BROKE,Quebrados: {list}. Parados até consertar.,Broken: {list}. Stopped until repaired.
 UI_NIGHT_BITTEN,Mordidos: {list}.,Bitten: {list}.
-UI_NIGHT_RETREAT,"Depois de quebrar o que deu, voltaram para a água.","After breaking what they could, they went back to the water."
 UI_REPAIR_ALL,Consertar tudo,Repair all
 UI_REPAIRING,Consertando,Repairing
 UI_REBUILDING,Reconstruindo,Rebuilding
@@ -540,3 +537,13 @@ RAID_BAR_FELL1,{n} caído,{n} fallen
 RAID_BAR_SOON1,{who}: {n} sai da água em {t} ({d}),{who}: {n} comes out of the water in {t} ({d})
 RAID_DEAD,{k} mortos,{k} down
 RAID_DEAD1,{k} morto,{k} down
+UI_BITTEN,{name} levou uma mordida!,{name} got bitten!
+NIGHT_CAME,{n} vieram,{n} came
+NIGHT_CAME1,{n} veio,{n} came
+NIGHT_KILLED,{n} derrubados,{n} taken down
+NIGHT_KILLED1,{n} derrubado,{n} taken down
+NIGHT_WALLS,{n} muros caíram,{n} walls fell
+NIGHT_WALLS1,{n} muro caiu,{n} wall fell
+TIP_HP_N,"Vida {h}/{m}: quanto aguenta de zumbi antes de avariar. Avariado, aguenta mais {m} antes de virar ruína. Sobe a cada nível.","Health {h}/{m}: how much zombie it takes before breaking. Once broken, it takes {m} more before becoming a ruin. Goes up with each level."
+TIP_HP_WALL_N,"Vida do muro {h}/{m}: o zumbi para nele e bate até derrubar. Se tiver abertura perto, ele vai por ela. Sobe a cada nível.","Wall health {h}/{m}: zombies stop and hit it until it falls. If there is a gap nearby, they use it. Goes up with each level."
+TIP_GAIN_HP,Aguenta mais: vida {a} → {b},Tougher: health {a} → {b}

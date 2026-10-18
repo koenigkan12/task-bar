@@ -359,7 +359,7 @@ func _update_raid_bar(delta: float) -> void:
 			txt += " · " + _raid_event
 		col = C_WARN
 		_raid_bar.tooltip_text = I18n.t("TIP_RAID_BAR_LIVE")
-	elif _raid_result_t > 0.0:
+	elif _raid_result_t > 0.0 and not (_card.visible and _card_kind == "night"):   # o cartão da manhã já diz
 		txt = _raid_result
 		col = C_GOOD if _raid_result_good else C_AMBER
 		ic = "check" if _raid_result_good else "lua"
@@ -382,9 +382,6 @@ func _update_raid_bar(delta: float) -> void:
 	_raid_bar.size = Vector2.ZERO
 	var ms := _raid_bar.get_minimum_size()
 	_raid_bar.position = Vector2(roundf(W / 2.0 - ms.x / 2.0), 16)
-	# O aviso solto (rádio, toasts) desce para baixo do placar em vez de cobrir.
-	if _toast.visible and _toast.position.y < 30.0:
-		_toast.position.y = 34.0
 
 
 var _raid_result_good := true
@@ -698,11 +695,16 @@ func _process(delta: float) -> void:
 	if _refresh_acc >= 0.2:
 		_refresh_acc = 0.0
 		refresh()
-	if _toast_t > 0.0:
+	if _toast.visible:
 		_toast_t -= delta
-		_toast.modulate.a = clampf(_toast_t, 0.0, 1.0)
+		_toast.modulate.a = clampf(_toast_t * 2.0, 0.0, 1.0)
 		if _toast_t <= 0.0:
 			_toast.visible = false
+			_show_next_toast()
+		else:
+			_place_toast()
+	elif not _tq.is_empty():
+		_show_next_toast()
 
 
 ## Explica de onde vêm os números de entra/sai (quem trabalha, quem come, noite).
@@ -826,7 +828,8 @@ func refresh() -> void:
 	# Zumbis saíram da água: avisa uma vez por noite (antes eles apareciam sem nenhum aviso).
 	var zon := sim.defense.zombies.size()
 	if zon > 0 and _z_seen == 0 and not sim.offline:
-		toast(I18n.t("UI_RAID_ARRIVED"))
+		_raid_event = I18n.t("UI_RAID_ARRIVED")   # no próprio placar (como aviso solto ficava atrás dele)
+		_raid_event_t = 4.0
 	_z_seen = zon
 	if not _notices.is_empty():
 		_next_notice()
@@ -860,13 +863,60 @@ func refresh() -> void:
 			_rebuild_manage()
 
 
-func toast(text: String) -> void:
+## Fila única de avisos no alto: um de cada vez, nunca um em cima do outro.
+## prio: 0 perigo (passa na frente), 1 resultado/normal, 2 ambiente (rádio; some durante ataque).
+const TOAST_DANGER := 0
+const TOAST_NORMAL := 1
+const TOAST_AMBIENT := 2
+var _tq: Array[Dictionary] = []
+var _toast_prio := TOAST_NORMAL
+
+
+func toast(text: String, prio: int = TOAST_NORMAL, dur: float = 3.0) -> void:
 	if sim != null and sim.offline:
 		return   # alcançando o tempo fechado: o resumo vem no cartão de volta, não em avisos soltos
-	_toast.text = text
+	if prio >= TOAST_AMBIENT and raid_on():
+		return   # rádio e afins não aparecem no meio do ataque
+	if (_toast.visible and _toast.text == text) or _tq.any(func(q: Dictionary) -> bool: return String(q["text"]) == text):
+		return
+	var item := {"text": text, "prio": prio, "dur": maxf(dur, 4.0 if prio == TOAST_DANGER else dur)}
+	var at := _tq.size()
+	for i in _tq.size():
+		if int(_tq[i]["prio"]) > prio:
+			at = i
+			break
+	_tq.insert(at, item)
+	while _tq.size() > 4:   # fila curta: o mais velho de menor prioridade sai
+		_tq.pop_back()
+	if not _toast.visible:
+		_show_next_toast()
+	elif _toast_prio > prio:
+		_toast_t = minf(_toast_t, 0.25)   # perigo chegou: o aviso de agora sai rápido
+
+
+## Ataque acontecendo (ou contagem rodando): o alto da tela é do placar.
+func raid_on() -> bool:
+	var df := sim.defense
+	return not df.zombies.is_empty() or (sim.is_night() and not df.pending.is_empty())
+
+
+func _show_next_toast() -> void:
+	if _tq.is_empty():
+		return
+	var item: Dictionary = _tq.pop_front()
+	_toast_prio = int(item["prio"])
+	_toast.text = String(item["text"])
 	_toast.visible = true
 	_toast.modulate.a = 1.0
-	_toast_t = 3.0
+	_toast_t = float(item["dur"]) if _tq.is_empty() else minf(float(item["dur"]), 2.5)
+	_toast.add_theme_color_override("font_color", C_WARN if _toast_prio == TOAST_DANGER else C_TEXT)
+	_place_toast()
+
+
+## Fica no espaço livre do alto (entre o painel da esquerda e o cartão aberto, abaixo do placar);
+## se não couber ali, desce para cima da barra de baixo. Recalculado a cada quadro: o cartão e o
+## placar abrem e fecham depois que o aviso já apareceu.
+func _place_toast() -> void:
 	_toast.autowrap_mode = TextServer.AUTOWRAP_OFF
 	_toast.custom_minimum_size = Vector2.ZERO
 	_toast.size = Vector2(0, 14)
@@ -875,13 +925,12 @@ func toast(text: String) -> void:
 		_toast.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		_toast.custom_minimum_size = Vector2(maxw, 0)
 		_toast.size = Vector2.ZERO
-	# Fica no espaço livre entre o painel da esquerda e o cartão aberto; se não couber ali,
-	# desce para cima da barra de baixo (antes ele cobria o título do cartão).
 	var x0 := 154.0 if _manage.visible else 0.0
 	var x1 := _card.position.x if _card.visible else W
 	var ts := _toast.get_minimum_size()
+	var top := (_raid_bar.position.y + _raid_bar.size.y + 2.0) if _raid_bar.visible else 18.0
 	if ts.x <= x1 - x0 - 4.0:
-		_toast.position = Vector2(roundf(x0 + (x1 - x0) / 2.0 - ts.x / 2.0), 34 if _raid_bar.visible else 18)
+		_toast.position = Vector2(roundf(x0 + (x1 - x0) / 2.0 - ts.x / 2.0), top)
 	else:
 		_toast.position = Vector2(roundf(W / 2.0 - ts.x / 2.0), H - BOTTOM_H - ts.y - 2.0)
 
@@ -962,8 +1011,15 @@ func _card_night() -> void:
 	var title := fmt("RAID_WON", {"k": int(rep.get("killed", 0)), "n": int(rep.get("came", 0))}) if won \
 			else fmt("RAID_FLED", {"n": int(rep.get("fled", 0)), "k": int(rep.get("killed", 0))})
 	_header("check" if won else "lua", title, fmt("UI_NIGHT_REPORT", {"n": int(rep.get("day", 0))}))
-	_card_box.add_child(_stats([_stat("zumbi", str(int(rep.get("came", 0))), I18n.t("TIP_NIGHT_CAME")),
-			_stat("espada", str(int(rep.get("killed", 0))), I18n.t("TIP_NIGHT_KILLED"), C_GOOD)]))
+	# Placar com rótulo: "6 vieram · 4 derrubados · 2 muros caíram" (o número sozinho não dizia o quê).
+	var came := int(rep.get("came", 0))
+	var kil := int(rep.get("killed", 0))
+	var wd := int(rep.get("walls", 0)) - int(rep.get("walls_fixed", 0))
+	var score: Array = [_stat("zumbi", fmt("NIGHT_CAME1" if came == 1 else "NIGHT_CAME", {"n": came}), I18n.t("TIP_NIGHT_CAME")),
+			_stat("espada", fmt("NIGHT_KILLED1" if kil == 1 else "NIGHT_KILLED", {"n": kil}), I18n.t("TIP_NIGHT_KILLED"), C_GOOD)]
+	if wd > 0:
+		score.append(_stat("escudo", fmt("NIGHT_WALLS1" if wd == 1 else "NIGHT_WALLS", {"n": wd}), I18n.t("TIP_NIGHT_WALLS_DOWN"), C_WARN))
+	_card_box.add_child(_stats(score))
 	var names: Array[String] = []
 	var ruins: Array[String] = []
 	var to_fix: Array[int] = []
@@ -986,9 +1042,6 @@ func _card_night() -> void:
 		_card_box.add_child(_wrap_row("avariado", fmt("UI_NIGHT_BROKE", {"list": ", ".join(names)}), C_WARN))
 	if not ruins.is_empty():
 		_card_box.add_child(_wrap_row("ruina", fmt("UI_NIGHT_RUINED", {"list": ", ".join(ruins)}), C_WARN))
-	if walls_down > 0:
-		var wr := _stats([_stat("escudo", "%d" % walls_down, I18n.t("TIP_NIGHT_WALLS_DOWN"), C_WARN)])
-		_card_box.add_child(wr)
 	var bit: Array[String] = []
 	for pid in rep.get("bitten", []):
 		var bp := sim.person(int(pid))
@@ -1508,6 +1561,9 @@ func _card_building() -> void:
 			elif nd.has("rate_s"):
 				var nr := "%.1f" % (60.0 / float(nd["rate_s"]))
 				gain.append(_stat(String(d.get("res", "seta")), nr + "/min", fmt("UI_GAIN_RATE", {"n": nr})))
+			var hg := _hp_gain(b, nl)
+			if hg != null:
+				gain.append(hg)
 			_card_box.add_child(_stats(gain))
 			if float(nd["time_s"]) > 0.0:
 				_card_box.add_child(_row([_cost_row(nd["cost"]), _icon_rect("relogio"), _label(fmt_time(float(nd["time_s"])))]))
@@ -2075,12 +2131,14 @@ func _damage_lines(b: Dictionary) -> bool:
 	var mh := sim.defense.max_hp(b)
 	var h := sim.defense.hp(b)
 	if h >= mh:
+		if _has_hp(b):
+			_card_box.add_child(_stats([_hp_stat(b)]))
 		return false
 	var broken := bool(b.get("broken", false))
 	if broken:
 		_card_box.add_child(_wrap_row("avariado", I18n.t("UI_BROKEN"), C_WARN))
 	else:
-		_card_box.add_child(_stats([_stat("escudo", "%d/%d" % [int(h), int(mh)], I18n.t("TIP_HP"), C_WARN)]))
+		_card_box.add_child(_stats([_hp_stat(b)]))
 	var rc: Dictionary = sim.defense.repair_cost(b)
 	var fx := Button.new()
 	fx.text = I18n.t("UI_REPAIR")
@@ -2097,7 +2155,34 @@ func _damage_lines(b: Dictionary) -> bool:
 	return broken   # avariado não produz nem sobe de nível até consertar
 
 
-## Números da defesa (dano, alcance, intervalo, vida); as frases que explicam ficam na dica.
+## Prédio que zumbi derruba (casas, produção, defesas) ou muro: tem vida para mostrar.
+func _has_hp(b: Dictionary) -> bool:
+	return String(b["type"]) == "muro" or sim.defense.attackable(b)
+
+
+## 🛡 120/120, como o 17/18 das pessoas. Vermelho quando apanhou. A frase vai na dica.
+func _hp_stat(b: Dictionary) -> Control:
+	var mh := int(sim.defense.max_hp(b))
+	var h := int(ceilf(sim.defense.hp(b)))
+	var tip := fmt("TIP_HP_WALL_N", {"h": h, "m": mh}) if String(b["type"]) == "muro" else fmt("TIP_HP_N", {"h": h, "m": mh})
+	return _stat("escudo", "%d/%d" % [h, mh], tip, C_WARN if h < mh else C_TEXT)
+
+
+## Quanto a vida sobe no próximo nível (🛡 +60), com "120 → 180" na dica.
+func _hp_gain(b: Dictionary, nl: int) -> Control:
+	if not _has_hp(b):
+		return null
+	var nb := b.duplicate()
+	nb["level"] = nl
+	var a := int(sim.defense.max_hp(b))
+	var z := int(sim.defense.max_hp(nb))
+	if z <= a:
+		return null
+	return _stat("escudo", "+%d" % (z - a), fmt("TIP_GAIN_HP", {"a": a, "b": z}), C_GOOD)
+
+
+## Números da defesa (dano, alcance, intervalo); a vida fica no 🛡 h/máx do cartão. As frases que
+## explicam ficam na dica.
 func _defense_stats(tp: String, lv: Dictionary, b: Dictionary) -> Array:
 	var out: Array = []
 	var kind := String(sim.def(tp).get("defense", ""))
@@ -2115,8 +2200,6 @@ func _defense_stats(tp: String, lv: Dictionary, b: Dictionary) -> Array:
 			out.append(_stat("mover", "%.1f" % float(lv["range"]), fmt("TIP_DEF_RANGE", {"n": lv["range"]})))
 		if lv.has("rate_s"):
 			out.append(_stat("relogio", "%.1fs" % float(lv["rate_s"]), fmt("TIP_DEF_RATE", {"n": lv["rate_s"]})))
-	if lv.has("hp") and (b.is_empty() or sim.defense.hp(b) >= sim.defense.max_hp(b)):
-		out.append(_stat("escudo", str(int(lv["hp"])), I18n.t("TIP_HP_WALL") if tp == "muro" else I18n.t("TIP_HP")))
 	if not b.is_empty() and int(b.get("guard", -1)) >= 0:
 		var gp := sim.person(int(b["guard"]))
 		if not gp.is_empty():
@@ -2223,9 +2306,11 @@ func on_radio(line: Dictionary) -> void:
 	radio_unread += 1
 	if quiet or String(line.get("kind", "")) == "reaction":
 		return
+	# Chiado não é notícia: só fala nova vira aviso (e nunca no meio do ataque).
+	if String(line.get("speaker", "ruido")) == "ruido":
+		return
 	var who := I18n.t("speaker." + String(line.get("speaker", "ruido")))
-	toast(who + ": " + I18n.t(String(line["text_key"])))
-	_toast_t = 7.0
+	toast(who + ": " + I18n.t(String(line["text_key"])), TOAST_AMBIENT, 7.0)
 
 
 func show_radio() -> void:

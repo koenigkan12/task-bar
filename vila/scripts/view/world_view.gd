@@ -22,10 +22,8 @@ var show_arrivals := false             # tutorial: mostra por onde os zumbis che
 var _ground: Sprite2D
 var _flora: VilaFlora                  # flores da mata que brilham de noite
 var _water: VilaWater                  # ondas, vento, peixe e o farol do porto
-var _boat: Sprite2D                     # bote no porto enquanto tem gente esperando para entrar
+var _boat: VilaBoat                     # bote no porto enquanto tem gente esperando para entrar
 var _boat_state := ""                   # "", in (chegando), here (no píer), out (indo embora)
-var _boat_t := 0.0
-const BOAT_SAIL_S := 5.0
 const BOAT_COL := Color(1.0, 0.8, 0.35)
 var ICON_FRAMES := 28                   # icons.png: ícones de 8 px (setup lê da largura)
 var _defense: VilaDefenseView
@@ -110,12 +108,9 @@ func setup(s: VilaSim) -> void:
 	_water = VilaWater.new()
 	add_child(_water)
 	_water.setup(sim, tex("farol"), _objects)
-	_boat = Sprite2D.new()
-	_boat.texture = tex("bote")
-	_boat.centered = true   # gira em volta do meio quando o barqueiro vira a proa para ir embora
-	_boat.visible = false
-	_boat.z_index = -5
-	add_child(_boat)
+	_boat = VilaBoat.new()
+	_boat.setup("bote", tex("bote_8d"))
+	_objects.add_child(_boat)   # junto com prédios e gente: na frente do píer, atrás do que está mais ao sul
 	_sync_terrain(true)
 	_sync_buildings()
 	_sync_people(0.0)
@@ -244,6 +239,27 @@ func _opaque_at(spr: Sprite2D, world: Vector2) -> bool:
 				if img2.get_pixel((spr.frame % spr.hframes) * fw + x, (spr.frame / spr.hframes) * fh + y).a > 0.5:
 					return true
 	return false
+
+
+## Rachaduras desenhadas por cima do prédio (sempre as mesmas para o mesmo prédio): três riscos
+## em zigue-zague no meio do desenho e lascas faltando.
+func _draw_cracks(ck: Node2D, spm: Sprite2D, id: int) -> void:
+	if spm.texture == null:
+		return
+	var r := spm.get_rect()
+	var rng := RandomNumberGenerator.new()
+	rng.seed = id * 92821 + 7
+	var col := Color8(43, 30, 44, 230)
+	for i in 3:
+		var p := Vector2(r.position.x + r.size.x * rng.randf_range(0.25, 0.75), r.position.y + r.size.y * rng.randf_range(0.35, 0.6)).round()
+		var pts := PackedVector2Array([p])
+		for k in rng.randi_range(3, 5):
+			p += Vector2(rng.randi_range(-2, 2), rng.randi_range(2, 3))
+			pts.append(p)
+		ck.draw_polyline(pts, col, 1.0)
+	for i in 4:
+		var q := Vector2(r.position.x + r.size.x * rng.randf_range(0.2, 0.8), r.position.y + r.size.y * rng.randf_range(0.4, 0.9)).round()
+		ck.draw_rect(Rect2(q, Vector2(2, 1)), col)
 
 
 ## Golpe recente no prédio: 1 logo na pancada, cai a 0 em ~0,25 s (para piscar a cada golpe).
@@ -534,18 +550,34 @@ func _update_building(b: Dictionary, node: Dictionary) -> void:
 	# Avariado pelos zumbis: apagado; ruína: escuro e baixo (o alerta pisca na camada da defesa).
 	var spm: Sprite2D = node["sprite"]
 	# Quebrado: torto, baixo e escuro (como o prédio destruído do Clash); ruína: desabado.
-	if bool(b.get("ruin", false)):
+	# Desaba aos poucos (não troca de desenho num quadro): escala e torção vão até o alvo.
+	var ruin := bool(b.get("ruin", false))
+	var broken := bool(b.get("broken", false))
+	var want_s := Vector2(1.0, 0.45) if ruin else (Vector2(1.0, 0.86) if broken else Vector2.ONE)
+	var want_k := 0.0 if ruin else (0.14 if broken else 0.0)
+	if ruin:
 		spm.modulate = Color(0.36, 0.3, 0.34)
-		spm.scale = Vector2(1.0, 0.45)
-		spm.skew = 0.0
-	elif bool(b.get("broken", false)):
+	elif broken:
 		spm.modulate = Color(0.78, 0.46, 0.44)
-		spm.scale = Vector2(1.0, 0.86)
-		spm.skew = 0.14
 	else:
 		spm.modulate = Color.WHITE
-		spm.scale = Vector2.ONE
-		spm.skew = 0.0
+	if spm.scale.distance_to(want_s) < 0.01:
+		spm.scale = want_s
+	else:
+		spm.scale = spm.scale.lerp(want_s, 0.12 if want_s.y < spm.scale.y else 1.0)
+	spm.skew = want_k if absf(spm.skew - want_k) < 0.01 else lerpf(spm.skew, want_k, 0.12)
+	# Rachado: abaixo da metade da vida o prédio mostra rachaduras (e continua rachado de dia).
+	var cracked := not ruin and (broken or (sim.defense.attackable(b) and sim.defense.hp(b) < sim.defense.max_hp(b) * 0.5))
+	var ck: Node2D = node.get("cracks")
+	if cracked and ck == null:
+		ck = Node2D.new()
+		var bid := int(b["id"])
+		ck.draw.connect(func() -> void: _draw_cracks(ck, spm, bid))
+		spm.add_child(ck)
+		node["cracks"] = ck
+		ck.queue_redraw()
+	if ck != null:
+		ck.visible = cracked
 	# Cada golpe de zumbi: o prédio pisca vermelho e dá um tranco (feedback de que está apanhando).
 	var hk := _hit_k(int(b["id"]))
 	if hk > 0.0:
@@ -592,6 +624,9 @@ func _sync_people(delta: float) -> void:
 		# Cansaço (noites viradas): cor mais apagada e passo mais lento.
 		var tired := int(p.get("tired", 0))
 		spr.modulate = Color.WHITE if tired <= 0 else Color(1, 1, 1).lerp(Color(0.62, 0.64, 0.82), clampf(tired / 3.0, 0.25, 1.0))
+		# Mordida de zumbi agora: pisca vermelho.
+		if sim.t - float(p.get("bitten_t", -1e9)) < 0.6 and int(_anim_t * 10.0) % 2 == 0:
+			spr.modulate = Color(1.0, 0.3, 0.25)
 		var col := 0
 		if p["moving"]:
 			col = 1 + int((_anim_t + float(id) * 0.37) * 8.0 * minf(1.0, sim.rest_mult(p))) % 4
@@ -680,119 +715,63 @@ func _process(delta: float) -> void:
 	_overlay.queue_redraw()
 
 
-## Gente nova chega de bote: ele vem do rio até o píer de baixo e fica lá (com um "!" em cima) até o
-## jogador clicar e escolher quem entra; depois vai embora. Barcos no mapa são naufrágios; o único que
-## navega é esse (e o do mascate).
+## Gente nova chega de bote: ele vem pelo mar, encosta na frente do píer de baixo e fica lá (com um "!"
+## em cima) até o jogador clicar e escolher quem entra; depois desencosta e vai embora. Como o barco
+## anda está em VilaBoat (proa sempre para onde vai, curva, desenho por direção, esteira, remo).
+## Barcos no mapa são naufrágios; os únicos que navegam são esse e o do mascate.
 func _sync_boat(delta: float) -> void:
 	var gate := sim._first("gate")
 	var has := not gate.is_empty() and not sim.gate_group.is_empty()
-	_boat_t += delta
-	if has and _boat_state in ["", "out"]:
-		# Abrindo o jogo com gente já esperando: o bote já está lá, sem refazer a viagem.
-		_boat_state = "in" if _boat_seen else "here"
-		_boat_t = 0.0
-	elif not has and _boat_state in ["in", "here"]:
-		_boat_state = "out"
-		_boat_t = 0.0
-	_boat_seen = true
-	if gate.is_empty() or _boat_state == "":
+	if gate.is_empty():
 		_boat.visible = false
+		_boat.state = ""
+		_boat_state = ""
 		return
-	var dock := boat_dock()
-	# O bote anda na direção do comprido dele (de lado pela margem), nunca de lado: vem da esquerda
-	# rente à costa, encosta subindo um pouco, e volta pelo mesmo caminho com o barqueiro remando.
-	var lane := dock + Vector2(0, 16)
-	var away := lane + Vector2(-220, 0)
-	var bob := Vector2(0, roundf(sin(_anim_t * 1.6)))
-	var k := clampf(_boat_t / BOAT_SAIL_S, 0.0, 1.0)
-	k = k * k * (3.0 - 2.0 * k)
-	_boat.visible = true
-	var path := func(f: float) -> Vector2:   # 0 = longe, 1 = no píer
-		return away.lerp(lane, f / 0.8) if f < 0.8 else lane.lerp(dock, (f - 0.8) / 0.2)
-	var half := _boat.texture.get_size() / 2.0 if _boat.texture != null else Vector2.ZERO
-	_boat_rot = 0.0
-	match _boat_state:
-		"in":
-			_boat_tl = (path.call(k) as Vector2).round() + bob
-			_boat_dir = 1.0
-			if _boat_t >= BOAT_SAIL_S:
-				_boat_state = "here"
-		"here":
-			_boat_tl = dock.round() + bob
-			_boat_dir = 1.0
-		"out":
-			# Primeiro desencosta e vira a proa (meia-volta no lugar), depois rema embora de frente.
-			if _boat_t < BOAT_TURN_S:
-				var kt := _boat_t / BOAT_TURN_S
-				kt = kt * kt * (3.0 - 2.0 * kt)
-				_boat_tl = dock.lerp(lane, kt).round() + bob
-				_boat_rot = PI * kt
-				_boat_dir = 1.0
-			else:
-				var ko := clampf((_boat_t - BOAT_TURN_S) / BOAT_SAIL_S, 0.0, 1.0)
-				ko = ko * ko * (3.0 - 2.0 * ko)
-				_boat_tl = lane.lerp(away, ko).round() + bob
-				_boat_dir = -1.0
-				if _boat_t >= BOAT_TURN_S + BOAT_SAIL_S:
-					_boat_state = ""
-					_boat.visible = false
-	_boat.position = _boat_tl + half
-	_boat.rotation = _boat_rot
+	if _boat_state == "here" and _boat.state == "":   # capturas: põe o bote já atracado
+		_boat.moor(_boat_berth())
+	if has and _boat.state in ["", "back", "out"]:
+		# Abrindo o jogo com gente já esperando: o bote já está lá, sem refazer a viagem.
+		if _boat_seen and _boat.state == "":
+			_boat.sail_in(_boat_berth())
+		elif _boat.state == "":
+			_boat.moor(_boat_berth())
+	elif not has and _boat.state in ["in", "here"]:
+		_boat.sail_out()
+	_boat_seen = true
+	_boat.passengers = sim.gate_group.size() if _boat.state in ["in", "here"] else 0
+	_boat.step(delta)
+	_boat_state = _boat.state
 
 
-var _boat_dir := 1.0   # para onde a proa aponta (1 = direita)
-var _boat_tl := Vector2.ZERO   # canto de cima do bote (o sprite gira em volta do meio)
-var _boat_rot := 0.0
-const BOAT_TURN_S := 1.6
+## Onde o bote encosta: rente à frente do píer, proa para o leste. Se o mascate já está amarrado
+## lá, o bote encosta por fora dele (quem desce passa pelo barco do mascate, como em qualquer cais).
+func _boat_berth() -> Vector2:
+	var at := _pier_front() + Vector2(8, 3)
+	if _merchant_nodes.size() > 2 and (_merchant_nodes[2] as VilaBoat).state in ["in", "here"]:
+		at.y += 15.0
+	return at
 
 
-## Quem está no bote: o barqueiro na popa remando e, enquanto espera no píer, as cabeças de quem veio.
-## Desenhado em volta do meio do bote, girando junto quando ele vira.
-func _draw_boat_crew() -> void:
-	if _boat_state == "" or not _boat.visible or _boat.texture == null:
-		return
-	var w := float(_boat.texture.get_width())
-	var h := float(_boat.texture.get_height())
-	var moving := _boat_state != "here"
-	_overlay.draw_set_transform(_boat_tl + Vector2(w, h) / 2.0, _boat_rot, Vector2(_boat_dir, 1.0))
-	var stern := Vector2(-w / 2.0 + 5.0, 5.0 - h / 2.0)
-	_overlay.draw_rect(Rect2(stern + Vector2(-2, -3), Vector2(4, 4)), Color8(92, 74, 96))
-	_overlay.draw_rect(Rect2(stern + Vector2(-1, -6), Vector2(3, 3)), Color8(226, 186, 150))
-	_overlay.draw_rect(Rect2(stern + Vector2(-2, -7), Vector2(5, 1)), Color8(150, 112, 70))
-	# remos: vão e voltam quando anda, parados quando encostado
-	var ph := sin(_anim_t * 6.0) if moving else 0.0
-	for sg in [-1.0, 1.0]:
-		var a := stern + Vector2(0, -1)
-		_overlay.draw_line(a, a + Vector2(-(3.0 + ph * 2.0), sg * 6.0), Color8(150, 112, 70), 1.0)
-	if _boat_state == "here" or _boat_state == "in":
-		var n := mini(3, sim.gate_group.size())
-		for i in n:
-			var hp := Vector2(-5.0 + i * 5.0, 3.0 - h / 2.0)
-			_overlay.draw_rect(Rect2(hp + Vector2(-1, -1), Vector2(3, 3)), Color8(226, 186, 150))
-			_overlay.draw_rect(Rect2(hp + Vector2(-1, 2), Vector2(3, 2)), Color8(120, 140, 170))
-	_overlay.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-
-
-var _boat_seen := false
-
-
-func boat_dock() -> Vector2:
+## Meio da borda da frente do píer (o desenho do píer desce 12 px para dentro da água).
+func _pier_front() -> Vector2:
 	var gate := sim._first("gate")
 	if gate.is_empty():
 		return Vector2.ZERO
 	var fp := sim._fp("gate")
-	return Vector2(Vector2i(gate["cell"]).x + fp.x, Vector2i(gate["cell"]).y + fp.y) * TILE + Vector2(1, 2)
+	return Vector2((Vector2i(gate["cell"]).x + fp.x / 2.0) * TILE, (Vector2i(gate["cell"]).y + fp.y) * TILE + 12.0)
+
+
+func boat_dock() -> Vector2:
+	return _boat_berth()
 
 
 ## O bote parado no píer com gente esperando (clique abre a escolha).
 func boat_waiting() -> bool:
-	return _boat_state == "here"
+	return _boat.state == "here"
 
 
 func boat_rect() -> Rect2:
-	if _boat_state == "" or _boat.texture == null:
-		return Rect2()
-	return Rect2(_boat_tl + Vector2(-4, -22), _boat.texture.get_size() + Vector2(8, 26))
+	return _boat.rect()
 
 
 func boat_screen_rect() -> Rect2:
@@ -804,11 +783,14 @@ func boat_screen_rect() -> Rect2:
 	return sr if get_viewport_rect().intersects(sr) else Rect2()
 
 
+var _boat_seen := false
+
+
 ## Em cima do bote: balão com "!" pulando; fora da tela, a seta na beira aponta para o píer.
 func _draw_boat_sign() -> void:
-	if _boat_state != "here":
+	if _boat.state != "here":
 		return
-	var top := _boat_tl + Vector2(_boat.texture.get_width() / 2.0, -4.0 - absf(sin(_anim_t * 3.0)) * 3.0)
+	var top := _boat.pos + Vector2(0, -16.0 - absf(sin(_anim_t * 3.0)) * 3.0)
 	var r := Rect2((top - Vector2(5, 13)).round(), Vector2(10, 12))
 	_overlay.draw_rect(r.grow(1), Color(0.12, 0.08, 0.12, 0.95))
 	_overlay.draw_rect(r, BOAT_COL)
@@ -1099,7 +1081,6 @@ func _draw_overlay() -> void:
 			var gx := roundi((fp2.x * TILE - src.size.x) / 2.0)
 			_overlay.draw_texture_rect_region(bt, Rect2(bottom + Vector2(gx, -src.size.y), src.size), src, Color(1, 1, 1, 0.6))
 	_draw_defense_hints()
-	_draw_boat_crew()
 	_draw_boat_sign()
 	# Entulho marcado para limpar: colchetes âmbar e um martelo
 	var mk := tex("icons")
@@ -1206,7 +1187,6 @@ func _draw_brackets(r: Rect2, c: Color = Color(1, 1, 1, 0.7)) -> void:
 ## O mascate chega de barco: o barco entra pelo mar até o píer, ele desce e anda até a praça, onde
 ## monta a banca. Quando vai embora faz o caminho de volta e o barco some no mar. Só desenho: para a
 ## simulação ele já está na praça desde que chegou (dá para clicar nele no caminho também).
-const M_SAIL_S := 5.0           # barco entrando ou saindo
 const M_WALK_TPS := 2.6         # passo do mascate (células por segundo)
 var _m_state := ""              # "", sail_in, walk_in, here, walk_out, sail_out
 var _m_t := 0.0
@@ -1214,12 +1194,13 @@ var _m_path: PackedVector2Array = PackedVector2Array()
 var _m_seen := false            # primeiro quadro: se já estava aqui (jogo carregado), aparece pronto
 
 
+## Onde o barco do mascate amarra: rente à frente do píer, proa para o leste (por fora do bote se o
+## bote chegou primeiro).
 func _m_dock() -> Vector2:
-	var g := sim._first("gate")
-	if g.is_empty():
-		return Vector2.ZERO
-	var fp := sim._fp("gate")
-	return Vector2(Vector2i(g["cell"]).x * TILE - 30, (Vector2i(g["cell"]).y + fp.y) * TILE - 10)
+	var at := _pier_front() + Vector2(-4, 8)
+	if _boat.state in ["in", "here"]:
+		at.y += 20.0
+	return at
 
 
 func _m_stand() -> Vector2:
@@ -1233,7 +1214,7 @@ func _m_route() -> PackedVector2Array:
 	var out := PackedVector2Array()
 	if g.is_empty() or pr.is_empty():
 		return out
-	out.append(_m_dock() + Vector2(26, 20))   # desce do barco no píer
+	out.append(_pier_front() + Vector2(0, -6))   # desce do barco para o píer
 	out.append(Vector2(Vector2i(g["cell"])) * TILE + Vector2(16, 20))
 	for c in sim._path(Vector2(sim._door(g)), sim._door(pr)):
 		out.append(c * TILE + Vector2(8, 12))
@@ -1257,13 +1238,9 @@ func _m_make() -> void:
 	man.offset = Vector2(0, -7)
 	man.visible = false
 	_objects.add_child(man)
-	var boat := Sprite2D.new()
-	boat.texture = tex("barco_mascate")
-	boat.hframes = 2
-	boat.centered = false
-	boat.z_index = -5
-	boat.visible = false
-	add_child(boat)
+	var boat := VilaBoat.new()
+	boat.setup("mascate", tex("barco_mascate_8d"))
+	_objects.add_child(boat)
 	_merchant_nodes = [stall, man, boat]
 
 
@@ -1281,9 +1258,17 @@ func _sync_merchant(delta: float) -> void:
 		if here:
 			_m_make()
 			_m_state = "here"
+			(_merchant_nodes[2] as VilaBoat).moor(_m_dock())
 	if here and _m_state in ["", "walk_out", "sail_out"]:
 		_m_make()
-		_m_state = "sail_in" if _m_state == "" else "walk_in"
+		var bt0: VilaBoat = _merchant_nodes[2]
+		if _m_state == "":
+			_m_state = "sail_in"
+			bt0.sail_in(_m_dock())
+		else:
+			_m_state = "walk_in"
+			if bt0.state != "here":
+				bt0.moor(bt0.dock)
 		_m_t = 0.0
 		_m_path = _m_route()
 	elif not here and _m_state in ["sail_in", "walk_in", "here"]:
@@ -1291,36 +1276,26 @@ func _sync_merchant(delta: float) -> void:
 		_m_t = 0.0
 		_m_path = _m_route()
 		_m_path.reverse()
+		if _m_state == "sail_out":
+			(_merchant_nodes[2] as VilaBoat).sail_out()
 	if _m_state == "":
 		return
 	_m_t += delta
 	var stall: Sprite2D = _merchant_nodes[0]
 	var man: Sprite2D = _merchant_nodes[1]
-	var boat: Sprite2D = _merchant_nodes[2]
-	var dock := _m_dock()
-	var away := dock + Vector2(-40, 150)
-	boat.frame = int(_anim_t * 2.0) % 2
-	var bob := Vector2(0, roundf(sin(_anim_t * 1.4)))
+	var boat: VilaBoat = _merchant_nodes[2]
+	boat.step(delta)
 	match _m_state:
 		"sail_in", "sail_out":
-			var k := clampf(_m_t / M_SAIL_S, 0.0, 1.0)
-			k = k * k * (3.0 - 2.0 * k)
-			var from := away if _m_state == "sail_in" else dock
-			var to := dock if _m_state == "sail_in" else away
-			boat.visible = true
-			boat.position = from.lerp(to, k).round() + bob
 			man.visible = false
 			stall.visible = false
-			if _m_t >= M_SAIL_S:
-				if _m_state == "sail_in":
-					_m_state = "walk_in"
-					_m_t = 0.0
-				else:
-					_m_clear()
-					return
+			if _m_state == "sail_in" and boat.state == "here":
+				_m_state = "walk_in"
+				_m_t = 0.0
+			elif _m_state == "sail_out" and boat.state == "":
+				_m_clear()
+				return
 		"walk_in", "walk_out":
-			boat.visible = true
-			boat.position = dock.round() + bob
 			stall.visible = _m_state == "walk_out"
 			man.visible = true
 			var done := _m_walk(man, delta)
@@ -1329,10 +1304,9 @@ func _sync_merchant(delta: float) -> void:
 					_m_state = "here"
 				else:
 					_m_state = "sail_out"
+					boat.sail_out()
 				_m_t = 0.0
 		"here":
-			boat.visible = true
-			boat.position = dock.round() + bob
 			stall.visible = true
 			man.visible = true
 			man.position = _m_stand()
